@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CricScore – Live Cricket Scoring App</title>
+  <meta name="description" content="A premium live cricket scoring application to track matches ball by ball with full scorecards, partnerships, and player stats." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ===================== SCREEN: SETUP ===================== -->
+<div id="screen-setup" class="screen active">
+  <div class="setup-bg"></div>
+  <div class="setup-container">
+    <div class="logo-wrap">
+      <div class="logo-icon">
+        <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="24" cy="24" r="22" fill="url(#lg1)" />
+          <path d="M14 34L24 10L34 34" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M17 27h14" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+          <defs>
+            <linearGradient id="lg1" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#00D46A"/>
+              <stop offset="1" stop-color="#0052CC"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="logo-text">Cric<span>Score</span></div>
+    </div>
+    <p class="setup-tagline">Ball-by-Ball Live Cricket Scoring</p>
+
+    <div class="setup-card">
+      <h2 class="setup-title">New Match Setup</h2>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="team1-name">Team 1 Name</label>
+          <input type="text" id="team1-name" class="form-input" placeholder="e.g. Mumbai Indians" maxlength="25" oninput="syncTeamNames()" />
+        </div>
+        <div class="form-group">
+          <label for="team2-name">Team 2 Name</label>
+          <input type="text" id="team2-name" class="form-input" placeholder="e.g. Chennai Super Kings" maxlength="25" oninput="syncTeamNames()" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="total-overs">Total Overs</label>
+          <select id="total-overs" class="form-input">
+            <option value="5">5 Overs</option>
+            <option value="10">10 Overs</option>
+            <option value="20" selected>20 Overs (T20)</option>
+            <option value="50">50 Overs (ODI)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="players-per-team">Players per Team</label>
+          <select id="players-per-team" class="form-input" onchange="renderPlayerInputs()">
+            <option value="5">5 Players</option>
+            <option value="6">6 Players</option>
+            <option value="7">7 Players</option>
+            <option value="8">8 Players</option>
+            <option value="9">9 Players</option>
+            <option value="10">10 Players</option>
+            <option value="11" selected>11 Players</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Toss Section -->
+      <div class="toss-section">
+        <div class="toss-label">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          Toss
+        </div>
+        <div class="toss-row">
+          <div class="toss-group">
+            <label class="toss-sub-label">Won by</label>
+            <select id="toss-winner" class="form-input toss-select" onchange="syncTossUI()">
+              <option value="1" id="opt-team1">Team 1</option>
+              <option value="2" id="opt-team2">Team 2</option>
+            </select>
+          </div>
+          <div class="toss-group">
+            <label class="toss-sub-label">Elected to</label>
+            <div class="toss-choice-btns">
+              <button type="button" id="toss-bat-btn" class="toss-choice active" onclick="selectTossChoice('bat')">
+                🏏 Bat
+              </button>
+              <button type="button" id="toss-bowl-btn" class="toss-choice" onclick="selectTossChoice('bowl')">
+                🎯 Bowl
+              </button>
+            </div>
+          </div>
+        </div>
+        <!-- Live summary line -->
+        <div class="toss-summary" id="toss-summary">Team 1 won the toss and elected to Bat</div>
+      </div>
+
+
+      <div class="section-divider">
+        <span>Team 1 Players</span>
+      </div>
+      <div id="team1-players" class="player-inputs">
+        <!-- dynamically filled -->
+      </div>
+
+      <div class="section-divider">
+        <span>Team 2 Players</span>
+      </div>
+      <div id="team2-players" class="player-inputs">
+        <!-- dynamically filled -->
+      </div>
+
+      <button id="btn-start-match" class="btn-primary" onclick="startMatch()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><polygon points="5,3 19,12 5,21" fill="white"/></svg>
+        Start Match
+      </button>
+
+      <button class="btn-history" onclick="showHistory()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Match History
+      </button>
+
+      <button class="btn-history" onclick="showCareerStats()" style="margin-top: 0.4rem;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Career Stats
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SCREEN: INNINGS SETUP ===================== -->
+<div id="screen-innings-setup" class="screen">
+  <div class="setup-bg"></div>
+  <div class="setup-container">
+    <div class="logo-wrap small">
+      <div class="logo-icon small">
+        <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="22" fill="url(#lg2)"/><path d="M14 34L24 10L34 34" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 27h14" stroke="white" stroke-width="2.5" stroke-linecap="round"/><defs><linearGradient id="lg2" x1="0" y1="0" x2="48" y2="48"><stop stop-color="#00D46A"/><stop offset="1" stop-color="#0052CC"/></linearGradient></defs></svg>
+      </div>
+      <div class="logo-text">Cric<span>Score</span></div>
+    </div>
+
+    <div class="setup-card">
+      <h2 class="setup-title" id="innings-setup-title">Choose Opening Batters &amp; Bowler</h2>
+      <p class="innings-subtitle" id="innings-setup-subtitle">Innings 1</p>
+
+      <div class="form-group">
+        <label>Striker (Opening Batter 1)</label>
+        <select id="select-striker" class="form-input"></select>
+      </div>
+      <div class="form-group">
+        <label>Non-Striker (Opening Batter 2)</label>
+        <select id="select-non-striker" class="form-input"></select>
+      </div>
+      <div class="form-group">
+        <label>Opening Bowler</label>
+        <select id="select-bowler" class="form-input"></select>
+      </div>
+
+      <button class="btn-primary" onclick="beginInnings()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><polygon points="5,3 19,12 5,21" fill="white"/></svg>
+        Begin Innings
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SCREEN: SCORING ===================== -->
+<div id="screen-scoring" class="screen">
+  <header class="scoring-header">
+    <div class="header-left">
+      <div class="logo-mini">
+        <svg viewBox="0 0 48 48" fill="none" width="28" height="28"><circle cx="24" cy="24" r="22" fill="url(#lg3)"/><path d="M14 34L24 10L34 34" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 27h14" stroke="white" stroke-width="2.5" stroke-linecap="round"/><defs><linearGradient id="lg3" x1="0" y1="0" x2="48" y2="48"><stop stop-color="#00D46A"/><stop offset="1" stop-color="#0052CC"/></linearGradient></defs></svg>
+      </div>
+      <span class="logo-text-mini">CricScore</span>
+    </div>
+    <div class="header-center" id="header-match-title">Match</div>
+    <div class="header-right">
+      <button class="btn-icon" id="btn-player-stats" onclick="showPlayerStats()" title="Player Stats">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/></svg>
+      </button>
+      <button class="btn-icon" id="btn-scorecard" onclick="showScorecard()" title="View Scorecard">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="3"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="scoring-body">
+    <!-- ===== LEFT: Scoreboard ===== -->
+    <div class="scoreboard-panel">
+      <!-- Innings indicator -->
+      <div class="innings-badge-wrap">
+        <div class="innings-badge" id="innings-label">1st Innings</div>
+        <div class="match-situation" id="match-situation"></div>
+      </div>
+
+      <!-- Main Score -->
+      <div class="main-score-block">
+        <div class="batting-team-name" id="batting-team-name">Team A</div>
+        <div class="score-display">
+          <span class="runs" id="score-runs">0</span>
+          <span class="score-sep">/</span>
+          <span class="wickets" id="score-wickets">0</span>
+        </div>
+        <div class="overs-display" id="score-overs">0.0 Overs</div>
+        <div class="run-rate-display" id="run-rate">RR: 0.00</div>
+      </div>
+
+      <!-- Target (2nd innings) -->
+      <div class="target-block hidden" id="target-block">
+        <div class="target-info" id="target-info"></div>
+        <div class="required-rr" id="required-rr"></div>
+      </div>
+
+      <!-- Batters -->
+      <div class="batters-card">
+        <div class="card-label">At The Crease</div>
+        <div class="batter-row" id="batter-striker">
+          <div class="batter-name">—</div>
+          <div class="batter-stats">0 (0)</div>
+          <div class="batter-badge striker-badge">*</div>
+        </div>
+        <div class="batter-row" id="batter-non-striker">
+          <div class="batter-name">—</div>
+          <div class="batter-stats">0 (0)</div>
+        </div>
+      </div>
+
+      <!-- Current Bowler -->
+      <div class="bowler-card">
+        <div class="card-label">Bowling</div>
+        <div class="bowler-row" id="bowler-current">
+          <div class="bowler-name">—</div>
+          <div class="bowler-stats">0-0 (0)</div>
+        </div>
+      </div>
+
+      <!-- This Over balls -->
+      <div class="over-balls-card">
+        <div class="card-label">This Over</div>
+        <div class="over-balls" id="over-balls"></div>
+        <div class="over-runs" id="over-runs-display">0 runs this over</div>
+      </div>
+    </div>
+
+    <!-- ===== RIGHT: Scoring Panel ===== -->
+    <div class="input-panel">
+      <!-- Runs buttons -->
+      <div class="section-label">Runs</div>
+      <div class="runs-grid">
+        <button class="run-btn" id="btn-0" onclick="addBall(0)">0</button>
+        <button class="run-btn" id="btn-1" onclick="addBall(1)">1</button>
+        <button class="run-btn" id="btn-2" onclick="addBall(2)">2</button>
+        <button class="run-btn" id="btn-3" onclick="addBall(3)">3</button>
+        <button class="run-btn runs-4" id="btn-4" onclick="addBall(4)">4</button>
+        <button class="run-btn runs-6" id="btn-6" onclick="addBall(6)">6</button>
+      </div>
+
+      <!-- Extras -->
+      <div class="section-label">Extras</div>
+      <div class="extras-grid">
+        <button class="extra-btn" id="btn-wide" onclick="addExtra('wide')">Wide</button>
+        <button class="extra-btn" id="btn-no-ball" onclick="addExtra('noBall')">No Ball</button>
+        <button class="extra-btn" id="btn-bye" onclick="addExtra('bye')">Bye</button>
+        <button class="extra-btn" id="btn-leg-bye" onclick="addExtra('legBye')">Leg Bye</button>
+      </div>
+
+      <!-- Wicket -->
+      <div class="section-label">Wicket</div>
+      <div class="wicket-grid">
+        <button class="wicket-btn" id="btn-wicket-bowled" onclick="showWicketModal('Bowled')">Bowled</button>
+        <button class="wicket-btn" id="btn-wicket-caught" onclick="showWicketModal('Caught')">Caught</button>
+        <button class="wicket-btn" id="btn-wicket-lbw" onclick="showWicketModal('LBW')">LBW</button>
+        <button class="wicket-btn" id="btn-wicket-runout" onclick="showWicketModal('Run Out')">Run Out</button>
+        <button class="wicket-btn" id="btn-wicket-stumped" onclick="showWicketModal('Stumped')">Stumped</button>
+        <button class="wicket-btn" id="btn-wicket-other" onclick="showWicketModal('Hit Wicket')">Hit Wicket</button>
+      </div>
+
+      <!-- Undo -->
+      <button class="btn-undo" id="btn-undo" onclick="undoLastBall()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l4-4-4-4"/><path d="M7 5H3"/><path d="M3 5C3 5 3 19 19 19"/></svg>
+        Undo Last Ball
+      </button>
+
+      <!-- Last ball indicator -->
+      <div class="last-ball-indicator" id="last-ball-indicator" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SCREEN: SCORECARD ===================== -->
+<div id="screen-scorecard" class="screen">
+  <header class="scoring-header">
+    <div class="header-left">
+      <button class="btn-icon" onclick="hideScorecard()" title="Back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15,18 9,12 15,6"/></svg>
+      </button>
+    </div>
+    <div class="header-center">Full Scorecard</div>
+    <div class="header-right"></div>
+  </header>
+  <div id="scorecard-body" class="scorecard-body">
+    <!-- Dynamically populated -->
+  </div>
+</div>
+
+<!-- ===================== SCREEN: PLAYER STATS ===================== -->
+<div id="screen-player-stats" class="screen">
+  <header class="scoring-header">
+    <div class="header-left">
+      <button class="btn-icon" onclick="hidePlayerStats()" title="Back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15,18 9,12 15,6"/></svg>
+      </button>
+    </div>
+    <div class="header-center">Player Stats</div>
+    <div class="header-right"></div>
+  </header>
+
+  <!-- Tab bar -->
+  <div class="ps-tab-bar">
+    <button class="ps-tab active" id="tab-batting" onclick="switchStatsTab('batting')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-14 9V3z"/></svg>
+      Batting
+    </button>
+    <button class="ps-tab" id="tab-bowling" onclick="switchStatsTab('bowling')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+      Bowling
+    </button>
+  </div>
+
+  <!-- Team filter pills -->
+  <div class="ps-team-filter" id="ps-team-filter"></div>
+
+  <!-- Stats grid -->
+  <div class="ps-body" id="ps-body">
+    <!-- Dynamically populated -->
+  </div>
+</div>
+
+<!-- ===================== SCREEN: CAREER STATS ===================== -->
+<div id="screen-career-stats" class="screen">
+  <header class="scoring-header">
+    <div class="header-left">
+      <button class="btn-icon" onclick="hideCareerStats()" title="Back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15,18 9,12 15,6"/></svg>
+      </button>
+    </div>
+    <div class="header-center">Career Stats</div>
+    <div class="header-right"></div>
+  </header>
+
+  <!-- Tab bar -->
+  <div class="ps-tab-bar">
+    <button class="ps-tab active" id="tab-career-batting" onclick="switchCareerTab('batting')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3l14 9-14 9V3z"/></svg>
+      Batting
+    </button>
+    <button class="ps-tab" id="tab-career-bowling" onclick="switchCareerTab('bowling')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+      Bowling
+    </button>
+  </div>
+
+  <!-- Stats Search -->
+  <div style="padding: 1rem; padding-bottom: 0;">
+    <input type="text" id="career-search-input" class="form-input" style="margin: 0; background: rgba(0,0,0,0.4);" placeholder="Search player..." oninput="renderCareerStatsBody()">
+  </div>
+
+  <!-- Stats grid -->
+  <div class="ps-body" id="career-stats-body">
+    <!-- Dynamically populated -->
+  </div>
+</div>
+
+<!-- ===================== SCREEN: HISTORY ===================== -->
+<div id="screen-history" class="screen">
+  <header class="scoring-header">
+    <div class="header-left">
+      <button class="btn-icon" onclick="hideHistory()" title="Back">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15,18 9,12 15,6"/></svg>
+      </button>
+    </div>
+    <div class="header-center">Match History</div>
+    <div class="header-right">
+      <button class="btn-icon" id="btn-clear-history" onclick="clearHistory()" title="Clear All History">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+      </button>
+    </div>
+  </header>
+  <div id="history-body" class="history-body">
+    <!-- Dynamically populated -->
+  </div>
+</div>
+
+<!-- ===================== SCREEN: NEW BOWLER ===================== -->
+<div id="screen-new-bowler" class="screen">
+  <div class="setup-bg"></div>
+  <div class="setup-container">
+    <div class="setup-card">
+      <h2 class="setup-title">Over Complete</h2>
+      <p class="innings-subtitle" id="over-complete-subtitle">Select the next bowler</p>
+      <div class="form-group">
+        <label>New Bowler</label>
+        <select id="select-new-bowler" class="form-input"></select>
+      </div>
+      <button class="btn-primary" onclick="setNewBowler()">
+        Continue
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== SCREEN: MATCH RESULT ===================== -->
+<div id="screen-result" class="screen">
+  <div class="result-bg"></div>
+
+  <!-- Scrollable content -->
+  <div class="result-scroll">
+    <div class="result-container">
+
+      <!-- Trophy + result -->
+      <div class="result-trophy" id="result-trophy-emoji">🏆</div>
+      <h1 class="result-title">Match Complete!</h1>
+      <div class="result-winner" id="result-winner"></div>
+
+      <!-- Score cards -->
+      <div class="result-cards" id="result-cards"></div>
+
+      <!-- Inline mini scorecard -->
+      <div class="result-scorecard-wrap" id="result-scorecard-wrap"></div>
+
+      <!-- Action buttons -->
+      <div class="result-actions">
+        <button class="result-action-btn result-action-secondary" onclick="showResultScorecard()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="3"/></svg>
+          Full Scorecard
+        </button>
+        <button class="result-action-btn result-action-secondary" onclick="showHistoryFromResult()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Match History
+        </button>
+        <button class="result-action-btn result-action-primary" onclick="newMatch()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Match
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ===================== MODAL: WICKET ===================== -->
+<div id="modal-wicket" class="modal-overlay" style="display:none;">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3 id="modal-wicket-title">Wicket!</h3>
+      <button class="modal-close" onclick="closeWicketModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Batsman Out</label>
+        <select id="modal-out-batsman" class="form-input"></select>
+      </div>
+      <div class="form-group" id="fielder-group">
+        <label id="fielder-label">Fielder</label>
+        <select id="modal-fielder" class="form-input"></select>
+      </div>
+      <div class="form-group">
+        <label>Runs on this delivery</label>
+        <div class="inline-runs">
+          <button class="mini-run-btn active" data-runs="0" onclick="setWicketRuns(0)">0</button>
+          <button class="mini-run-btn" data-runs="1" onclick="setWicketRuns(1)">1</button>
+          <button class="mini-run-btn" data-runs="2" onclick="setWicketRuns(2)">2</button>
+          <button class="mini-run-btn" data-runs="3" onclick="setWicketRuns(3)">3</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeWicketModal()">Cancel</button>
+      <button class="btn-danger" onclick="confirmWicket()">Confirm Wicket</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL: NEW BATTER ===================== -->
+<div id="modal-new-batter" class="modal-overlay" style="display:none;">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h3>New Batsman In</h3>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Select Incoming Batsman</label>
+        <select id="modal-new-batter" class="form-input"></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-primary" onclick="confirmNewBatter()">Send In</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TOAST ===================== -->
+<div id="toast" class="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
