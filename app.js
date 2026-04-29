@@ -700,6 +700,147 @@ function checkInningsEnd(inn) {
   }
 }
 
+function calculateAwards() {
+  const allBatters = [];
+  const allBowlers = [];
+  const fielders = {};
+
+  console.log('Match innings:', match.innings);
+
+  match.innings.forEach((inn, idx) => {
+    if (!inn) {
+      console.log(`Innings ${idx} is null`);
+      return;
+    }
+
+    console.log(`Processing innings ${idx}:`, inn);
+
+    // Batters
+    Object.values(inn.batters).forEach(b => {
+      allBatters.push(b);
+    });
+
+    // Bowlers
+    Object.values(inn.bowlers).forEach(b => {
+      allBowlers.push(b);
+    });
+
+    // Fielders (from wickets)
+    inn.ballLog.forEach(ball => {
+      if (ball.isWicket && ball.fielder) {
+        fielders[ball.fielder] = (fielders[ball.fielder] || 0) + 1;
+      }
+    });
+  });
+
+  console.log('All batters:', allBatters);
+  console.log('All bowlers:', allBowlers);
+  console.log('All fielders:', fielders);
+
+  // 🏏 Best Batsman (highest runs)
+  const bestBatsman = allBatters.length > 0 ? allBatters.sort((a, b) => b.runs - a.runs)[0] : null;
+
+  // 🎯 Best Bowler (most wickets)
+  const bestBowler = allBowlers.length > 0 ? allBowlers
+    .filter(b => b.balls > 0)
+    .sort((a, b) => b.wickets - a.wickets || a.runs - b.runs)[0] : null;
+
+  // 🧤 Best Fielder (most dismissals)
+  const bestFielder = Object.entries(fielders).length > 0 ? Object.entries(fielders)
+    .sort((a, b) => b[1] - a[1])[0] : null;
+
+  // 🏆 MVP (Most Valuable Player) - Better formula
+  let mvp = null;
+  let mvpScore = -1;
+
+  allBatters.forEach(b => {
+    // Batting score: runs weighted heavily
+    const battingScore = b.runs * 1.5;
+    
+    // Bowling score: wickets weighted high, runs given weighted negative
+    const bowler = allBowlers.find(x => x.name === b.name);
+    const bowlingScore = bowler ? (bowler.wickets * 50 - bowler.runs * 0.5) : 0;
+    
+    // Fielding score
+    const fieldingScore = (fielders[b.name] || 0) * 30;
+    
+    const totalScore = battingScore + bowlingScore + fieldingScore;
+
+    if (totalScore > mvpScore) {
+      mvpScore = totalScore;
+      mvp = b.name;
+    }
+  });
+
+  console.log('Final awards:', { mvp, bestBatsman, bestBowler, bestFielder });
+
+  return {
+    mvp,
+    bestBatsman,
+    bestBowler,
+    bestFielder
+  };
+}
+
+function displayAwards() {
+  console.log('=== displayAwards() called ===');
+  
+  const awardsEl = $('result-awards');
+  console.log('Awards element found:', awardsEl);
+  
+  if (!awardsEl) {
+    console.error('Awards element not found!');
+    return;
+  }
+
+  const awards = calculateAwards();
+  console.log('Awards data:', awards);
+  
+  // Build HTML with inline styles and clear structure
+  const html = `
+    <div style="width: 100%; padding: 1.2rem; background: linear-gradient(135deg, rgba(0,212,106,0.15) 0%, rgba(0,82,204,0.08) 100%); border-radius: 12px; border: 2px solid rgba(0,212,106,0.3); margin-bottom: 1rem;">
+      
+      <!-- MVP Section -->
+      <div style="background: rgba(0,212,106,0.25); padding: 0.8rem; border-radius: 8px; margin-bottom: 0.8rem; border-left: 4px solid #00d46a;">
+        <div style="color: #00d46a; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.3rem;">🏆 PLAYER OF THE MATCH (MVP)</div>
+        <div style="color: #fff; font-size: 1.1rem; font-weight: 700;">${awards.mvp || 'N/A'}</div>
+      </div>
+
+      <!-- Best Batsman -->
+      <div style="background: rgba(100,200,255,0.15); padding: 0.8rem; border-radius: 8px; margin-bottom: 0.8rem; border-left: 4px solid #64c8ff;">
+        <div style="color: #64c8ff; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.3rem;">🏏 BEST BATSMAN</div>
+        <div style="color: #fff; font-size: 1rem;">
+          ${awards.bestBatsman?.name || 'N/A'} 
+          <span style="color: #64c8ff;"> • ${awards.bestBatsman?.runs || 0} runs (${awards.bestBatsman?.balls || 0} balls)</span>
+        </div>
+      </div>
+
+      <!-- Best Bowler -->
+      <div style="background: rgba(255,100,100,0.15); padding: 0.8rem; border-radius: 8px; margin-bottom: 0.8rem; border-left: 4px solid #ff6464;">
+        <div style="color: #ff6464; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.3rem;">🎯 BEST BOWLER</div>
+        <div style="color: #fff; font-size: 1rem;">
+          ${awards.bestBowler?.name || 'N/A'}
+          <span style="color: #ff6464;"> • ${awards.bestBowler?.wickets || 0}/${awards.bestBowler?.runs || 0} (${awards.bestBowler?.overs || 0} overs)</span>
+        </div>
+      </div>
+
+      <!-- Best Fielder -->
+      <div style="background: rgba(255,200,100,0.15); padding: 0.8rem; border-radius: 8px; border-left: 4px solid #ffc864;">
+        <div style="color: #ffc864; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.3rem;">🧤 BEST FIELDER</div>
+        <div style="color: #fff; font-size: 1rem;">
+          ${awards.bestFielder ? awards.bestFielder[0] : 'N/A'}
+          <span style="color: #ffc864;"> • ${awards.bestFielder ? awards.bestFielder[1] : 0} dismissals</span>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  awardsEl.innerHTML = html;
+  awardsEl.style.display = 'block';
+  awardsEl.style.visibility = 'visible';
+  console.log('Awards HTML set successfully');
+}
+
 function decideResult() {
   const inn1 = match.innings[0];
   const inn2 = match.innings[1];
@@ -726,6 +867,8 @@ function decideResult() {
   // Winner text
   $('result-winner').textContent = resultText;
 
+  $('result-scorecard-wrap').innerHTML = buildResultMiniScorecard(inn1, inn2);
+
   // Score summary cards (highlight winner)
   const inn1won = inn1.runs > inn2.runs;
   const inn2won = inn2.runs > inn1.runs;
@@ -747,6 +890,11 @@ function decideResult() {
   saveMatchToHistory();
 
   showScreen('screen-result');
+
+  // ── Display Awards (after screen is shown) ──
+  setTimeout(() => {
+    displayAwards();
+  }, 50);
 }
 
 // Build a compact batting + bowling summary for the result screen
@@ -1362,6 +1510,10 @@ function saveMatchToHistory() {
   const inn2 = match.innings[1];
   if (!inn1 || !inn2) return;
 
+ 
+function goBack() {
+  showScreen('screen-setup'); // or previous screen if needed
+}
   const entry = {
     id: Date.now(),
     date: new Date().toISOString(),

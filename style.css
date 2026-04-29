@@ -3,23 +3,23 @@
    ============================================================ */
 
 :root {
-  /* Palette */
+  /* Palette - Sky Blue with White Theme */
   --clr-green: #00d46a;
   --clr-blue: #0052cc;
-  --clr-dark: #0a0e17;
-  --clr-card: rgba(12, 16, 28, 0.82);
-  --clr-glass: rgba(255, 255, 255, 0.06);
-  --clr-glass-border: rgba(255, 255, 255, 0.10);
-  --clr-text: #f0f2f5;
-  --clr-text2: #9ca3af;
+  --clr-dark: #87ceeb;
+  --clr-card: rgba(255, 255, 255, 0.95);
+  --clr-glass: rgba(255, 255, 255, 0.9);
+  --clr-glass-border: rgba(135, 206, 235, 0.4);
+  --clr-text: #1a1a2e;
+  --clr-text2: #4a5568;
   --clr-accent: #00d46a;
   --clr-danger: #ef4444;
   --clr-four: #facc15;
   --clr-six: #f97316;
   --clr-wide: #6366f1;
-  --primary-gradient: linear-gradient(135deg, var(--clr-green), var(--clr-blue));
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.45);
-  --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+  --primary-gradient: linear-gradient(135deg, #87ceeb 0%, #e0f6ff 100%);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.15);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
   --radius: 14px;
   --radius-sm: 8px;
 }
@@ -29,8 +29,7 @@
 html { font-size: 15px; }
 body {
   font-family: 'Outfit', system-ui, sans-serif;
-  background: var(--clr-dark);
-  color: var(--clr-text);
+background: linear-gradient(135deg, #0a0e17, #1a2a3a, #243b55);  color: var(--clr-text);
   min-height: 100vh;
   overflow: hidden;
   position: relative;
@@ -41,10 +40,10 @@ body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background: url('cricket_bg.png') center / cover no-repeat;
+  background: url('cricket_bg.png') center center / cover no-repeat;
   opacity: 0.25;
-  z-index: 0;
   pointer-events: none;
+  transform: none; /* 🔥 important */
 }
 
 /* ===== Screens ===== */
@@ -303,8 +302,10 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: .55rem 1rem;
-  background: rgba(8,10,20,.85);
+  padding: .55rem 1rem; 
+  background:burlywood; 
+
+  border: 1px solid rgba(0,212,106,0.4);
   border-bottom: 1px solid var(--clr-glass-border);
   flex-shrink: 0;
 }
@@ -695,6 +696,7 @@ body::before {
   max-width: 540px;
   margin: 0 auto;
   text-align: center;
+  width: 100%;
 }
 
 .result-trophy { font-size: 4.5rem; animation: pulse 1.6s infinite; margin-bottom: .4rem; }
@@ -1252,3 +1254,56 @@ body::before {
 .hist-table { font-size: .76rem !important; }
 .hist-table th { font-size: .65rem !important; }
 .hist-table td, .hist-table th { padding: .3rem .3rem !important; }
+
+
+.awards-section {
+  width: 100%;
+  max-width: 100%;
+  padding: 1rem 0;
+  margin: 0 0 1.5rem 0;
+  display: grid !important;
+  gap: 0.8rem;
+  background: transparent;
+  border: none;
+  grid-template-columns: 1fr;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.award-card {
+  display: block !important;
+  padding: 0.9rem 1rem;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(0,212,106,0.2) 0%, rgba(0,82,204,0.1) 100%);
+  border: 2px solid rgba(0,212,106,0.4);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: center;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0,212,106,0.12);
+  min-height: auto;
+  line-height: 1.5;
+}
+
+.award-card strong {
+  color: #00d46a;
+  font-weight: 700;
+  display: inline;
+}
+
+.btn-back {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-back:hover {
+  background: rgba(255,255,255,0.15);
+}

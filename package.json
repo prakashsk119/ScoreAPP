@@ -1,0 +1,14 @@
+{
+  "name": "score-app",
+  "version": "1.0.0",
+  "description": "CricScore - Ball-by-Ball Cricket Scoring Application",
+  "main": "app.js",
+  "scripts": {
+    "dev": "http-server -p 8080 -o",
+    "start": "http-server -p 8080"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
