@@ -13,6 +13,7 @@
     href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="favicon.ico">
 </head>
 
 <body>
@@ -263,8 +264,13 @@
             <span class="score-sep">/</span>
             <span class="wickets" id="score-wickets">0</span>
           </div>
-          <div class="overs-display" id="score-overs">0.0 Overs</div>
-          <div class="run-rate-display" id="run-rate">RR: 0.00</div>
+          <div class="overs-display" id="score-overs">
+            0.0 / 0 Overs
+          </div>
+
+          <div class="run-rate-display" id="run-rate">
+            RR: 0.00
+          </div>
         </div>
 
         <!-- Target (2nd innings) -->
@@ -475,11 +481,7 @@
       </div>
     </header>
     <div id="history-body" class="history-body">
-
-      PS D:\Score APP> git push -u origin main
-      remote: Permission to prakashsk119/ScoreAPP.git denied to prakashdlux.
-      fatal: unable to access 'https://github.com/prakashsk119/ScoreAPP.git/': The requested URL returned error: 403
-      PS D:\Score APP> <!-- Dynamically populated -->
+      <!-- Dynamically populated -->
     </div>
   </div>
 
@@ -596,7 +598,7 @@
       <div class="modal-body">
         <div class="form-group">
           <label>Select Incoming Batsman</label>
-          <select id="modal-new-batter" class="form-input"></select>
+          <select id="select-new-batter" class="form-input"></select>
         </div>
       </div>
       <div class="modal-footer">

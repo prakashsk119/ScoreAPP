@@ -55,7 +55,9 @@ body::before {
   z-index: 1;
   animation: fadeIn .35s ease;
 }
-.screen.active { display: flex; }
+.screen.active { display: flex;
+  overflow: hidden; 
+ }
 
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes popIn { from { transform: scale(.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -134,7 +136,9 @@ body::before {
   border-color: var(--clr-green);
   box-shadow: 0 0 0 3px rgba(0,212,106,.15);
 }
-.form-input option { background: #1a1d2e; }
+.form-input option {   background: #ffffff !important;   /* ✅ white dropdown */
+  color: black !important;           
+}
 
 /* Section divider */
 .section-divider {
@@ -819,7 +823,148 @@ body::before {
 .result-action-secondary:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); }
 
 
+/* ===== Awards Section (Result Screen) ===== */
+.awards-section {
+  display: none;
+  width: 100%;
+  margin-bottom: 1.4rem;
+}
+
+.awards-header {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--clr-text2);
+  margin-bottom: .75rem;
+}
+.awards-header-icon { font-size: 1rem; }
+
+.awards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .6rem;
+  width: 100%;
+}
+
+/* Individual award card */
+.award-card {
+  display: flex;
+  align-items: flex-start;
+  gap: .65rem;
+  padding: .8rem .9rem;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  background: rgba(255,255,255,.06);
+  transition: transform .18s, box-shadow .18s;
+  text-align: left;
+}
+.award-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Emoji icon */
+.award-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: .05rem;
+}
+
+.award-body { flex: 1; min-width: 0; }
+
+.award-label {
+  font-size: .65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .7px;
+  margin-bottom: .18rem;
+}
+
+.award-name {
+  font-size: .95rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: .3rem;
+  color: #fff;
+}
+
+.award-sub {
+  font-size: .68rem;
+  color: rgba(255,255,255,.45);
+  font-style: italic;
+}
+
+.award-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem;
+}
+
+.award-stat-pill {
+  display: inline-block;
+  font-size: .64rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  padding: .12rem .42rem;
+  border-radius: 20px;
+  background: rgba(255,255,255,.1);
+  color: rgba(255,255,255,.75);
+  border: 1px solid rgba(255,255,255,.12);
+}
+.award-stat-pill.award-four { background: rgba(250,204,21,.15); color: var(--clr-four); border-color: rgba(250,204,21,.25); }
+.award-stat-pill.award-six  { background: rgba(249,115,22,.15); color: var(--clr-six);  border-color: rgba(249,115,22,.25); }
+
+/* ─── Per-award colour themes ─── */
+/* MVP – Gold */
+.award-mvp {
+  background: linear-gradient(135deg, rgba(234,179,8,.18) 0%, rgba(234,179,8,.06) 100%);
+  border-color: rgba(234,179,8,.35);
+  grid-column: 1 / -1; /* full width */
+  animation: awardGlow 3s ease-in-out infinite;
+}
+.award-mvp .award-label  { color: #f6c90e; }
+.award-mvp .award-name   { font-size: 1.1rem; color: #ffe87a; }
+
+@keyframes awardGlow {
+  0%, 100% { box-shadow: 0 0 0 rgba(234,179,8,0); }
+  50%       { box-shadow: 0 0 18px rgba(234,179,8,.28); }
+}
+
+/* Best Batsman – Sky Blue */
+.award-bat {
+  background: linear-gradient(135deg, rgba(56,189,248,.18) 0%, rgba(56,189,248,.06) 100%);
+  border-color: rgba(56,189,248,.3);
+}
+.award-bat .award-label { color: #38bdf8; }
+
+/* Best Bowler – Crimson */
+.award-bowl {
+  background: linear-gradient(135deg, rgba(239,68,68,.18) 0%, rgba(239,68,68,.06) 100%);
+  border-color: rgba(239,68,68,.3);
+}
+.award-bowl .award-label { color: #ef4444; }
+
+/* Best Fielder – Amber */
+.award-field {
+  background: linear-gradient(135deg, rgba(251,146,60,.18) 0%, rgba(251,146,60,.06) 100%);
+  border-color: rgba(251,146,60,.3);
+}
+.award-field .award-label { color: #fb923c; }
+
+@media (max-width: 420px) {
+  .awards-grid { grid-template-columns: 1fr; }
+  .award-mvp { grid-column: 1; }
+}
+
 /* ===== Toast ===== */
+
 .toast {
   position: fixed;
   bottom: 1.5rem;
@@ -860,7 +1005,7 @@ body::before {
   .form-row { flex-direction: column; gap: .5rem; }
   .player-inputs { grid-template-columns: 1fr; }
   .setup-card { padding: 1.2rem; }
-  .scoreboard-panel { padding: .7rem; max-height: 38vh; }
+  .scoreboard-panel { padding: .7rem; max-height: 100vh; }
   .runs-grid { grid-template-columns: repeat(3, 1fr); }
   .wicket-grid { grid-template-columns: repeat(2, 1fr); }
 }
@@ -1303,7 +1448,7 @@ body::before {
   cursor: pointer;
   font-size: 14px;
 }
-
+  
 .btn-back:hover {
   background: rgba(255,255,255,0.15);
-}
+} 

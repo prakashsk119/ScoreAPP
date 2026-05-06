@@ -527,15 +527,15 @@ function promptNewBatter(outBatsman) {
 
   if (available.length === 0) return; // all out handled elsewhere
 
-  const sel = document.querySelector('#modal-new-batter select');
+  const sel = $('select-new-batter');
   sel.innerHTML = available.map(p => `<option value="${p}">${p}</option>`).join('');
 
-  document.querySelector('#modal-new-batter').style.display = 'flex';
+  $('modal-new-batter').style.display = 'flex';
 }
 
 function confirmNewBatter() {
   const inn = getInnings();
-  const newBatter = document.querySelector('#modal-new-batter select').value;
+  const newBatter = $('select-new-batter').value;
 
   inn.batters[newBatter] = createBatterStats(newBatter);
   inn.battedList.push(newBatter);
@@ -550,7 +550,7 @@ function confirmNewBatter() {
     inn.strikerName = newBatter;
   }
 
-  document.querySelector('#modal-new-batter').style.display = 'none';
+  $('modal-new-batter').style.display = 'none';
   renderScoring();
 }
 
@@ -783,62 +783,88 @@ function calculateAwards() {
 }
 
 function displayAwards() {
-  console.log('=== displayAwards() called ===');
-  
   const awardsEl = $('result-awards');
-  console.log('Awards element found:', awardsEl);
-  
-  if (!awardsEl) {
-    console.error('Awards element not found!');
-    return;
-  }
+  if (!awardsEl) return;
 
   const awards = calculateAwards();
-  console.log('Awards data:', awards);
-  
-  // Build HTML with inline styles and clear structure
-  const html = `
-    <div style="width: 100%; padding: 1.2rem; background: linear-gradient(135deg, rgba(0,212,106,0.15) 0%, rgba(0,82,204,0.08) 100%); border-radius: 12px; border: 2px solid rgba(0,212,106,0.3); margin-bottom: 1rem;">
-      
-      <!-- MVP Section -->
-      <div style="background: rgba(0,212,106,0.25); padding: 0.8rem; border-radius: 8px; margin-bottom: 0.8rem; border-left: 4px solid #00d46a;">
-        <div style="color: #00d46a; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.3rem;">🏆 PLAYER OF THE MATCH (MVP)</div>
-        <div style="color: #fff; font-size: 1.1rem; font-weight: 700;">${awards.mvp || 'N/A'}</div>
+
+  // Build the stats line for best batsman
+  const bbRuns   = awards.bestBatsman?.runs  ?? 0;
+  const bbBalls  = awards.bestBatsman?.balls ?? 0;
+  const bbFours  = awards.bestBatsman?.fours ?? 0;
+  const bbSixes  = awards.bestBatsman?.sixes ?? 0;
+  const bbSR     = bbBalls > 0 ? ((bbRuns / bbBalls) * 100).toFixed(1) : '0.0';
+
+  // Build the stats line for best bowler
+  const bwWkts  = awards.bestBowler?.wickets ?? 0;
+  const bwRuns  = awards.bestBowler?.runs    ?? 0;
+  const bwOvers = awards.bestBowler ? oversString(awards.bestBowler.balls) : '0.0';
+  const bwEco   = awards.bestBowler?.balls > 0
+    ? (awards.bestBowler.runs / (awards.bestBowler.balls / 6)).toFixed(1)
+    : '0.0';
+
+  awardsEl.innerHTML = `
+    <div class="awards-header">
+      <span class="awards-header-icon">🏅</span>
+      Match Awards
+    </div>
+    <div class="awards-grid">
+
+      <!-- Player of the Match -->
+      <div class="award-card award-mvp">
+        <div class="award-icon">🏆</div>
+        <div class="award-body">
+          <div class="award-label">Player of the Match</div>
+          <div class="award-name">${awards.mvp || '—'}</div>
+          <div class="award-sub">Most Valuable Player</div>
+        </div>
       </div>
 
       <!-- Best Batsman -->
-      <div style="background: rgba(100,200,255,0.15); padding: 0.8rem; border-radius: 8px; margin-bottom: 0.8rem; border-left: 4px solid #64c8ff;">
-        <div style="color: #64c8ff; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.3rem;">🏏 BEST BATSMAN</div>
-        <div style="color: #fff; font-size: 1rem;">
-          ${awards.bestBatsman?.name || 'N/A'} 
-          <span style="color: #64c8ff;"> • ${awards.bestBatsman?.runs || 0} runs (${awards.bestBatsman?.balls || 0} balls)</span>
+      <div class="award-card award-bat">
+        <div class="award-icon">🏏</div>
+        <div class="award-body">
+          <div class="award-label">Best Batsman</div>
+          <div class="award-name">${awards.bestBatsman?.name || '—'}</div>
+          <div class="award-stats">
+            <span class="award-stat-pill">${bbRuns} runs</span>
+            <span class="award-stat-pill">${bbBalls} balls</span>
+            <span class="award-stat-pill">SR ${bbSR}</span>
+            ${bbFours > 0 ? `<span class="award-stat-pill award-four">${bbFours}×4</span>` : ''}
+            ${bbSixes > 0 ? `<span class="award-stat-pill award-six">${bbSixes}×6</span>` : ''}
+          </div>
         </div>
       </div>
 
       <!-- Best Bowler -->
-      <div style="background: rgba(255,100,100,0.15); padding: 0.8rem; border-radius: 8px; margin-bottom: 0.8rem; border-left: 4px solid #ff6464;">
-        <div style="color: #ff6464; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.3rem;">🎯 BEST BOWLER</div>
-        <div style="color: #fff; font-size: 1rem;">
-          ${awards.bestBowler?.name || 'N/A'}
-          <span style="color: #ff6464;"> • ${awards.bestBowler?.wickets || 0}/${awards.bestBowler?.runs || 0} (${awards.bestBowler?.overs || 0} overs)</span>
+      <div class="award-card award-bowl">
+        <div class="award-icon">🎯</div>
+        <div class="award-body">
+          <div class="award-label">Best Bowler</div>
+          <div class="award-name">${awards.bestBowler?.name || '—'}</div>
+          <div class="award-stats">
+            <span class="award-stat-pill">${bwWkts}/${bwRuns}</span>
+            <span class="award-stat-pill">${bwOvers} ov</span>
+            <span class="award-stat-pill">Eco ${bwEco}</span>
+          </div>
         </div>
       </div>
 
       <!-- Best Fielder -->
-      <div style="background: rgba(255,200,100,0.15); padding: 0.8rem; border-radius: 8px; border-left: 4px solid #ffc864;">
-        <div style="color: #ffc864; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.3rem;">🧤 BEST FIELDER</div>
-        <div style="color: #fff; font-size: 1rem;">
-          ${awards.bestFielder ? awards.bestFielder[0] : 'N/A'}
-          <span style="color: #ffc864;"> • ${awards.bestFielder ? awards.bestFielder[1] : 0} dismissals</span>
+      <div class="award-card award-field">
+        <div class="award-icon">🧤</div>
+        <div class="award-body">
+          <div class="award-label">Best Fielder</div>
+          <div class="award-name">${awards.bestFielder ? awards.bestFielder[0] : '—'}</div>
+          <div class="award-stats">
+            <span class="award-stat-pill">${awards.bestFielder ? awards.bestFielder[1] : 0} dismissal${(awards.bestFielder?.[1] ?? 0) !== 1 ? 's' : ''}</span>
+          </div>
         </div>
       </div>
-    </div>
-  `;
-  
-  awardsEl.innerHTML = html;
+
+    </div>`;
+
   awardsEl.style.display = 'block';
-  awardsEl.style.visibility = 'visible';
-  console.log('Awards HTML set successfully');
 }
 
 function decideResult() {
@@ -1083,8 +1109,8 @@ function renderScoring() {
   $('batting-team-name').textContent = inn.battingTeamName;
   $('score-runs').textContent = inn.runs;
   $('score-wickets').textContent = inn.wickets;
-  $('score-overs').textContent = oversString(inn.balls) + ' Overs';
-  $('run-rate').textContent = `CRR: ${currentRunRate(inn)}`;
+$('score-overs').textContent =
+  `${oversString(inn.balls)} / ${match.totalOvers} Overs`;  $('run-rate').textContent = `CRR: ${currentRunRate(inn)}`;
 
   // Target info (2nd innings)
   if (match.currentInnings === 2 && match.innings[0]) {
@@ -1510,10 +1536,6 @@ function saveMatchToHistory() {
   const inn2 = match.innings[1];
   if (!inn1 || !inn2) return;
 
- 
-function goBack() {
-  showScreen('screen-setup'); // or previous screen if needed
-}
   const entry = {
     id: Date.now(),
     date: new Date().toISOString(),
