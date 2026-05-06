@@ -7,12 +7,18 @@ let match = {
   team1: { name: '', players: [] },
   team2: { name: '', players: [] },
   totalOvers: 20,
-  playersPerTeam: 11,    // configurable 5–11
-  battingFirst: 1,       // 1 or 2
-  currentInnings: 1,     // 1 or 2
-  innings: [null, null], // will hold Innings objects
-  result: null
+  playersPerTeam: 11,
+  battingFirst: 1,
+  currentInnings: 1,
+  innings: [null, null],
+  result: null,
+  phase: 'setup'   // setup | innings-select | scoring | bowler-select | result
 };
+
+// ===== REAL-TIME SYNC =====
+let _socket = null;
+let _roomCode = null;
+let _isViewer = false;
 
 
 function createInnings(battingTeamIdx, bowlingTeamIdx) {
@@ -158,7 +164,6 @@ function startMatch() {
   const t1Players = [...document.querySelectorAll('.team1-player')].map((el, i) => el.value.trim() || `T1 Player ${i + 1}`);
   const t2Players = [...document.querySelectorAll('.team2-player')].map((el, i) => el.value.trim() || `T2 Player ${i + 1}`);
 
-  // Ensure unique names
   const dedupe = (arr) => {
     const seen = {};
     return arr.map(n => {
@@ -167,13 +172,12 @@ function startMatch() {
     });
   };
 
-  // Derive who bats first from toss winner + elected choice
-  const tossWinner = parseInt($('toss-winner').value);   // 1 or 2
+  const tossWinner = parseInt($('toss-winner').value);
   let battingFirst;
   if (tossChoice === 'bat') {
-    battingFirst = tossWinner;                            // toss winner bats
+    battingFirst = tossWinner;
   } else {
-    battingFirst = tossWinner === 1 ? 2 : 1;             // toss winner bowls → other team bats
+    battingFirst = tossWinner === 1 ? 2 : 1;
   }
 
   match.team1 = { name: t1Name, players: dedupe(t1Players) };
@@ -183,6 +187,10 @@ function startMatch() {
   match.battingFirst = battingFirst;
   match.currentInnings = 1;
   match.result = null;
+  match.phase = 'innings-select';
+
+  // Host a room when match starts
+  hostMatch();
 
   setupInningsSelection(1);
 }
@@ -235,13 +243,15 @@ function beginInnings() {
   inn.bowlers[bowlerName] = createBowlerStats(bowlerName);
 
   match.innings[inningsNum - 1] = inn;
+  match.phase = 'scoring';
 
-  // Set header title
   $('header-match-title').textContent = `${match.team1.name} vs ${match.team2.name}`;
 
   showScreen('screen-scoring');
   renderScoring();
+  syncState();
 }
+
 
 // ===== SCORING LOGIC =====
 function getInnings() {
@@ -300,6 +310,7 @@ function addBall(runs) {
   checkOverComplete(inn);
   checkInningsEnd(inn);
   renderScoring();
+  syncState();
 }
 
 function addExtra(type) {
@@ -366,6 +377,7 @@ function addExtra(type) {
   }
   checkInningsEnd(inn);
   renderScoring();
+  syncState();
 }
 
 // ===== WICKETS =====
@@ -518,6 +530,7 @@ function confirmWicket() {
   checkOverComplete(inn);
   renderScoring();
   promptNewBatter(outBatsman);
+  syncState();
 }
 
 function promptNewBatter(outBatsman) {
@@ -552,6 +565,7 @@ function confirmNewBatter() {
 
   $('modal-new-batter').style.display = 'none';
   renderScoring();
+  syncState();
 }
 
 // ===== OVER MANAGEMENT =====
@@ -588,9 +602,11 @@ function checkOverComplete(inn) {
     inn.overBalls = [];
     inn.overRuns = 0;
     inn.previousBowlerName = inn.currentBowlerName;
+    match.phase = 'bowler-select';
 
     // Show new bowler selection
     showNewBowlerScreen(inn);
+    syncState();
   }
 }
 
@@ -644,9 +660,11 @@ function setNewBowler() {
   if (!inn.bowlers[bowlerName]) {
     inn.bowlers[bowlerName] = createBowlerStats(bowlerName);
   }
+  match.phase = 'scoring';
 
   showScreen('screen-scoring');
   renderScoring();
+  syncState();
 }
 
 function swapStrike(inn) {
@@ -666,11 +684,11 @@ function finishInnings(inn) {
   });
 
   if (match.currentInnings === 1) {
-    // Start 2nd innings
     toast(`${inn.battingTeamName} scored ${inn.runs}/${inn.wickets} in ${oversString(inn.balls)} overs`);
+    match.phase = 'innings-select';
+    syncState();
     setTimeout(() => setupInningsSelection(2), 1500);
   } else {
-    // Match complete
     decideResult();
   }
 }
@@ -886,6 +904,7 @@ function decideResult() {
   }
 
   match.result = resultText;
+  match.phase = 'result';
 
   // Trophy emoji — tie gets handshake
   $('result-trophy-emoji').textContent = isTie ? '🤝' : '🏆';
@@ -1065,6 +1084,7 @@ function undoLastBall() {
 
   toast('Last ball undone');
   renderScoring();
+  syncState();
 }
 
 // ===== DISPLAY HELPERS =====
@@ -1929,3 +1949,155 @@ function renderCareerStatsBody() {
   html += '</div>';
   body.innerHTML = html;
 }
+
+// =====================================================================
+// ==================  REAL-TIME SYNC (Socket.io)  ====================
+// =====================================================================
+
+function initRealtime() {
+  if (typeof io === 'undefined') return;
+  _socket = io();
+
+  // Receive state update from server (viewer side)
+  _socket.on('state-sync', (state) => {
+    match = state;
+    applyPhaseToScreen();
+  });
+
+  // Host disconnected — notify viewers
+  _socket.on('host-disconnected', () => {
+    toast('⚠️ Scorer disconnected');
+    const lb = $('live-badge');
+    if (lb) { lb.textContent = '⚠️ Offline'; lb.style.background = 'rgba(239,68,68,.2)'; }
+  });
+
+  // Update viewer count badge (host only)
+  _socket.on('viewer-count', (count) => {
+    const badge = $('viewer-count-badge');
+    if (badge) badge.textContent = `👁 ${count}`;
+  });
+}
+
+// Host: create a room on the server when match starts
+function hostMatch() {
+  if (!_socket) return;
+  _socket.emit('host-match', ({ code }) => {
+    _roomCode = code;
+    // Show room code pill in header
+    const pill = $('room-code-pill');
+    if (pill) { $('room-code-text').textContent = code; pill.style.display = 'flex'; }
+    toast(`Match code: ${code} — share with viewers!`);
+  });
+}
+
+// Host: push current match state to all viewers
+function syncState() {
+  if (!_socket || !_roomCode || _isViewer) return;
+  _socket.emit('push-state', { code: _roomCode, state: JSON.parse(JSON.stringify(match)) });
+}
+
+// Viewer: join using a code
+function joinMatch() {
+  const code = $('join-code-input').value.trim().toUpperCase();
+  $('join-error').textContent = '';
+  if (code.length < 6) { $('join-error').textContent = 'Enter a 6-character code.'; return; }
+
+  _socket.emit('join-match', { code }, ({ error, ok, state }) => {
+    if (error) { $('join-error').textContent = error; return; }
+    _roomCode = code;
+    _isViewer = true;
+    hideJoinModal();
+    setViewerMode(true);
+    if (state) { match = state; applyPhaseToScreen(); }
+    else { toast('Joined! Waiting for match to start...'); }
+  });
+}
+
+// Apply the correct screen based on match.phase (for viewers receiving state)
+function applyPhaseToScreen() {
+  const phase = match.phase || 'setup';
+
+  if (phase === 'innings-select') {
+    const battingTeamIdx = match.battingFirst;
+    const bowlingTeamIdx = battingTeamIdx === 1 ? 2 : 1;
+    const battingTeam = battingTeamIdx === 1 ? match.team1 : match.team2;
+    $('innings-setup-title').textContent = 'Choose Opening Batters & Bowler';
+    $('innings-setup-subtitle').textContent = `1st Innings — ${battingTeam.name} batting`;
+    showScreen('screen-innings-setup');
+
+  } else if (phase === 'scoring') {
+    $('header-match-title').textContent = `${match.team1.name} vs ${match.team2.name}`;
+    showScreen('screen-scoring');
+    renderScoring();
+
+  } else if (phase === 'bowler-select') {
+    const inn = match.innings[match.currentInnings - 1];
+    if (inn) {
+      $('over-complete-subtitle').textContent =
+        `Over ${Math.floor(inn.balls / 6)} complete — ${inn.runs}/${inn.wickets}`;
+    }
+    showScreen('screen-new-bowler');
+
+  } else if (phase === 'result') {
+    // Re-render result screen from existing match state
+    const inn1 = match.innings[0], inn2 = match.innings[1];
+    if (!inn1 || !inn2) return;
+    const isTie = inn1.runs === inn2.runs;
+    $('result-trophy-emoji').textContent = isTie ? '🤝' : '🏆';
+    $('result-winner').textContent = match.result || '';
+    const inn1won = inn1.runs > inn2.runs;
+    const inn2won = inn2.runs > inn1.runs;
+    $('result-cards').innerHTML = `
+      <div class="result-summary-card ${inn1won ? 'result-card-winner' : ''}">
+        <div class="result-team-name">${inn1.battingTeamName}</div>
+        <div class="result-team-score">${inn1.runs}/${inn1.wickets} <small>(${oversString(inn1.balls)} ov)</small></div>
+      </div>
+      <div class="result-vs-sep">vs</div>
+      <div class="result-summary-card ${inn2won ? 'result-card-winner' : ''}">
+        <div class="result-team-name">${inn2.battingTeamName}</div>
+        <div class="result-team-score">${inn2.runs}/${inn2.wickets} <small>(${oversString(inn2.balls)} ov)</small></div>
+      </div>`;
+    $('result-scorecard-wrap').innerHTML = buildResultMiniScorecard(inn1, inn2);
+    showScreen('screen-result');
+    setTimeout(() => displayAwards(), 50);
+  }
+}
+
+// Disable all scoring controls for viewers
+function setViewerMode(enabled) {
+  _isViewer = enabled;
+  if (!enabled) return;
+  // Show live badge
+  const lb = $('live-badge');
+  if (lb) lb.style.display = 'flex';
+  // Disable all interactive scoring buttons
+  const selectors = [
+    '.run-btn', '.extra-btn', '.wicket-btn',
+    '#btn-undo', '#btn-start-match',
+    '#btn-player-stats'
+  ];
+  selectors.forEach(sel => {
+    document.querySelectorAll(sel).forEach(btn => {
+      btn.disabled = true;
+      btn.style.opacity = '0.4';
+      btn.style.cursor = 'not-allowed';
+    });
+  });
+}
+
+// ── UI helpers ──
+function showJoinModal() {
+  $('join-code-input').value = '';
+  $('join-error').textContent = '';
+  $('modal-join').style.display = 'flex';
+  setTimeout(() => $('join-code-input').focus(), 100);
+}
+function hideJoinModal() { $('modal-join').style.display = 'none'; }
+
+function copyRoomCode() {
+  if (!_roomCode) return;
+  navigator.clipboard.writeText(_roomCode).then(() => toast(`Code ${_roomCode} copied!`));
+}
+
+// ── Kick off socket connection when DOM is ready ──
+document.addEventListener('DOMContentLoaded', initRealtime);

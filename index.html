@@ -136,7 +136,15 @@
           Start Match
         </button>
 
-        <button class="btn-history" onclick="showHistory()">
+        <!-- Join Live Match -->
+        <button class="btn-history btn-join-live" onclick="showJoinModal()" style="margin-top:0.4rem; border-color:rgba(0,212,106,.35); color:var(--clr-green);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+          </svg>
+          Join Live Match
+        </button>
+
+        <button class="btn-history" onclick="showHistory()" style="margin-top:0.4rem;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10" />
             <polyline points="12 6 12 12 16 14" />
@@ -229,6 +237,12 @@
       </div>
       <div class="header-center" id="header-match-title">Match</div>
       <div class="header-right">
+        <!-- Room code pill (host only) -->
+        <div id="room-code-pill" class="room-code-pill" style="display:none;" onclick="copyRoomCode()" title="Click to copy code">
+          <span class="room-code-dot"></span>
+          <span id="room-code-text">------</span>
+          <span class="room-code-viewers" id="viewer-count-badge">👁 0</span>
+        </div>
         <button class="btn-icon" id="btn-player-stats" onclick="showPlayerStats()" title="Player Stats">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="9" cy="7" r="4" />
@@ -254,6 +268,8 @@
         <div class="innings-badge-wrap">
           <div class="innings-badge" id="innings-label">1st Innings</div>
           <div class="match-situation" id="match-situation"></div>
+          <!-- LIVE viewer badge -->
+          <div class="live-badge" id="live-badge" style="display:none;">🔴 LIVE</div>
         </div>
 
         <!-- Main Score -->
@@ -610,6 +626,31 @@
   <!-- ===================== TOAST ===================== -->
   <div id="toast" class="toast"></div>
 
+  <!-- Join Live Match Modal -->
+  <div id="modal-join" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🔴 Join Live Match</h3>
+        <button class="modal-close" onclick="hideJoinModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:.85rem;color:var(--clr-text2);margin-bottom:.5rem;">Ask the scorer for the 6-character match code.</p>
+        <div class="form-group">
+          <label>Match Code</label>
+          <input type="text" id="join-code-input" class="form-input" placeholder="e.g. ABC123"
+            maxlength="6" style="text-transform:uppercase;letter-spacing:3px;font-size:1.2rem;font-weight:700;text-align:center;"
+            oninput="this.value=this.value.toUpperCase()" />
+        </div>
+        <div id="join-error" style="color:var(--clr-danger);font-size:.8rem;min-height:1rem;"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="hideJoinModal()">Cancel</button>
+        <button class="btn-primary" style="margin:0;padding:.45rem 1.2rem;width:auto;" onclick="joinMatch()">Join Match</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
   <script src="app.js"></script>
 </body>
 

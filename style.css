@@ -823,7 +823,66 @@ body::before {
 .result-action-secondary:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); }
 
 
+/* ===== Room Code Pill (Live Match) ===== */
+.room-code-pill {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .22rem .6rem;
+  background: rgba(0,212,106,.12);
+  border: 1px solid rgba(0,212,106,.3);
+  border-radius: 20px;
+  font-size: .78rem;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--clr-green);
+  cursor: pointer;
+  letter-spacing: 1.5px;
+  transition: background .15s;
+  user-select: none;
+}
+.room-code-pill:hover { background: rgba(0,212,106,.22); }
+
+.room-code-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--clr-green);
+  animation: livePulse 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes livePulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .4; transform: scale(.7); }
+}
+
+.room-code-viewers {
+  font-size: .68rem;
+  font-weight: 500;
+  color: rgba(255,255,255,.55);
+  letter-spacing: 0;
+  margin-left: .15rem;
+}
+
+/* LIVE badge (viewer mode) */
+.live-badge {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  font-size: .65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  padding: .18rem .55rem;
+  border-radius: 20px;
+  background: rgba(239,68,68,.18);
+  border: 1px solid rgba(239,68,68,.35);
+  color: #ef4444;
+  animation: livePulse 1.4s ease-in-out infinite;
+}
+
 /* ===== Awards Section (Result Screen) ===== */
+
 .awards-section {
   display: none;
   width: 100%;
