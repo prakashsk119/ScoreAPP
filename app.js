@@ -1983,12 +1983,36 @@ function hostMatch() {
   if (!_socket) return;
   _socket.emit('host-match', ({ code }) => {
     _roomCode = code;
-    // Show room code pill in header
+    // Update the small pill in header
     const pill = $('room-code-pill');
     if (pill) { $('room-code-text').textContent = code; pill.style.display = 'flex'; }
-    toast(`Match code: ${code} — share with viewers!`);
+    // Show the big share modal automatically
+    showShareModal(code);
   });
 }
+
+// Show the prominent Share Code modal
+function showShareModal(code) {
+  $('share-code-display').textContent = code;
+  $('modal-share').style.display = 'flex';
+}
+function hideShareModal() { $('modal-share').style.display = 'none'; }
+
+function copyShareCode() {
+  const code = _roomCode;
+  if (!code) return;
+  navigator.clipboard.writeText(code).then(() => {
+    $('copy-share-btn').textContent = '✅ Copied!';
+    setTimeout(() => { $('copy-share-btn').textContent = '📋 Copy Code'; }, 2000);
+  });
+}
+
+function shareViaWhatsApp() {
+  const url = window.location.origin;
+  const msg = `Join my live cricket match! 🏏\nMatch Code: *${_roomCode}*\nOpen the app: ${url}\nClick "Join Live Match" and enter the code.`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
 
 // Host: push current match state to all viewers
 function syncState() {

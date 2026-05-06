@@ -823,7 +823,65 @@ body::before {
 .result-action-secondary:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); }
 
 
+/* ===== Share Code Modal ===== */
+.share-modal-card { max-width: 420px; }
+
+.share-code-box {
+  background: linear-gradient(135deg, rgba(0,212,106,.15), rgba(0,82,204,.1));
+  border: 2px solid rgba(0,212,106,.4);
+  border-radius: var(--radius);
+  padding: 1.2rem 2rem;
+  text-align: center;
+  width: 100%;
+}
+
+.share-code-text {
+  font-size: 2.4rem;
+  font-weight: 900;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 6px;
+  color: var(--clr-green);
+  text-shadow: 0 0 20px rgba(0,212,106,.4);
+}
+
+.share-actions {
+  display: flex;
+  gap: .6rem;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.share-btn {
+  flex: 1;
+  min-width: 130px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  padding: .6rem 1rem;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: .88rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: transform .12s, opacity .15s;
+}
+.share-btn:hover { transform: translateY(-2px); opacity: .92; }
+.share-btn:active { transform: translateY(0); }
+
+.share-btn-copy {
+  background: rgba(0,212,106,.15);
+  border: 1px solid rgba(0,212,106,.35);
+  color: var(--clr-green);
+}
+.share-btn-whatsapp {
+  background: #25D366;
+  color: #fff;
+}
+
 /* ===== Room Code Pill (Live Match) ===== */
+
 .room-code-pill {
   display: flex;
   align-items: center;
