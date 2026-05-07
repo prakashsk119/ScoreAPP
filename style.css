@@ -1152,6 +1152,7 @@ body::before {
   font-size: .82rem;
   margin-bottom: .6rem;
 }
+
 .sc-table th {
   text-align: left;
   padding: .4rem .3rem;
@@ -1161,11 +1162,13 @@ body::before {
   color: var(--clr-text2);
   border-bottom: 1px solid var(--clr-glass-border);
 }
+
 .sc-table td {
   padding: .5rem .3rem;
   border-bottom: 1px solid rgba(255, 255, 255, .04);
   color: var(--clr-text);
 }
+
 .sc-table-bat th:nth-child(n+3),
 .sc-table-bat td:nth-child(n+3),
 .sc-table-bowl th:nth-child(n+2),
@@ -1173,6 +1176,7 @@ body::before {
   text-align: right;
   font-family: 'JetBrains Mono', monospace;
 }
+
 .sc-table tr.not-out td {
   color: var(--clr-green);
 }
@@ -2195,7 +2199,7 @@ body::before {
   }
 
   .wicket-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
   }
 }
 
@@ -3831,18 +3835,42 @@ body::before {
   margin-right: 6px;
 }
 
-.tag-four { background: var(--clr-four); color: #000; }
-.tag-six { background: var(--clr-six); color: #000; }
-.tag-wicket { background: var(--clr-danger); color: #fff; }
+.tag-four {
+  background: var(--clr-four);
+  color: #000;
+}
+
+.tag-six {
+  background: var(--clr-six);
+  color: #000;
+}
+
+.tag-wicket {
+  background: var(--clr-danger);
+  color: #fff;
+}
 
 @keyframes slideInUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 
-.tab-content { display: none; }
-.tab-content.active { display: block; }
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
 .commentary-feed {
   max-height: 400px;
   overflow-y: auto;
@@ -3916,8 +3944,15 @@ body::before {
   box-shadow: 0 0 10px rgba(0, 212, 106, 0.1);
 }
 
-.bar-inn1 { background: linear-gradient(to top, var(--clr-green), #00ff80); opacity: 0.9; }
-.bar-inn2 { background: linear-gradient(to top, var(--clr-blue), #3b82f6); opacity: 0.9; }
+.bar-inn1 {
+  background: linear-gradient(to top, var(--clr-green), #00ff80);
+  opacity: 0.9;
+}
+
+.bar-inn2 {
+  background: linear-gradient(to top, var(--clr-blue), #3b82f6);
+  opacity: 0.9;
+}
 
 .over-label {
   position: absolute;
@@ -3997,7 +4032,13 @@ body::before {
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
 
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
