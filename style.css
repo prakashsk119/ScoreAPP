@@ -3,25 +3,25 @@
    ============================================================ */
 
 :root {
-  /* Palette - Sky Blue with White Theme */
+  /* Palette - Premium Dark Glass Theme */
   --clr-green: #00d46a;
-  --clr-blue: #0052cc;
-  --clr-dark: #87ceeb;
-  --clr-card: rgba(255, 255, 255, 0.95);
-  --clr-glass: rgba(255, 255, 255, 0.9);
-  --clr-glass-border: rgba(135, 206, 235, 0.4);
-  --clr-text: #1a1a2e;
-  --clr-text2: #4a5568;
+  --clr-blue: #3b82f6;
+  --clr-bg: #0a0e17;
+  --clr-card: rgba(255, 255, 255, 0.05);
+  --clr-glass: rgba(255, 255, 255, 0.03);
+  --clr-glass-border: rgba(255, 255, 255, 0.12);
+  --clr-text: #ffffff;
+  --clr-text2: rgba(255, 255, 255, 0.6);
   --clr-accent: #00d46a;
   --clr-danger: #ef4444;
   --clr-four: #facc15;
   --clr-six: #f97316;
   --clr-wide: #6366f1;
-  --primary-gradient: linear-gradient(135deg, #87ceeb 0%, #e0f6ff 100%);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.15);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
-  --radius: 14px;
-  --radius-sm: 8px;
+  --primary-gradient: linear-gradient(135deg, #00d46a 0%, #0052cc 100%);
+  --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.2);
+  --radius: 20px;
+  --radius-sm: 10px;
 }
 
 /* ===== Reset ===== */
@@ -66,6 +66,7 @@ body::before {
   flex-direction: column;
   z-index: 1;
   animation: fadeIn .35s ease;
+  background: var(--clr-bg);
 }
 
 .screen.active {
@@ -1101,7 +1102,8 @@ body::before {
 .scorecard-body {
   flex: 1;
   overflow-y: auto;
-  padding: 1rem;
+  padding: 1rem 1rem 100px;
+  background: var(--clr-bg);
 }
 
 .scorecard-body::-webkit-scrollbar {
@@ -1230,6 +1232,7 @@ body::before {
   flex: 1;
   overflow-y: auto;
   width: 100%;
+  padding-bottom: 100px;
 }
 
 .result-scroll::-webkit-scrollbar {
@@ -1566,6 +1569,7 @@ body::before {
   flex: 1;
   overflow-y: auto;
   width: 100%;
+  padding-bottom: 100px;
 }
 
 .result-scroll::-webkit-scrollbar {
