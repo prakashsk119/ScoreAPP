@@ -63,6 +63,7 @@ function $(id) { return document.getElementById(id); }
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   $(id).classList.add('active');
+  closeSidebar(); // Auto-close sidebar on navigation
 }
 
 function toast(msg) {
@@ -2123,8 +2124,11 @@ function copyRoomCode() {
   navigator.clipboard.writeText(_roomCode).then(() => toast(`Code ${_roomCode} copied!`));
 }
 
-// ── Kick off socket connection when DOM is ready ──
-document.addEventListener('DOMContentLoaded', initRealtime);
+// ── Kick off socket connection and UI when DOM is ready ──
+document.addEventListener('DOMContentLoaded', () => {
+  initRealtime();
+  renderLeaderboard(); // Ensure leaderboard data is ready for landing page
+});
 
 // =====================================================
 // SIDEBAR DRAWER

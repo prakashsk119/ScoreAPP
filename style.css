@@ -498,12 +498,30 @@ body::before {
   font-weight: 600;
   font-size: .95rem;
   color: rgba(255,255,255,.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .logo-mini {
-  width: 30px;
-  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
+.logo-mini .logo-icon {
+  width: 24px;
+  height: 24px;
+}
+.logo-mini .logo-text {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+.logo-mini .logo-text span {
+  color: var(--clr-green);
+}
+
 
 .logo-text-mini {
   font-size: 1.05rem;
@@ -2406,28 +2424,33 @@ body::before {
 
 /* Hamburger button */
 .hamburger-btn {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 5px;
-  background: rgba(255,255,255,.08);
-  border: 1px solid rgba(255,255,255,.12);
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background .15s;
+  transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
-.hamburger-btn:hover { background: rgba(255,255,255,.14); }
+.hamburger-btn:hover { 
+  background: rgba(255, 255, 255, 0.2); 
+  border-color: var(--clr-green);
+  transform: translateY(-1px);
+}
 .hamburger-btn span {
   display: block;
-  width: 18px;
+  width: 20px;
   height: 2px;
-  background: #ffffff;
+  background: #fff;
   border-radius: 2px;
-  transition: transform .2s, opacity .2s;
+  transition: all 0.2s;
 }
 
 /* Backdrop */
