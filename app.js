@@ -2142,6 +2142,12 @@ function closeSidebar() {
   $('sidebar-backdrop').classList.remove('open');
 }
 
+// Bottom nav active state
+function updateNav(el) {
+  document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+  el.classList.add('active');
+}
+
 // Share the app itself (not match code)
 function shareApp() {
   const url = window.location.origin;
@@ -2186,58 +2192,72 @@ function renderLeaderboard() {
     return;
   }
 
-  // Aggregate stats from all matches
-  const batMap = {}, bowlMap = {};
+  const batMap = {};
+  const bowlMap = {};
 
   history.forEach(m => {
-    (m.innings || []).forEach(inn => {
-      const team = inn.team || '';
-      (inn.batters || []).forEach(b => {
-        if (!b.name || b.name.startsWith('Player')) return;
-        const key = b.name;
-        if (!batMap[key]) batMap[key] = { name: b.name, team, runs: 0, matches: 0 };
-        batMap[key].runs += b.runs || 0;
-        batMap[key].matches++;
-      });
-      (inn.bowlers || []).forEach(b => {
-        if (!b.name || b.name.startsWith('Player')) return;
-        const key = b.name;
-        if (!bowlMap[key]) bowlMap[key] = { name: b.name, team, wickets: 0, matches: 0 };
-        bowlMap[key].wickets += b.wickets || 0;
-        bowlMap[key].matches++;
+    const teams = [m.team1, m.team2];
+    teams.forEach(t => {
+      t.players.forEach(p => {
+        if (!p.name) return;
+        if (!batMap[p.name]) batMap[p.name] = { name: p.name, team: t.name, runs: 0 };
+        batMap[p.name].runs += (p.runs || 0);
+
+        if (!bowlMap[p.name]) bowlMap[p.name] = { name: p.name, team: t.name, wickets: 0 };
+        bowlMap[p.name].wickets += (p.wickets || 0);
       });
     });
   });
 
+  const body = $('leaderboard-body');
+  const podium = $('leaderboard-podium');
   let rows = [];
+
   if (_lbTab === 'bat') {
-    rows = Object.values(batMap).sort((a, b) => b.runs - a.runs).slice(0, 20);
-    if (!rows.length) { body.innerHTML = `<div class="ps-empty" style="margin-top:3rem;"><div>No batting data yet</div></div>`; return; }
-    body.innerHTML = rows.map((p, i) => `
-      <div class="lb-row">
-        <div class="lb-rank ${i < 3 ? `lb-rank-${i+1}` : ''}">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}</div>
-        <div class="lb-name-wrap" style="flex:1;min-width:0;">
-          <div class="lb-name">${p.name}</div>
-          <div class="lb-team">${p.team}</div>
-        </div>
-        <div class="lb-stat">
-          ${p.runs}<br><span class="lb-stat-label">runs</span>
-        </div>
-      </div>`).join('');
+    rows = Object.values(batMap).sort((a, b) => b.runs - a.runs);
   } else {
-    rows = Object.values(bowlMap).sort((a, b) => b.wickets - a.wickets).slice(0, 20);
-    if (!rows.length) { body.innerHTML = `<div class="ps-empty" style="margin-top:3rem;"><div>No bowling data yet</div></div>`; return; }
-    body.innerHTML = rows.map((p, i) => `
-      <div class="lb-row">
-        <div class="lb-rank ${i < 3 ? `lb-rank-${i+1}` : ''}">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}</div>
-        <div class="lb-name-wrap" style="flex:1;min-width:0;">
-          <div class="lb-name">${p.name}</div>
-          <div class="lb-team">${p.team}</div>
-        </div>
-        <div class="lb-stat" style="color:var(--clr-danger);">
-          ${p.wickets}<br><span class="lb-stat-label">wickets</span>
-        </div>
-      </div>`).join('');
+    rows = Object.values(bowlMap).sort((a, b) => b.wickets - a.wickets);
   }
+
+  if (!rows.length) {
+    podium.innerHTML = '';
+    body.innerHTML = `<div class="ps-empty" style="margin-top:3rem;"><div>No data yet</div></div>`;
+    return;
+  }
+
+  // Populate Podium (Top 3)
+  const top3 = rows.slice(0, 3);
+  const remaining = rows.slice(3, 20);
+
+  // Reorder for visual podium: [2, 1, 3]
+  const visualOrder = [];
+  if (top3[1]) visualOrder.push({ ...top3[1], rank: 2 });
+  if (top3[0]) visualOrder.push({ ...top3[0], rank: 1 });
+  if (top3[2]) visualOrder.push({ ...top3[2], rank: 3 });
+
+  podium.innerHTML = visualOrder.map(p => `
+    <div class="podium-item podium-item-${p.rank}">
+      <div class="podium-rank">${p.rank === 1 ? '1st' : p.rank === 2 ? '2nd' : '3rd'}</div>
+      <div class="podium-avatar">${p.rank === 1 ? '🥇' : '👤'}</div>
+      <div class="podium-bar">
+        <div class="podium-name" style="text-overflow:ellipsis; overflow:hidden; white-space:nowrap; width:100%;">${p.name}</div>
+        <div class="podium-score">${_lbTab === 'bat' ? p.runs : p.wickets}</div>
+        <div style="font-size:0.6rem;opacity:0.7;">${_lbTab === 'bat' ? 'Runs' : 'Wkts'}</div>
+      </div>
+    </div>
+  `).join('');
+
+  // Populate Remaining List
+  body.innerHTML = remaining.map((p, i) => `
+    <div class="lb-row">
+      <div class="lb-rank">${i + 4}</div>
+      <div class="lb-name-wrap" style="flex:1;min-width:0;">
+        <div class="lb-name">${p.name}</div>
+        <div class="lb-team">${p.team}</div>
+      </div>
+      <div class="lb-stat">
+        ${_lbTab === 'bat' ? p.runs : p.wickets}<br>
+        <span class="lb-stat-label">${_lbTab === 'bat' ? 'runs' : 'wickets'}</span>
+      </div>
+    </div>`).join('');
 }
-

@@ -18,7 +18,38 @@
 
 <body>
 
-  <!-- ===================== SCREEN: SETUP ===================== -->
+  <!-- ===================== SCREEN: ONBOARDING ===================== -->
+  <div id="screen-onboarding" class="screen active">
+    <div class="setup-bg"></div>
+    <div class="onboarding-content">
+      <div class="onboarding-logo">
+        <svg viewBox="0 0 120 120" fill="none">
+          <circle cx="60" cy="60" r="58" fill="url(#lg_ob)" />
+          <path d="M35 85L60 25L85 85" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+          <path d="M42 68h36" stroke="white" stroke-width="5" stroke-linecap="round" />
+          <defs>
+            <linearGradient id="lg_ob" x1="0" y1="0" x2="120" y2="120">
+              <stop stop-color="#00D46A" /><stop offset="1" stop-color="#0052CC" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <h1 class="onboarding-title">Let Cricket Follow You</h1>
+      <p class="onboarding-text">Track live scores, match history, and player stats at your fingertips.</p>
+      
+      <div class="onboarding-dots">
+        <span class="dot"></span>
+        <span class="dot active"></span>
+        <span class="dot"></span>
+      </div>
+      
+      <button class="btn-primary onboarding-btn" onclick="showScreen('screen-setup')">
+        Get Started
+      </button>
+    </div>
+  </div>
+
+  <!-- ===================== SCREEN: SETUP / HOME ===================== -->
   <div id="screen-setup" class="screen">
     <div class="setup-bg"></div>
     <div class="setup-container">
@@ -49,8 +80,6 @@
         </div>
         <div class="header-right"></div>
       </header>
-
-      <p class="setup-tagline">Ball-by-Ball Live Cricket Scoring</p>
 
       <div class="setup-card">
         <h2 class="setup-title">New Match Setup</h2>
@@ -707,7 +736,7 @@
   </div>
 
   <!-- ===================== SCREEN: LEADERBOARD ===================== -->
-  <div id="screen-leaderboard" class="screen active">
+  <div id="screen-leaderboard" class="screen">
     <header class="scoring-header">
       <div class="header-left">
         <button class="hamburger-btn" onclick="openSidebar()" title="Menu">
@@ -717,28 +746,42 @@
       <div class="header-center">
         <div class="logo-mini">
           <div class="logo-icon">
-            <svg viewBox="0 0 48 48" fill="none">
-              <circle cx="24" cy="24" r="22" fill="url(#lg_lb)" />
-              <path d="M14 34L24 10L34 34" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M17 27h14" stroke="white" stroke-width="2.5" stroke-linecap="round" />
-              <defs>
-                <linearGradient id="lg_lb" x1="0" y1="0" x2="48" y2="48">
-                  <stop stop-color="#00D46A" /><stop offset="1" stop-color="#0052CC" />
-                </linearGradient>
-              </defs>
-            </svg>
+             <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="22" fill="url(#lg_lb)"/><path d="M14 34L24 10L34 34" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 27h14" stroke="white" stroke-width="2.5" stroke-linecap="round"/><defs><linearGradient id="lg_lb" x1="0" y1="0" x2="48" y2="48"><stop stop-color="#00D46A"/><stop offset="1" stop-color="#0052CC"/></linearGradient></defs></svg>
           </div>
-          <div class="logo-text">🏆 Leaderboards</div>
+          <div class="logo-text">🏆 Leaderboard</div>
         </div>
       </div>
       <div class="header-right"></div>
     </header>
+
     <div class="ps-tab-bar">
-      <button class="ps-tab active" id="lb-tab-bat" onclick="switchLbTab('bat')">🏏 Top Batsmen</button>
-      <button class="ps-tab" id="lb-tab-bowl" onclick="switchLbTab('bowl')">🎯 Top Bowlers</button>
+      <button class="ps-tab active" id="lb-tab-bat" onclick="switchLbTab('bat')">🏏 Batting</button>
+      <button class="ps-tab" id="lb-tab-bowl" onclick="switchLbTab('bowl')">🎯 Bowling</button>
     </div>
-    <div id="leaderboard-body" class="ps-body" style="padding:1rem;"></div>
+
+    <div id="leaderboard-podium" class="lb-podium"></div>
+    <div id="leaderboard-body" class="ps-body" style="padding:1rem; padding-top:0;"></div>
   </div>
+
+  <!-- ===================== BOTTOM NAV ===================== -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="showScreen('screen-setup'); updateNav(this);">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">Home</span>
+    </button>
+    <button class="nav-item" onclick="showLeaderboard(); updateNav(this);">
+      <span class="nav-icon">🏆</span>
+      <span class="nav-label">Stats</span>
+    </button>
+    <button class="nav-item" onclick="showHistory(); updateNav(this);">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">History</span>
+    </button>
+    <button class="nav-item" onclick="showCareerStats(); updateNav(this);">
+      <span class="nav-icon">👤</span>
+      <span class="nav-label">Profile</span>
+    </button>
+  </nav>
 
   <!-- ===================== MODAL: SHARE CODE ===================== -->
   <div id="modal-share" class="modal-overlay" style="display:none;">
