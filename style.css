@@ -481,11 +481,10 @@ body::before {
   align-items: center;
   justify-content: space-between;
   padding: .55rem 1rem;
-  background: burlywood;
-
-  border: 1px solid rgba(0, 212, 106, 0.4);
-  border-bottom: 1px solid var(--clr-glass-border);
+  background: rgba(6, 10, 22, 0.92);
+  border-bottom: 1px solid rgba(0, 212, 106, 0.25);
   flex-shrink: 0;
+  backdrop-filter: blur(10px);
 }
 
 .header-left,
@@ -498,7 +497,7 @@ body::before {
 .header-center {
   font-weight: 600;
   font-size: .95rem;
-  color: var(--clr-text2);
+  color: rgba(255,255,255,.85);
 }
 
 .logo-mini {
@@ -2548,7 +2547,7 @@ body::before {
   border: none;
   text-align: left;
   cursor: pointer;
-  color: var(--clr-text);
+  color: #1a1a2e;
   font-family: inherit;
   font-size: .93rem;
   font-weight: 500;
@@ -2575,7 +2574,7 @@ body::before {
 .sidebar-item-primary:hover { background: rgba(0,212,106,.06); }
 
 /* Live item */
-.sidebar-item-live { color: var(--clr-green); }
+.sidebar-item-live { color: #00d46a; }
 .sidebar-item-live:hover { background: rgba(0,212,106,.06); }
 
 .sidebar-divider {
