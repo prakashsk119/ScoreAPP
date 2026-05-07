@@ -52,34 +52,56 @@
   <!-- ===================== SCREEN: SETUP / HOME ===================== -->
   <div id="screen-setup" class="screen">
     <div class="setup-bg"></div>
-    <div class="setup-container">
-
-      <!-- Unified App Header -->
-      <header class="scoring-header" style="background:transparent; border-bottom:none;">
-        <div class="header-left">
-          <button class="hamburger-btn" onclick="openSidebar()" title="Menu">
-            <span></span><span></span><span></span>
-          </button>
-        </div>
-        <div class="header-center">
-          <div class="logo-mini">
-            <div class="logo-icon">
-              <svg viewBox="0 0 48 48" fill="none">
-                <circle cx="24" cy="24" r="22" fill="url(#lg_h)" />
-                <path d="M14 34L24 10L34 34" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-                <path d="M17 27h14" stroke="white" stroke-width="2.5" stroke-linecap="round" />
-                <defs>
-                  <linearGradient id="lg_h" x1="0" y1="0" x2="48" y2="48">
-                    <stop stop-color="#00D46A" /><stop offset="1" stop-color="#0052CC" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
-            <div class="logo-text">Cric<span>Score</span></div>
+    
+    <!-- Dashboard Header -->
+    <header class="scoring-header" style="background:transparent; border-bottom:none;">
+      <div class="header-left">
+        <button class="hamburger-btn" onclick="openSidebar()" title="Menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+      <div class="header-center">
+        <div class="logo-mini">
+          <div class="logo-icon">
+            <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="22" fill="url(#lg_h)"/><path d="M14 34L24 10L34 34" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 27h14" stroke="white" stroke-width="2.5" stroke-linecap="round"/><defs><linearGradient id="lg_h" x1="0" y1="0" x2="48" y2="48"><stop stop-color="#00D46A"/><stop offset="1" stop-color="#0052CC"/></linearGradient></defs></svg>
           </div>
+          <div class="logo-text">Cric<span>Score</span></div>
         </div>
-        <div class="header-right"></div>
-      </header>
+      </div>
+      <div class="header-right"></div>
+    </header>
+
+    <div class="setup-container">
+      
+      <!-- Promo Banner -->
+      <div class="dash-banner">
+        <div class="dash-banner-content">
+          <h2>Tournament 2026</h2>
+          <p>Experience the thrill of live scoring</p>
+          <button class="banner-btn" onclick="showPlayerStats()">View Stats</button>
+        </div>
+        <div class="dash-banner-img">🏏</div>
+      </div>
+
+      <!-- Quick Stats -->
+      <div class="dash-stats-row">
+        <div class="dash-stat-card">
+          <span class="stat-val" id="dash-total-matches">0</span>
+          <span class="stat-label">Matches</span>
+        </div>
+        <div class="dash-stat-card">
+          <span class="stat-val" id="dash-total-runs">0</span>
+          <span class="stat-label">Runs</span>
+        </div>
+        <div class="dash-stat-card">
+          <span class="stat-val" id="dash-total-wkts">0</span>
+          <span class="stat-label">Wickets</span>
+        </div>
+      </div>
+
+      <div class="section-divider" style="margin-top: 1.5rem;">
+        <span>Quick Setup</span>
+      </div>
 
       <div class="setup-card">
         <h2 class="setup-title">New Match Setup</h2>
@@ -462,23 +484,7 @@
           <span></span><span></span><span></span>
         </button>
       </div>
-      <div class="header-center">
-        <div class="logo-mini">
-          <div class="logo-icon">
-            <svg viewBox="0 0 48 48" fill="none">
-              <circle cx="24" cy="24" r="22" fill="url(#lg_cs)" />
-              <path d="M14 34L24 10L34 34" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-              <path d="M17 27h14" stroke="white" stroke-width="2.5" stroke-linecap="round" />
-              <defs>
-                <linearGradient id="lg_cs" x1="0" y1="0" x2="48" y2="48">
-                  <stop stop-color="#00D46A" /><stop offset="1" stop-color="#0052CC" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-          <div class="logo-text">📊 Career Stats</div>
-        </div>
-      </div>
+      <div class="header-center">Career Statistics</div>
       <div class="header-right"></div>
     </header>
 
@@ -500,9 +506,13 @@
     </div>
 
     <!-- Stats Search -->
-    <div style="padding: 1rem; padding-bottom: 0;">
-      <input type="text" id="career-search-input" class="form-input" style="margin: 0; background: rgba(0,0,0,0.4);"
-        placeholder="Search player..." oninput="renderCareerStatsBody()">
+    <div class="ps-search-container">
+      <div class="ps-search-wrap">
+        <svg class="ps-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="career-search-input" placeholder="Search for a player..." oninput="renderCareerStatsBody()">
+      </div>
     </div>
 
     <!-- Stats grid -->

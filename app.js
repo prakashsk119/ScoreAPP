@@ -1206,7 +1206,7 @@ function showScorecard(from) {
     </div>`;
 
     // Batting table
-    html += `<table class="sc-table"><thead><tr>
+    html += `<table class="sc-table sc-table-bat"><thead><tr>
       <th>Batter</th><th>Dismissal</th><th>R</th><th>B</th><th>4s</th><th>6s</th><th>SR</th>
     </tr></thead><tbody>`;
 
@@ -1228,7 +1228,7 @@ function showScorecard(from) {
 
     // Bowling table
     html += `<div class="sc-section-title">Bowling</div>`;
-    html += `<table class="sc-table"><thead><tr>
+    html += `<table class="sc-table sc-table-bowl"><thead><tr>
       <th>Bowler</th><th>O</th><th>M</th><th>R</th><th>W</th><th>Eco</th>
     </tr></thead><tbody>`;
 
@@ -1881,67 +1881,76 @@ function renderCareerStatsBody() {
   }
 
   if (stats.length === 0) {
-    body.innerHTML = `<div style="text-align:center; padding: 2rem; color: var(--clr-text2);">No stats found</div>`;
+    body.innerHTML = `<div class="ps-empty"><div style="font-size:3rem; margin-bottom:1rem;">🔍</div><div class="ps-empty-title">No Players Found</div><div class="ps-empty-sub">Try a different search term.</div></div>`;
     return;
   }
 
   let html = '<div class="ps-cards-grid">';
 
   if (careerTab === 'batting') {
-    // Sort logic: Runs descending
     stats.sort((a, b) => b.bat.runs - a.bat.runs);
 
     stats.forEach(p => {
-      if (p.bat.innings === 0) return; // Skip if no batting
+      if (p.bat.innings === 0) return;
       const avg = (p.bat.innings - p.bat.notOuts) > 0 ? (p.bat.runs / (p.bat.innings - p.bat.notOuts)).toFixed(1) : (p.bat.runs > 0 ? '∞' : '0.0');
       const sr = p.bat.balls > 0 ? ((p.bat.runs / p.bat.balls) * 100).toFixed(1) : '0.0';
       const hsStr = `${p.bat.highScore}${p.bat.hsNotOut ? '*' : ''}`;
 
       html += `<div class="ps-card">
-        <div class="ps-player-name">${p.name}</div>
-        <div class="ps-stats-row">
-          <div class="ps-stat-box"><div class="ps-stat-lbl">MATCHES</div><div class="ps-stat-val">${p.matches}</div></div>
-          <div class="ps-stat-box"><div class="ps-stat-lbl">INNINGS</div><div class="ps-stat-val">${p.bat.innings}</div></div>
-          <div class="ps-stat-box"><div class="ps-stat-lbl">RUNS</div><div class="ps-stat-val highlighted">${p.bat.runs}</div></div>
+        <div class="ps-card-header">
+          <div class="ps-avatar">${p.name.charAt(0).toUpperCase()}</div>
+          <div class="ps-card-info">
+            <div class="ps-player-name">${p.name}</div>
+            <div class="ps-player-team">${p.matches} Matches</div>
+          </div>
+          <div class="ps-card-hs">
+            <div class="ps-hs-runs highlighted">${p.bat.runs}</div>
+            <div class="ps-hs-label">Runs</div>
+          </div>
         </div>
         <div class="ps-stats-row">
-          <div class="ps-stat-box"><div class="ps-stat-lbl">AVG</div><div class="ps-stat-val">${avg}</div></div>
+          <div class="ps-stat-box"><div class="ps-stat-lbl">Inn</div><div class="ps-stat-val">${p.bat.innings}</div></div>
+          <div class="ps-stat-box"><div class="ps-stat-lbl">Avg</div><div class="ps-stat-val">${avg}</div></div>
           <div class="ps-stat-box"><div class="ps-stat-lbl">SR</div><div class="ps-stat-val">${sr}</div></div>
-          <div class="ps-stat-box"><div class="ps-stat-lbl">HS</div><div class="ps-stat-val">${hsStr}</div></div>
         </div>
-        <div class="ps-stats-row" style="margin-top: .5rem; border-top: 1px solid var(--clr-glass-border); padding-top: .5rem;">
+        <div class="ps-stats-row">
+          <div class="ps-stat-box"><div class="ps-stat-lbl">HS</div><div class="ps-stat-val">${hsStr}</div></div>
           <div class="ps-stat-box"><div class="ps-stat-lbl">50s/100s</div><div class="ps-stat-val">${p.bat.fifties}/${p.bat.hundreds}</div></div>
           <div class="ps-stat-box"><div class="ps-stat-lbl">4s/6s</div><div class="ps-stat-val">${p.bat.fours}/${p.bat.sixes}</div></div>
         </div>
       </div>`;
     });
   } else {
-    // Sort logic: Wickets descending, then Economy
     stats.sort((a, b) => b.bowl.wickets - a.bowl.wickets);
 
     stats.forEach(p => {
-      if (p.bowl.innings === 0) return; // Skip if no bowling
+      if (p.bowl.innings === 0) return;
       const overs = p.bowl.balls > 0 ? `${Math.floor(p.bowl.balls/6)}.${p.bowl.balls%6}` : '0.0';
       const eco = p.bowl.balls > 0 ? (p.bowl.runs / (p.bowl.balls / 6)).toFixed(2) : '0.00';
       const avg = p.bowl.wickets > 0 ? (p.bowl.runs / p.bowl.wickets).toFixed(1) : '—';
       const best = p.bowl.bestRuns === Infinity ? '—' : `${p.bowl.bestWickets}/${p.bowl.bestRuns}`;
 
       html += `<div class="ps-card">
-        <div class="ps-player-name">${p.name}</div>
-        <div class="ps-stats-row">
-          <div class="ps-stat-box"><div class="ps-stat-lbl">MATCHES</div><div class="ps-stat-val">${p.matches}</div></div>
-          <div class="ps-stat-box"><div class="ps-stat-lbl">INNINGS</div><div class="ps-stat-val">${p.bowl.innings}</div></div>
-          <div class="ps-stat-box"><div class="ps-stat-lbl">WICKETS</div><div class="ps-stat-val highlighted">${p.bowl.wickets}</div></div>
+        <div class="ps-card-header">
+          <div class="ps-avatar ps-avatar-bowl">${p.name.charAt(0).toUpperCase()}</div>
+          <div class="ps-card-info">
+            <div class="ps-player-name">${p.name}</div>
+            <div class="ps-player-team">${p.matches} Matches</div>
+          </div>
+          <div class="ps-card-hs">
+            <div class="ps-hs-runs highlighted">${p.bowl.wickets}</div>
+            <div class="ps-hs-label">Wkts</div>
+          </div>
         </div>
         <div class="ps-stats-row">
-          <div class="ps-stat-box"><div class="ps-stat-lbl">OVERS</div><div class="ps-stat-val">${overs}</div></div>
-          <div class="ps-stat-box"><div class="ps-stat-lbl">RUNS</div><div class="ps-stat-val">${p.bowl.runs}</div></div>
-          <div class="ps-stat-box"><div class="ps-stat-lbl">MAIDENS</div><div class="ps-stat-val">${p.bowl.maidens}</div></div>
+          <div class="ps-stat-box"><div class="ps-stat-lbl">Inn</div><div class="ps-stat-val">${p.bowl.innings}</div></div>
+          <div class="ps-stat-box"><div class="ps-stat-lbl">Overs</div><div class="ps-stat-val">${overs}</div></div>
+          <div class="ps-stat-box"><div class="ps-stat-lbl">Eco</div><div class="ps-stat-val">${eco}</div></div>
         </div>
-        <div class="ps-stats-row" style="margin-top: .5rem; border-top: 1px solid var(--clr-glass-border); padding-top: .5rem;">
-          <div class="ps-stat-box"><div class="ps-stat-lbl">ECO</div><div class="ps-stat-val">${eco}</div></div>
-          <div class="ps-stat-box"><div class="ps-stat-lbl">AVG</div><div class="ps-stat-val">${avg}</div></div>
-          <div class="ps-stat-box"><div class="ps-stat-lbl">BEST</div><div class="ps-stat-val">${best}</div></div>
+        <div class="ps-stats-row">
+          <div class="ps-stat-box"><div class="ps-stat-lbl">Avg</div><div class="ps-stat-val">${avg}</div></div>
+          <div class="ps-stat-box"><div class="ps-stat-lbl">Best</div><div class="ps-stat-val">${best}</div></div>
+          <div class="ps-stat-box"><div class="ps-stat-lbl">Runs</div><div class="ps-stat-val">${p.bowl.runs}</div></div>
         </div>
       </div>`;
     });
@@ -2209,7 +2218,6 @@ function renderLeaderboard() {
     });
   });
 
-  const body = $('leaderboard-body');
   const podium = $('leaderboard-podium');
   let rows = [];
 
@@ -2223,6 +2231,15 @@ function renderLeaderboard() {
     podium.innerHTML = '';
     body.innerHTML = `<div class="ps-empty" style="margin-top:3rem;"><div>No data yet</div></div>`;
     return;
+  }
+
+  // Populate dash stats
+  if ($('dash-total-matches')) {
+    const totalRuns = Object.values(batMap).reduce((acc, p) => acc + p.runs, 0);
+    const totalWkts = Object.values(bowlMap).reduce((acc, p) => acc + p.wickets, 0);
+    $('dash-total-matches').innerText = history.length;
+    $('dash-total-runs').innerText = totalRuns;
+    $('dash-total-wkts').innerText = totalWkts;
   }
 
   // Populate Podium (Top 3)
