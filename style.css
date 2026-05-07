@@ -2425,7 +2425,7 @@ body::before {
   display: block;
   width: 18px;
   height: 2px;
-  background: var(--clr-text);
+  background: #ffffff;
   border-radius: 2px;
   transition: transform .2s, opacity .2s;
 }
