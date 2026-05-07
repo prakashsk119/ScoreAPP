@@ -2124,4 +2124,116 @@ function copyRoomCode() {
 }
 
 // ── Kick off socket connection when DOM is ready ──
-document.addEventListener('DOMContentLoaded', initRealtime);
+document.addEventListener('DOMContentLoaded', initRealtime);
+
+// =====================================================
+// SIDEBAR DRAWER
+// =====================================================
+function openSidebar() {
+  $('sidebar').classList.add('open');
+  $('sidebar-backdrop').classList.add('open');
+}
+function closeSidebar() {
+  $('sidebar').classList.remove('open');
+  $('sidebar-backdrop').classList.remove('open');
+}
+
+// Share the app itself (not match code)
+function shareApp() {
+  const url = window.location.origin;
+  const msg = `🏏 Check out CricScore - Free Ball-by-Ball Cricket Scorer!\n${url}`;
+  if (navigator.share) {
+    navigator.share({ title: 'CricScore', text: msg, url }).catch(() => {});
+  } else {
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  }
+}
+
+// =====================================================
+// LEADERBOARD
+// =====================================================
+let _lbTab = 'bat';
+
+function showLeaderboard() {
+  showScreen('screen-leaderboard');
+  _lbTab = 'bat';
+  $('lb-tab-bat').classList.add('active');
+  $('lb-tab-bowl').classList.remove('active');
+  renderLeaderboard();
+}
+
+function switchLbTab(tab) {
+  _lbTab = tab;
+  $('lb-tab-bat').classList.toggle('active', tab === 'bat');
+  $('lb-tab-bowl').classList.toggle('active', tab === 'bowl');
+  renderLeaderboard();
+}
+
+function renderLeaderboard() {
+  const body = $('leaderboard-body');
+  const history = JSON.parse(localStorage.getItem('cricScoreHistory') || '[]');
+
+  if (!history.length) {
+    body.innerHTML = `<div class="ps-empty" style="margin-top:3rem;">
+      <div style="font-size:3rem;">🏆</div>
+      <div class="ps-empty-title">No Data Yet</div>
+      <div class="ps-empty-sub">Play some matches to see leaderboards!</div>
+    </div>`;
+    return;
+  }
+
+  // Aggregate stats from all matches
+  const batMap = {}, bowlMap = {};
+
+  history.forEach(m => {
+    (m.innings || []).forEach(inn => {
+      const team = inn.team || '';
+      (inn.batters || []).forEach(b => {
+        if (!b.name || b.name.startsWith('Player')) return;
+        const key = b.name;
+        if (!batMap[key]) batMap[key] = { name: b.name, team, runs: 0, matches: 0 };
+        batMap[key].runs += b.runs || 0;
+        batMap[key].matches++;
+      });
+      (inn.bowlers || []).forEach(b => {
+        if (!b.name || b.name.startsWith('Player')) return;
+        const key = b.name;
+        if (!bowlMap[key]) bowlMap[key] = { name: b.name, team, wickets: 0, matches: 0 };
+        bowlMap[key].wickets += b.wickets || 0;
+        bowlMap[key].matches++;
+      });
+    });
+  });
+
+  let rows = [];
+  if (_lbTab === 'bat') {
+    rows = Object.values(batMap).sort((a, b) => b.runs - a.runs).slice(0, 20);
+    if (!rows.length) { body.innerHTML = `<div class="ps-empty" style="margin-top:3rem;"><div>No batting data yet</div></div>`; return; }
+    body.innerHTML = rows.map((p, i) => `
+      <div class="lb-row">
+        <div class="lb-rank ${i < 3 ? `lb-rank-${i+1}` : ''}">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}</div>
+        <div class="lb-name-wrap" style="flex:1;min-width:0;">
+          <div class="lb-name">${p.name}</div>
+          <div class="lb-team">${p.team}</div>
+        </div>
+        <div class="lb-stat">
+          ${p.runs}<br><span class="lb-stat-label">runs</span>
+        </div>
+      </div>`).join('');
+  } else {
+    rows = Object.values(bowlMap).sort((a, b) => b.wickets - a.wickets).slice(0, 20);
+    if (!rows.length) { body.innerHTML = `<div class="ps-empty" style="margin-top:3rem;"><div>No bowling data yet</div></div>`; return; }
+    body.innerHTML = rows.map((p, i) => `
+      <div class="lb-row">
+        <div class="lb-rank ${i < 3 ? `lb-rank-${i+1}` : ''}">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}</div>
+        <div class="lb-name-wrap" style="flex:1;min-width:0;">
+          <div class="lb-name">${p.name}</div>
+          <div class="lb-team">${p.team}</div>
+        </div>
+        <div class="lb-stat" style="color:var(--clr-danger);">
+          ${p.wickets}<br><span class="lb-stat-label">wickets</span>
+        </div>
+      </div>`).join('');
+  }
+}
+
