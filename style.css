@@ -4042,3 +4042,200 @@ body::before {
     transform: translateY(0);
   }
 }
+/* ===================== LOGIN SCREEN ===================== */
+.login-container {
+  max-width: 400px;
+  width: 90%;
+  margin: auto;
+  padding: 2.5rem;
+  background: var(--clr-card);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--clr-glass-border);
+  border-radius: var(--radius);
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  animation: fadeInScale 0.5s ease-out;
+}
+
+.login-header {
+  margin-bottom: 2rem;
+}
+
+.logo-large {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 1.5rem;
+}
+
+.login-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  background: var(--primary-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.login-subtitle {
+  font-size: 0.95rem;
+  color: var(--clr-text2);
+}
+
+.login-form {
+  margin-bottom: 2rem;
+  text-align: left;
+}
+
+.login-btn {
+  width: 100%;
+  margin-top: 1rem;
+  height: 54px;
+  font-size: 1rem;
+}
+
+.login-footer {
+  font-size: 0.75rem;
+  color: var(--clr-text2);
+  line-height: 1.5;
+}
+
+.success-icon-wrap {
+  width: 120px;
+  height: 120px;
+  background: rgba(0, 212, 106, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 2rem;
+  animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes popIn {
+  0% { transform: scale(0); opacity: 0; }
+  70% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+
+/* ===================== CRICKET ANIMATION ===================== */
+.cricket-animation-wrap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+  overflow: hidden;
+}
+
+.animated-ball {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  background: radial-gradient(circle at 30% 30%, #ef4444, #991b1b);
+  border-radius: 50%;
+  box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4);
+  bottom: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+#screen-get-started.active .animated-ball {
+  animation: ballFly 1.2s cubic-bezier(0.15, 0.85, 0.35, 1) forwards;
+}
+
+#screen-get-started.active .onboarding-content {
+  animation: contentShake 0.4s 1s ease-in-out forwards;
+}
+
+@keyframes ballFly {
+  0% {
+    bottom: -100px;
+    transform: translateX(-50%) scale(0.5);
+    opacity: 1;
+  }
+  80% {
+    bottom: 60%;
+    transform: translateX(-50%) scale(5);
+    opacity: 0.8;
+    filter: blur(2px);
+  }
+  100% {
+    bottom: 60%;
+    transform: translateX(-50%) scale(8);
+    opacity: 0;
+    filter: blur(20px);
+  }
+}
+
+@keyframes contentShake {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(-5px, 5px); }
+  50% { transform: translate(5px, -5px); }
+  75% { transform: translate(-5px, -5px); }
+}
+
+.animated-ball::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.4);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+
+/* Auth Toggle Styles */
+.auth-toggle {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--clr-text2);
+}
+
+.auth-toggle a {
+  color: var(--clr-green);
+  text-decoration: none;
+  font-weight: 700;
+  margin-left: 4px;
+  transition: all 0.2s;
+}
+
+.auth-toggle a:hover {
+  text-decoration: underline;
+  opacity: 0.8;
+}
+
+.login-form .form-group {
+  margin-bottom: 1.2rem;
+}
+
+
+
+.start-match-big-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.2rem 2.5rem;
+  font-size: 1.1rem;
+  font-weight: 800;
+  border-radius: 50px;
+  box-shadow: 0 10px 25px rgba(0, 212, 106, 0.3);
+  transition: all 0.3s;
+}
+
+.start-match-big-btn:hover {
+  transform: scale(1.05) translateY(-3px);
+  box-shadow: 0 15px 35px rgba(0, 212, 106, 0.4);
+}
+

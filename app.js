@@ -2362,22 +2362,58 @@ function renderCommentary() {
 
 // ===== SHARE MATCH RESULT =====
 function shareMatchResult() {
+  if (!match || !match.innings || !match.innings[0]) {
+    toast("No match data to share!");
+    return;
+  }
+
   const inn1 = match.innings[0];
   const inn2 = match.innings[1];
-  if (!inn1) return;
   
-  let msg = "\u{1F3CF} *CricScore Match Result* \u{1F3CF}\n\n";
-  msg += inn1.battingTeamName + ": " + inn1.runs + "/" + inn1.wickets + " (" + oversString(inn1.balls) + ")\n";
-  if (inn2) {
-    msg += inn2.battingTeamName + ": " + inn2.runs + "/" + inn2.wickets + " (" + oversString(inn2.balls) + ")\n\n";
+  let msg = "🏏 *CricScore Match Result* 🏏\n\n";
+  msg += `*${inn1.battingTeamName}*: ${inn1.runs}/${inn1.wickets} (${oversString(inn1.balls)})\n`;
+  if (inn2 && inn2.balls > 0) {
+    msg += `*${inn2.battingTeamName}*: ${inn2.runs}/${inn2.wickets} (${oversString(inn2.balls)})\n\n`;
   }
-  msg += "\u{1F3C6} *" + match.result + "*\n\n";
+  
+  msg += `🏆 *${match.result || "Match Completed"}*\n\n`;
   msg += "Scored on CricScore app.";
   
   if (navigator.share) {
-    navigator.share({ title: "Match Result", text: msg }).catch(() => {});
+    navigator.share({
+      title: "Match Result",
+      text: msg
+    }).then(() => {
+      toast("Shared successfully!");
+    }).catch((err) => {
+      if (err.name !== "AbortError") {
+        copyToClipboard(msg);
+      }
+    });
   } else {
-    navigator.clipboard.writeText(msg).then(() => toast("Result copied to clipboard!"));
+    copyToClipboard(msg);
+  }
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      toast("📋 Result copied to clipboard!");
+    }).catch(() => {
+      toast("Failed to copy result.");
+    });
+  } else {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.select();
+    try {
+      document.execCommand("copy");
+      toast("📋 Result copied to clipboard!");
+    } catch (err) {
+      toast("Failed to copy result.");
+    }
+    document.body.removeChild(textArea);
   }
 }
 
@@ -2440,3 +2476,63 @@ function renderMatchGraphs() {
   html += `</div>`;
   container.innerHTML = html;
 }
+
+// ===== AUTHENTICATION LOGIC (Login & Register) =====
+let authMode = "login"; // "login" or "register"
+
+function toggleAuthMode() {
+  authMode = authMode === "login" ? "register" : "login";
+  
+  const title = $("auth-title");
+  const subtitle = $("auth-subtitle");
+  const btn = $("btn-auth");
+  const toggleText = $("toggle-text");
+  
+  if (authMode === "register") {
+    title.textContent = "Create Account";
+    subtitle.textContent = "Join the community of elite scorers.";
+    btn.textContent = "Create Free Account";
+    toggleText.innerHTML = `Already have an account? <a href="#" onclick="toggleAuthMode()">Login instead</a>`;
+  } else {
+    title.textContent = "Welcome to CricScore";
+    subtitle.textContent = "Elevate your game with professional scoring.";
+    btn.textContent = "Login to Account";
+    toggleText.innerHTML = `Don't have an account? <a href="#" onclick="toggleAuthMode()">Register Now</a>`;
+  }
+}
+
+function handleAuth() {
+  const email = $("login-email").value.trim();
+  const pass = $("login-pass").value.trim();
+  
+  if (!email || !pass) {
+    toast("Please fill in all fields");
+    return;
+  }
+  
+  if (pass.length < 6) {
+    toast("Password must be at least 6 characters");
+    return;
+  }
+
+  const btn = $("btn-auth");
+  const originalText = btn.textContent;
+  btn.textContent = authMode === "login" ? "Authenticating..." : "Creating Account...";
+  btn.disabled = true;
+  
+  // Simulate network request
+  setTimeout(() => {
+    btn.textContent = originalText;
+    btn.disabled = false;
+    
+    if (authMode === "register") {
+      toast("Account created successfully!");
+      // Switch to login mode after registration
+      toggleAuthMode();
+    } else {
+      showScreen("screen-home");
+      toast(`Welcome back, ${email.split("@")[0]}!`);
+    }
+  }, 1500);
+}
+

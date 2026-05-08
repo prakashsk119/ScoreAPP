@@ -18,39 +18,80 @@
 
 <body>
 
-  <!-- ===================== SCREEN: ONBOARDING ===================== -->
-  <div id="screen-onboarding" class="screen active">
+  <!-- ===================== SCREEN: LOGIN ===================== -->
+  <div id="screen-login" class="screen active">
     <div class="setup-bg"></div>
+    <div class="login-container">
+      <div class="login-header">
+        <div class="logo-large">
+          <svg viewBox="0 0 120 120" fill="none">
+            <circle cx="60" cy="60" r="58" fill="url(#lg_login)" />
+            <path d="M35 85L60 25L85 85" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M42 68h36" stroke="white" stroke-width="5" stroke-linecap="round" />
+            <defs>
+              <linearGradient id="lg_login" x1="0" y1="0" x2="120" y2="120">
+                <stop stop-color="#00D46A" />
+                <stop offset="1" stop-color="#0052CC" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <h1 class="login-title" id="auth-title">Welcome to CricScore</h1>
+        <p class="login-subtitle" id="auth-subtitle">Elevate your game with professional scoring.</p>
+      </div>
+      
+      <div class="login-form">
+        <div class="form-group">
+          <label for="login-email">Email Address</label>
+          <input type="email" id="login-email" class="form-input" placeholder="Enter your email">
+        </div>
+        <div class="form-group">
+          <label for="login-pass">Password</label>
+          <input type="password" id="login-pass" class="form-input" placeholder="••••••••">
+        </div>
+        
+        <button class="btn-primary login-btn" id="btn-auth" onclick="handleAuth()">
+          Login to Account
+        </button>
+        
+        <div class="auth-toggle">
+          <p id="toggle-text">Don't have an account? <a href="#" onclick="toggleAuthMode()">Register Now</a></p>
+        </div>
+      </div>
+      
+      <div class="login-footer">
+        <p>By continuing, you agree to our Terms of Service.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== SCREEN: GET STARTED ===================== -->
+  <div id="screen-get-started" class="screen">
+    <div class="setup-bg"></div>
+    
+    <!-- Cricket Animation Layer -->
+    <div class="cricket-animation-wrap">
+      <div class="animated-ball"></div>
+    </div>
+
     <div class="onboarding-content">
-      <div class="onboarding-logo">
-        <svg viewBox="0 0 120 120" fill="none">
-          <circle cx="60" cy="60" r="58" fill="url(#lg_ob)" />
-          <path d="M35 85L60 25L85 85" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
-          <path d="M42 68h36" stroke="white" stroke-width="5" stroke-linecap="round" />
-          <defs>
-            <linearGradient id="lg_ob" x1="0" y1="0" x2="120" y2="120">
-              <stop stop-color="#00D46A" /><stop offset="1" stop-color="#0052CC" />
-            </linearGradient>
-          </defs>
+      <div class="success-icon-wrap">
+        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="var(--clr-green)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
         </svg>
       </div>
-      <h1 class="onboarding-title">Let Cricket Follow You</h1>
-      <p class="onboarding-text">Track live scores, match history, and player stats at your fingertips.</p>
+      <h1 class="onboarding-title">Login Successful!</h1>
+      <p class="onboarding-text">Welcome back, champion. Your cricket dashboard is ready.</p>
       
-      <div class="onboarding-dots">
-        <span class="dot"></span>
-        <span class="dot active"></span>
-        <span class="dot"></span>
-      </div>
-      
-      <button class="btn-primary onboarding-btn" onclick="showScreen('screen-setup')">
+      <button class="btn-primary onboarding-btn" onclick="showScreen('screen-home')">
         Get Started
       </button>
     </div>
   </div>
 
-  <!-- ===================== SCREEN: SETUP / HOME ===================== -->
-  <div id="screen-setup" class="screen">
+  <!-- ===================== SCREEN: HOME / DASHBOARD ===================== -->
+  <div id="screen-home" class="screen">
     <div class="setup-bg"></div>
     
     <!-- Dashboard Header -->
@@ -99,10 +140,35 @@
         </div>
       </div>
 
-      <div class="section-divider" style="margin-top: 1.5rem;">
-        <span>Quick Setup</span>
+      <div style="margin: 2rem 0; text-align: center;">
+        <button class="btn-primary start-match-big-btn" onclick="showScreen('screen-setup')">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 8px;">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+          </svg>
+          Start New Match
+        </button>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ===================== SCREEN: SETUP / FORM ===================== -->
+  <div id="screen-setup" class="screen">
+    <div class="setup-bg"></div>
+    
+    <header class="scoring-header">
+      <div class="header-left">
+        <button class="btn-icon" onclick="showScreen('screen-home')" title="Back">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="15,18 9,12 15,6" />
+          </svg>
+        </button>
+      </div>
+      <div class="header-center">Match Configuration</div>
+      <div class="header-right"></div>
+    </header>
+
+    <div class="setup-container">
       <div class="setup-card">
         <h2 class="setup-title">New Match Setup</h2>
 
@@ -213,7 +279,6 @@
           <!-- Live summary line -->
           <div class="toss-summary" id="toss-summary">Team 1 won the toss and elected to Bat</div>
         </div>
-
 
         <div class="section-divider">
           <span>Team 1 Players</span>
@@ -530,8 +595,10 @@
   <div id="screen-career-stats" class="screen">
     <header class="scoring-header">
       <div class="header-left">
-        <button class="hamburger-btn" onclick="openSidebar()" title="Menu">
-          <span></span><span></span><span></span>
+        <button class="btn-icon" onclick="showScreen('screen-setup')" title="Back">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="15,18 9,12 15,6" />
+          </svg>
         </button>
       </div>
       <div class="header-center">Career Statistics</div>
@@ -575,8 +642,10 @@
   <div id="screen-history" class="screen">
     <header class="scoring-header">
       <div class="header-left">
-        <button class="hamburger-btn" onclick="openSidebar()" title="Menu">
-          <span></span><span></span><span></span>
+        <button class="btn-icon" onclick="showScreen('screen-setup')" title="Back">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="15,18 9,12 15,6" />
+          </svg>
         </button>
       </div>
       <div class="header-center">
@@ -766,9 +835,9 @@
 
     <!-- Menu items -->
     <nav class="sidebar-nav">
-      <button class="sidebar-item sidebar-item-primary" onclick="closeSidebar(); showScreen('screen-setup');">
+      <button class="sidebar-item sidebar-item-primary" onclick="closeSidebar(); showScreen('screen-home');">
         <span class="sidebar-item-icon">🏏</span>
-        <span class="sidebar-item-label">Start a Match</span>
+        <span class="sidebar-item-label">Home Dashboard</span>
         <span class="sidebar-item-badge">Free</span>
       </button>
 
@@ -814,8 +883,10 @@
   <div id="screen-leaderboard" class="screen">
     <header class="scoring-header">
       <div class="header-left">
-        <button class="hamburger-btn" onclick="openSidebar()" title="Menu">
-          <span></span><span></span><span></span>
+        <button class="btn-icon" onclick="showScreen('screen-setup')" title="Back">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="15,18 9,12 15,6" />
+          </svg>
         </button>
       </div>
       <div class="header-center">
@@ -840,7 +911,7 @@
 
   <!-- ===================== BOTTOM NAV ===================== -->
   <nav class="bottom-nav">
-    <button class="nav-item active" onclick="showScreen('screen-setup'); updateNav(this);">
+    <button class="nav-item active" onclick="showScreen('screen-home'); updateNav(this);">
       <span class="nav-icon">🏠</span>
       <span class="nav-label">Home</span>
     </button>
