@@ -2003,23 +2003,20 @@ function renderCareerStatsBody() {
       const loginName = (userData.email || "").split('@')[0];
       const profile = JSON.parse(localStorage.getItem('cricscore_profile_' + loginName) || '{}');
       
-      if (profile.matchName || profile.battingHand || profile.bowlingType) {
+            if (profile.matchName || profile.battingHand || profile.bowlingType) {
         const displayName = profile.matchName || loginName;
         profileHeaderHtml = `
-          <div class="ps-card" style="background: linear-gradient(135.44deg, #00D46A 0%, #00994D 100%); color: white; border: none; margin-bottom: 1.5rem;">
-            <div class="ps-card-header" style="border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; margin-bottom: 10px;">
-              <div class="ps-avatar" style="background: white; color: var(--clr-primary);">${displayName.charAt(0).toUpperCase()}</div>
-              <div class="ps-card-info">
-                <div class="ps-player-name" style="color: white;">${displayName.charAt(0).toUpperCase() + displayName.slice(1)}</div>
-                <div class="ps-player-team" style="color: rgba(255,255,255,0.8);">Pro Scorer</div>
+          <div style="background: rgba(0, 212, 106, 0.1); border: 1px solid rgba(0, 212, 106, 0.2); border-radius: 12px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 12px;">
+            <div style="width: 36px; height: 36px; background: var(--clr-green); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem;">${displayName.charAt(0).toUpperCase()}</div>
+            <div style="flex: 1;">
+              <div style="font-weight: 700; font-size: 0.95rem; color: var(--clr-text);">${displayName.charAt(0).toUpperCase() + displayName.slice(1)}</div>
+              <div style="display: flex; gap: 10px; font-size: 0.75rem; color: var(--clr-text-secondary); margin-top: 2px;">
+                <span>🏏 ${profile.battingHand || 'Batting Hand'}</span>
+                <span>🎯 ${profile.bowlingType || 'Bowling Type'}</span>
               </div>
             </div>
-            <div class="ps-stats-row">
-              <div class="ps-stat-box"><div class="ps-stat-lbl" style="color: rgba(255,255,255,0.7);">Batting</div><div class="ps-stat-val" style="color: white; font-size: 0.9rem;">${profile.battingHand || 'Not Set'}</div></div>
-              <div class="ps-stat-box"><div class="ps-stat-lbl" style="color: rgba(255,255,255,0.7);">Bowling</div><div class="ps-stat-val" style="color: white; font-size: 0.9rem;">${profile.bowlingType || 'Not Set'}</div></div>
-            </div>
           </div>
-          <div class="section-label" style="margin-bottom: 0.75rem;">Career Statistics</div>
+          <div class="section-label" style="margin-bottom: 0.75rem; font-size: 0.8rem; opacity: 0.7;">Career Statistics</div>
         `;
       }
     }
