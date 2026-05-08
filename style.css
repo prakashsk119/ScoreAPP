@@ -4271,3 +4271,11 @@ body::before {
   transform: scale(1.05) translateY(-3px);
   box-shadow: 0 15px 35px rgba(0, 212, 106, 0.4);
 }
+
+.sidebar-item-logout {
+  color: #ff4d4d !important;
+}
+
+.sidebar-item-logout:hover {
+  background: rgba(255, 77, 77, 0.1) !important;
+}

@@ -114,8 +114,24 @@ function renderPlayerInputs() {
 // Run on page load
 (function initSetup() {
   renderPlayerInputs();
-  document.querySelector('#screen-setup .setup-container').style.maxHeight = '95vh';
-  document.querySelector('#screen-setup .setup-container').style.overflowY = 'auto';
+  
+  // Check for persistent login
+  const userData = localStorage.getItem('cricscore_user');
+  if (userData) {
+    const user = JSON.parse(userData);
+    if (user.loggedIn) {
+      showScreen('screen-home');
+      // Update sidebar name if needed
+      const profileName = document.querySelector('.sidebar-profile-name');
+      if (profileName) profileName.textContent = user.email.split('@')[0];
+    }
+  }
+
+  const setupContainer = document.querySelector('#screen-setup .setup-container');
+  if (setupContainer) {
+    setupContainer.style.maxHeight = '95vh';
+    setupContainer.style.overflowY = 'auto';
+  }
 })();
 
 // Track toss elected choice ('bat' | 'bowl')
@@ -2655,9 +2671,18 @@ function handleAuth() {
       // Switch to login mode after registration
       toggleAuthMode();
     } else {
+      // PERSISTENCE: Save login state
+      localStorage.setItem('cricscore_user', JSON.stringify({ email, loggedIn: true }));
+      
       showScreen("screen-home");
       toast(`Welcome back, ${email.split("@")[0]}!`);
     }
   }, 1500);
 }
 
+
+function handleSignOut() {
+  localStorage.removeItem('cricscore_user');
+  showScreen('screen-login');
+  toast("Signed out successfully");
+}
