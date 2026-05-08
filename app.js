@@ -1840,11 +1840,25 @@ function formatHistoryDate(iso) {
 let careerTab = 'batting';
 let _isPersonalStats = false; // 'batting' or 'bowling'
 
-function showCareerStats() {
+function showCareerStats(isPersonal = false) {
+  _isPersonalStats = isPersonal;
   careerTab = 'batting';
-  $('career-search-input').value = '';
+  
+  const searchInput = $('career-search-input');
+  if (searchInput) searchInput.value = '';
+  
+  // Hide search container in personal mode
+  const searchContainer = $('career-search-container');
+  if (searchContainer) searchContainer.style.display = isPersonal ? 'none' : 'block';
+
+  // Update header title
+  const header = document.querySelector('#screen-career-stats .header-center');
+  if (header) header.textContent = isPersonal ? 'My Career Stats' : 'All Players Stats';
+
   document.querySelectorAll('#screen-career-stats .ps-tab').forEach(t => t.classList.remove('active'));
-  $('tab-career-batting').classList.add('active');
+  const tabBtn = $('tab-career-batting');
+  if (tabBtn) tabBtn.classList.add('active');
+
   renderCareerStatsBody();
   showScreen('screen-career-stats');
 }
