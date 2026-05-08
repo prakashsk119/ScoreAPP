@@ -1998,15 +1998,19 @@ function renderCareerStatsBody() {
   }
 
   
-  // PERSONAL FILTER: If in My Performance mode, filter by logged in user name
+  // PERSONAL FILTER: If in My Performance mode, filter by profile match name
   if (_isPersonalStats) {
     const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
-    const userName = (userData.email || "").split('@')[0].toLowerCase();
+    const loginName = (userData.email || "").split('@')[0];
+    const profile = JSON.parse(localStorage.getItem('cricscore_profile_' + loginName) || '{}');
     
-    if (userName) {
-      stats = stats.filter(p => p.name.toLowerCase() === userName);
+    // Use saved match name or fallback to login name
+    const searchName = (profile.matchName || loginName).toLowerCase();
+    
+    if (searchName) {
+      stats = stats.filter(p => p.name.toLowerCase() === searchName);
     } else {
-      stats = []; // Force empty if no user found
+      stats = [];
     }
   } else if (query) {
     // Filter by search
@@ -2790,6 +2794,7 @@ function showProfile() {
 
   // Load saved preferences
   const profile = JSON.parse(localStorage.getItem('cricscore_profile_' + name) || '{}');
+  $('profile-match-name').value = profile.matchName || name;
   if (profile.battingHand) $('profile-batting-hand').value = profile.battingHand;
   if (profile.bowlingType) $('profile-bowling-type').value = profile.bowlingType;
 
@@ -2798,15 +2803,16 @@ function showProfile() {
 
 function saveProfile() {
   const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
-  const name = (userData.email || "").split('@')[0];
-  if (!name) return;
+  const loginName = (userData.email || "").split('@')[0];
+  if (!loginName) return;
 
   const profile = {
+    matchName: $('profile-match-name').value.trim(),
     battingHand: $('profile-batting-hand').value,
     bowlingType: $('profile-bowling-type').value
   };
 
-  localStorage.setItem('cricscore_profile_' + name, JSON.stringify(profile));
+  localStorage.setItem('cricscore_profile_' + loginName, JSON.stringify(profile));
   toast("Profile updated successfully!");
   showScreen('screen-home');
 }
