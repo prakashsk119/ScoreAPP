@@ -96,16 +96,28 @@ function renderPlayerInputs() {
   const t1 = $('team1-players');
   const t2 = $('team2-players');
 
-  // Preserve existing values so changing the count doesn't wipe names already typed
+  // Preserve existing values
   const prev1 = [...document.querySelectorAll('.team1-player')].map(el => el.value);
   const prev2 = [...document.querySelectorAll('.team2-player')].map(el => el.value);
+
+  // Get profile name for auto-fill
+  const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
+  const loginName = (userData.email || "").split('@')[0];
+  const profile = JSON.parse(localStorage.getItem('cricscore_profile_' + loginName) || '{}');
+  const matchName = profile.matchName || loginName;
 
   t1.innerHTML = '';
   t2.innerHTML = '';
 
   for (let i = 1; i <= count; i++) {
-    const val1 = prev1[i - 1] !== undefined && prev1[i - 1] !== '' ? prev1[i - 1] : `Player ${i}`;
+    // Auto-fill first player with profile name if empty
+    let val1 = prev1[i - 1] !== undefined && prev1[i - 1] !== '' ? prev1[i - 1] : `Player ${i}`;
+    if (i === 1 && (prev1[i - 1] === undefined || prev1[i - 1] === '' || prev1[i - 1] === 'Player 1') && matchName) {
+      val1 = matchName;
+    }
+    
     const val2 = prev2[i - 1] !== undefined && prev2[i - 1] !== '' ? prev2[i - 1] : `Player ${i}`;
+    
     t1.innerHTML += `<div class="form-group player-input-wrap"><label>Player ${i}</label><input type="text" class="form-input team1-player" placeholder="Player ${i}" maxlength="20" value="${val1}"></div>`;
     t2.innerHTML += `<div class="form-group player-input-wrap"><label>Player ${i}</label><input type="text" class="form-input team2-player" placeholder="Player ${i}" maxlength="20" value="${val2}"></div>`;
   }
@@ -1875,7 +1887,7 @@ function switchCareerTab(tab) {
 }
 
 function aggregateCareerStats() {
-  const history = JSON.parse(localStorage.getItem('cricScoreHistory') || '[]');
+  const history = loadHistory();
   const players = {}; // map of playerName -> stats
 
   history.forEach(match => {
@@ -2328,7 +2340,7 @@ function switchLbTab(tab) {
 
 function renderLeaderboard() {
   const body = $('leaderboard-body');
-  const history = JSON.parse(localStorage.getItem('cricScoreHistory') || '[]');
+  const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
 
   if (!history.length) {
     body.innerHTML = `<div class="ps-empty" style="margin-top:3rem;">
