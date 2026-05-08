@@ -1861,18 +1861,23 @@ function switchCareerTab(tab) {
 }
 
 function aggregateCareerStats() {
-  const history = loadHistory();
+  const history = JSON.parse(localStorage.getItem('cricScoreHistory') || '[]');
   const players = {}; // map of playerName -> stats
 
   history.forEach(match => {
+    const matchParticipants = new Set();
+
     match.innings.forEach((inn, idx) => {
       // Batting Stats
       Object.values(inn.batters || {}).forEach(b => {
         if (!players[b.name]) players[b.name] = initCareerPlayer(b.name);
-          matchParticipants.add(b.name);
         const p = players[b.name];
         
-        p.matches++;
+        if (!matchParticipants.has(b.name)) {
+          p.matches++;
+          matchParticipants.add(b.name);
+        }
+
         p.bat.innings++;
         if (!b.isOut) p.bat.notOuts++;
         p.bat.runs += b.runs;
@@ -1891,13 +1896,12 @@ function aggregateCareerStats() {
       Object.values(inn.bowlers || {}).forEach(bw => {
         if (bw.balls > 0) {
           if (!players[bw.name]) players[bw.name] = initCareerPlayer(bw.name);
+          const p = players[bw.name];
+          
           if (!matchParticipants.has(bw.name)) {
             p.matches++;
             matchParticipants.add(bw.name);
           }
-          const p = players[bw.name];
-          
-
 
           p.bowl.innings++;
           p.bowl.balls += bw.balls;
@@ -1931,7 +1935,6 @@ function aggregateCareerStats() {
           p.field.total++;
         }
       });
-
     });
   });
 
