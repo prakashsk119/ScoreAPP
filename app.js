@@ -1314,7 +1314,7 @@ function showScorecard(from) {
     html += `</div>`;
   }
 
-  body.innerHTML = html;
+  body.innerHTML = profileHeaderHtml + html;
   showScreen('screen-scorecard');
 }
 
@@ -1953,6 +1953,33 @@ function renderCareerStatsBody() {
   const query = $('career-search-input').value.toLowerCase();
   
   let stats = aggregateCareerStats();
+  
+  let profileHeaderHtml = '';
+  if (_isPersonalStats) {
+    const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
+    const name = (userData.email || "").split('@')[0];
+    const profile = JSON.parse(localStorage.getItem('cricscore_profile_' + name) || '{}');
+    
+    if (profile.battingHand || profile.bowlingType) {
+      profileHeaderHtml = `
+        <div class="ps-card" style="background: linear-gradient(135.44deg, #00D46A 0%, #00994D 100%); color: white; border: none; margin-bottom: 1.5rem;">
+          <div class="ps-card-header" style="border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; margin-bottom: 10px;">
+            <div class="ps-avatar" style="background: white; color: var(--clr-primary);">${name.charAt(0).toUpperCase()}</div>
+            <div class="ps-card-info">
+              <div class="ps-player-name" style="color: white;">${name.charAt(0).toUpperCase() + name.slice(1)}</div>
+              <div class="ps-player-team" style="color: rgba(255,255,255,0.8);">Pro Scorer</div>
+            </div>
+          </div>
+          <div class="ps-stats-row">
+            <div class="ps-stat-box"><div class="ps-stat-lbl" style="color: rgba(255,255,255,0.7);">Batting</div><div class="ps-stat-val" style="color: white; font-size: 0.9rem;">${profile.battingHand || 'Not Set'}</div></div>
+            <div class="ps-stat-box"><div class="ps-stat-lbl" style="color: rgba(255,255,255,0.7);">Bowling</div><div class="ps-stat-val" style="color: white; font-size: 0.9rem;">${profile.bowlingType || 'Not Set'}</div></div>
+          </div>
+        </div>
+        <div class="section-label" style="margin-bottom: 0.75rem;">Career Statistics</div>
+      `;
+    }
+  }
+
   
   // PERSONAL FILTER: If in My Performance mode, filter by logged in user name
   if (_isPersonalStats) {
@@ -2730,4 +2757,39 @@ function handleSignOut() {
   setTimeout(() => {
     window.location.reload();
   }, 500);
+}
+
+function showProfile() {
+  const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
+  if (!userData.email) {
+    toast("Please login first");
+    showScreen('screen-login');
+    return;
+  }
+
+  const name = userData.email.split('@')[0];
+  $('profile-display-name').textContent = name.charAt(0).toUpperCase() + name.slice(1);
+  $('profile-display-email').textContent = userData.email;
+
+  // Load saved preferences
+  const profile = JSON.parse(localStorage.getItem('cricscore_profile_' + name) || '{}');
+  if (profile.battingHand) $('profile-batting-hand').value = profile.battingHand;
+  if (profile.bowlingType) $('profile-bowling-type').value = profile.bowlingType;
+
+  showScreen('screen-profile');
+}
+
+function saveProfile() {
+  const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
+  const name = (userData.email || "").split('@')[0];
+  if (!name) return;
+
+  const profile = {
+    battingHand: $('profile-batting-hand').value,
+    bowlingType: $('profile-bowling-type').value
+  };
+
+  localStorage.setItem('cricscore_profile_' + name, JSON.stringify(profile));
+  toast("Profile updated successfully!");
+  showScreen('screen-home');
 }

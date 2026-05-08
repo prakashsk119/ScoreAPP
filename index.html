@@ -609,6 +609,61 @@
   </div>
 
   <!-- ===================== SCREEN: CAREER STATS ===================== -->
+  <!-- ===================== SCREEN: PROFILE ===================== -->
+  <div id="screen-profile" class="screen">
+    <header class="scoring-header">
+      <div class="header-left">
+        <button class="btn-icon" onclick="showScreen('screen-home')" title="Back">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="15,18 9,12 15,6" />
+          </svg>
+        </button>
+      </div>
+      <div class="header-center">My Profile</div>
+      <div class="header-right"></div>
+    </header>
+
+    <div class="setup-container" style="padding-top: 1rem;">
+      <div class="setup-card" style="margin-bottom: 1.5rem;">
+        <div class="sidebar-avatar" style="width: 80px; height: 80px; font-size: 2.5rem; margin: 0 auto 1rem;">🏏</div>
+        <h2 id="profile-display-name" style="text-align: center; margin-bottom: 0.5rem; color: var(--clr-primary);">User Name</h2>
+        <p id="profile-display-email" style="text-align: center; color: var(--clr-text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem;">user@example.com</p>
+        
+        <div class="form-group">
+          <label>Batting Hand</label>
+          <select id="profile-batting-hand" class="form-input">
+            <option value="Right Hand">Right Handed</option>
+            <option value="Left Hand">Left Handed</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Bowling Style</label>
+          <select id="profile-bowling-type" class="form-input">
+            <option value="Right-arm Fast">Right-arm Fast</option>
+            <option value="Right-arm Medium">Right-arm Medium</option>
+            <option value="Right-arm Off-Spin">Right-arm Off-Spin</option>
+            <option value="Right-arm Leg-Spin">Right-arm Leg-Spin</option>
+            <option value="Left-arm Fast">Left-arm Fast</option>
+            <option value="Left-arm Medium">Left-arm Medium</option>
+            <option value="Left-arm Orthodox">Left-arm Orthodox (Spin)</option>
+            <option value="Left-arm Chinaman">Left-arm Chinaman (Spin)</option>
+          </select>
+        </div>
+
+        <button class="btn-primary" onclick="saveProfile()" style="margin-top: 1rem;">Save Profile Settings</button>
+      </div>
+
+      <div class="setup-card" style="background: rgba(0, 212, 106, 0.05); border: 1px solid rgba(0, 212, 106, 0.2);">
+        <h3 style="font-size: 1rem; margin-bottom: 0.75rem;">Profile Stats</h3>
+        <p style="font-size: 0.85rem; color: var(--clr-text-secondary); line-height: 1.5;">
+          These details will be displayed on your career dashboard and match reports. 
+          Make sure your name matches the one used in match scorecards to track your performance accurately.
+        </p>
+      </div>
+    </div>
+  </div>
+
   <div id="screen-career-stats" class="screen">
     <header class="scoring-header">
       <div class="header-left">
@@ -884,6 +939,11 @@
       <button class="sidebar-item" onclick="closeSidebar(); showHistory();">
         <span class="sidebar-item-icon">📋</span>
         <span class="sidebar-item-label">Match History</span>
+      </button>
+
+      <button class="sidebar-item" onclick="closeSidebar(); showProfile();">
+        <span class="sidebar-item-icon">👤</span>
+        <span class="sidebar-item-label">My Profile</span>
       </button>
 
       <button class="sidebar-item" onclick="closeSidebar(); showCareerStats(true);">
