@@ -1853,26 +1853,32 @@ let careerTab = 'batting';
 let _isPersonalStats = false; // 'batting' or 'bowling'
 
 function showCareerStats(isPersonal = false) {
-  _isPersonalStats = isPersonal;
-  careerTab = 'batting';
-  
-  const searchInput = $('career-search-input');
-  if (searchInput) searchInput.value = '';
-  
-  // Hide search container in personal mode
-  const searchContainer = $('career-search-container');
-  if (searchContainer) searchContainer.style.display = isPersonal ? 'none' : 'block';
+  try {
+    console.log("showCareerStats called with isPersonal:", isPersonal);
+    _isPersonalStats = isPersonal;
+    careerTab = 'batting';
+    
+    const searchInput = $('career-search-input');
+    if (searchInput) searchInput.value = '';
+    
+    const searchContainer = $('career-search-container');
+    if (searchContainer) searchContainer.style.display = isPersonal ? 'none' : 'block';
 
-  // Update header title
-  const header = document.querySelector('#screen-career-stats .header-center');
-  if (header) header.textContent = isPersonal ? 'My Career Stats' : 'All Players Stats';
+    const header = document.querySelector('#screen-career-stats .header-center');
+    if (header) header.textContent = isPersonal ? 'My Career Stats' : 'All Players Stats';
 
-  document.querySelectorAll('#screen-career-stats .ps-tab').forEach(t => t.classList.remove('active'));
-  const tabBtn = $('tab-career-batting');
-  if (tabBtn) tabBtn.classList.add('active');
+    document.querySelectorAll('#screen-career-stats .ps-tab').forEach(t => t.classList.remove('active'));
+    const tabBtn = $('tab-career-batting');
+    if (tabBtn) tabBtn.classList.add('active');
 
-  renderCareerStatsBody();
-  showScreen('screen-career-stats');
+    console.log("Calling renderCareerStatsBody...");
+    renderCareerStatsBody();
+    console.log("Calling showScreen...");
+    showScreen('screen-career-stats');
+  } catch (e) {
+    console.error("Error in showCareerStats:", e);
+    alert("Error loading stats: " + e.message);
+  }
 }
 
 function hideCareerStats() {
@@ -1978,135 +1984,151 @@ function initCareerPlayer(name) {
 }
 
 function renderCareerStatsBody() {
-  const body = $('career-stats-body');
-  const query = $('career-search-input').value.toLowerCase();
-  
-  let stats = aggregateCareerStats();
-  
-  let profileHeaderHtml = '';
-  if (_isPersonalStats) {
-    const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
-    const name = (userData.email || "").split('@')[0];
-    const profile = JSON.parse(localStorage.getItem('cricscore_profile_' + name) || '{}');
+  try {
+    const body = $('career-stats-body');
+    if (!body) { console.error("career-stats-body not found"); return; }
     
-    if (profile.battingHand || profile.bowlingType) {
-      profileHeaderHtml = `
-        <div class="ps-card" style="background: linear-gradient(135.44deg, #00D46A 0%, #00994D 100%); color: white; border: none; margin-bottom: 1.5rem;">
-          <div class="ps-card-header" style="border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; margin-bottom: 10px;">
-            <div class="ps-avatar" style="background: white; color: var(--clr-primary);">${name.charAt(0).toUpperCase()}</div>
+    const searchInput = $('career-search-input');
+    const query = searchInput ? searchInput.value.toLowerCase() : '';
+    
+    console.log("Aggregating career stats...");
+    let stats = aggregateCareerStats();
+    console.log("Stats aggregated. Count:", stats.length);
+    
+    let profileHeaderHtml = '';
+    if (_isPersonalStats) {
+      const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
+      const loginName = (userData.email || "").split('@')[0];
+      const profile = JSON.parse(localStorage.getItem('cricscore_profile_' + loginName) || '{}');
+      
+      if (profile.matchName || profile.battingHand || profile.bowlingType) {
+        const displayName = profile.matchName || loginName;
+        profileHeaderHtml = `
+          <div class="ps-card" style="background: linear-gradient(135.44deg, #00D46A 0%, #00994D 100%); color: white; border: none; margin-bottom: 1.5rem;">
+            <div class="ps-card-header" style="border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; margin-bottom: 10px;">
+              <div class="ps-avatar" style="background: white; color: var(--clr-primary);">${displayName.charAt(0).toUpperCase()}</div>
+              <div class="ps-card-info">
+                <div class="ps-player-name" style="color: white;">${displayName.charAt(0).toUpperCase() + displayName.slice(1)}</div>
+                <div class="ps-player-team" style="color: rgba(255,255,255,0.8);">Pro Scorer</div>
+              </div>
+            </div>
+            <div class="ps-stats-row">
+              <div class="ps-stat-box"><div class="ps-stat-lbl" style="color: rgba(255,255,255,0.7);">Batting</div><div class="ps-stat-val" style="color: white; font-size: 0.9rem;">${profile.battingHand || 'Not Set'}</div></div>
+              <div class="ps-stat-box"><div class="ps-stat-lbl" style="color: rgba(255,255,255,0.7);">Bowling</div><div class="ps-stat-val" style="color: white; font-size: 0.9rem;">${profile.bowlingType || 'Not Set'}</div></div>
+            </div>
+          </div>
+          <div class="section-label" style="margin-bottom: 0.75rem;">Career Statistics</div>
+        `;
+      }
+    }
+
+    if (_isPersonalStats) {
+      const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
+      const loginName = (userData.email || "").split('@')[0];
+      const profile = JSON.parse(localStorage.getItem('cricscore_profile_' + loginName) || '{}');
+      const searchName = (profile.matchName || loginName).toLowerCase();
+      if (searchName) {
+        stats = stats.filter(p => p.name.toLowerCase() === searchName);
+      } else {
+        stats = [];
+      }
+    } else if (query) {
+      stats = stats.filter(p => p.name.toLowerCase().includes(query));
+    }
+
+    if (stats.length === 0) {
+      body.innerHTML = profileHeaderHtml + `<div class="ps-empty"><div style="font-size:3rem; margin-bottom:1rem;">🔍</div><div class="ps-empty-title">No Players Found</div><div class="ps-empty-sub">Try a different search term.</div></div>`;
+      return;
+    }
+
+    let html = profileHeaderHtml + '<div class="ps-cards-grid">';
+    if (careerTab === 'batting') {
+      stats.sort((a, b) => b.bat.runs - a.bat.runs);
+      stats.forEach(p => {
+        if (p.bat.innings === 0) return;
+        const avg = (p.bat.innings - p.bat.notOuts) > 0 ? (p.bat.runs / (p.bat.innings - p.bat.notOuts)).toFixed(1) : (p.bat.runs > 0 ? '∞' : '0.0');
+        const sr = p.bat.balls > 0 ? ((p.bat.runs / p.bat.balls) * 100).toFixed(1) : '0.0';
+        const hsStr = `${p.bat.highScore}${p.bat.hsNotOut ? '*' : ''}`;
+        html += `
+        <div class="ps-card">
+          <div class="ps-card-header">
+            <div class="ps-avatar">${p.name.charAt(0).toUpperCase()}</div>
             <div class="ps-card-info">
-              <div class="ps-player-name" style="color: white;">${name.charAt(0).toUpperCase() + name.slice(1)}</div>
-              <div class="ps-player-team" style="color: rgba(255,255,255,0.8);">Pro Scorer</div>
+              <div class="ps-player-name">${p.name}</div>
+              <div class="ps-player-team">${p.matches} Matches</div>
+            </div>
+            <div class="ps-card-hs">
+              <div class="ps-hs-runs highlighted">${p.bat.runs}</div>
+              <div class="ps-hs-label">Runs</div>
             </div>
           </div>
           <div class="ps-stats-row">
-            <div class="ps-stat-box"><div class="ps-stat-lbl" style="color: rgba(255,255,255,0.7);">Batting</div><div class="ps-stat-val" style="color: white; font-size: 0.9rem;">${profile.battingHand || 'Not Set'}</div></div>
-            <div class="ps-stat-box"><div class="ps-stat-lbl" style="color: rgba(255,255,255,0.7);">Bowling</div><div class="ps-stat-val" style="color: white; font-size: 0.9rem;">${profile.bowlingType || 'Not Set'}</div></div>
+            <div class="ps-stat-box"><div class="ps-stat-lbl">Inn</div><div class="ps-stat-val">${p.bat.innings}</div></div>
+            <div class="ps-stat-box"><div class="ps-stat-lbl">Avg</div><div class="ps-stat-val">${avg}</div></div>
+            <div class="ps-stat-box"><div class="ps-stat-lbl">SR</div><div class="ps-stat-val">${sr}</div></div>
           </div>
-        </div>
-        <div class="section-label" style="margin-bottom: 0.75rem;">Career Statistics</div>
-      `;
-    }
-  }
-
-  
-  // PERSONAL FILTER: If in My Performance mode, filter by profile match name
-  if (_isPersonalStats) {
-    const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
-    const loginName = (userData.email || "").split('@')[0];
-    const profile = JSON.parse(localStorage.getItem('cricscore_profile_' + loginName) || '{}');
-    
-    // Use saved match name or fallback to login name
-    const searchName = (profile.matchName || loginName).toLowerCase();
-    
-    if (searchName) {
-      stats = stats.filter(p => p.name.toLowerCase() === searchName);
+        </div>`;
+      });
+    } else if (careerTab === 'bowling') {
+      stats.sort((a, b) => b.bowl.wickets - a.bowl.wickets);
+      stats.forEach(p => {
+        if (p.bowl.innings === 0) return;
+        const overs = p.bowl.balls > 0 ? `${Math.floor(p.bowl.balls/6)}.${p.bowl.balls%6}` : '0.0';
+        const eco = p.bowl.balls > 0 ? (p.bowl.runs / (p.bowl.balls / 6)).toFixed(2) : '0.00';
+        const avg = p.bowl.wickets > 0 ? (p.bowl.runs / p.bowl.wickets).toFixed(1) : '—';
+        const best = p.bowl.bestRuns === Infinity ? '—' : `${p.bowl.bestWickets}/${p.bowl.bestRuns}`;
+        html += `
+        <div class="ps-card">
+          <div class="ps-card-header">
+            <div class="ps-avatar ps-avatar-bowl">${p.name.charAt(0).toUpperCase()}</div>
+            <div class="ps-card-info">
+              <div class="ps-player-name">${p.name}</div>
+              <div class="ps-player-team">${p.matches} Matches</div>
+            </div>
+            <div class="ps-card-hs">
+              <div class="ps-hs-runs highlighted">${p.bowl.wickets}</div>
+              <div class="ps-hs-label">Wkts</div>
+            </div>
+          </div>
+          <div class="ps-stats-row">
+            <div class="ps-stat-box"><div class="ps-stat-lbl">Inn</div><div class="ps-stat-val">${p.bowl.innings}</div></div>
+            <div class="ps-stat-box"><div class="ps-stat-lbl">Overs</div><div class="ps-stat-val">${overs}</div></div>
+            <div class="ps-stat-box"><div class="ps-stat-lbl">Eco</div><div class="ps-stat-val">${eco}</div></div>
+          </div>
+        </div>`;
+      });
     } else {
-      stats = [];
+      // Fielding
+      stats.sort((a, b) => b.field.total - a.field.total);
+      stats.forEach(p => {
+        if (p.field.total === 0) return;
+        html += `
+        <div class="ps-card">
+          <div class="ps-card-header">
+            <div class="ps-avatar" style="background: var(--clr-blue);">${p.name.charAt(0).toUpperCase()}</div>
+            <div class="ps-card-info">
+              <div class="ps-player-name">${p.name}</div>
+              <div class="ps-player-team">${p.matches} Matches</div>
+            </div>
+            <div class="ps-card-hs">
+              <div class="ps-hs-runs highlighted" style="color: var(--clr-blue);">${p.field.total}</div>
+              <div class="ps-hs-label">Dismissals</div>
+            </div>
+          </div>
+          <div class="ps-stats-row">
+            <div class="ps-stat-box"><div class="ps-stat-lbl">Catches</div><div class="ps-stat-val">${p.field.catches}</div></div>
+            <div class="ps-stat-box"><div class="ps-stat-lbl">Run Outs</div><div class="ps-stat-val">${p.field.runOuts}</div></div>
+            <div class="ps-stat-box"><div class="ps-stat-lbl">Stumpings</div><div class="ps-stat-val">${p.field.stumpings}</div></div>
+          </div>
+        </div>`;
+      });
     }
-  } else if (query) {
-    // Filter by search
-    stats = stats.filter(p => p.name.toLowerCase().includes(query));
+    html += '</div>';
+    body.innerHTML = html;
+  } catch (e) {
+    console.error("Error in renderCareerStatsBody:", e);
+    alert("Error rendering stats: " + e.message);
   }
-
-  if (stats.length === 0) {
-    body.innerHTML = `<div class="ps-empty"><div style="font-size:3rem; margin-bottom:1rem;">🔍</div><div class="ps-empty-title">No Players Found</div><div class="ps-empty-sub">Try a different search term.</div></div>`;
-    return;
-  }
-
-  let html = '<div class="ps-cards-grid">';
-
-  if (careerTab === 'batting') {
-    stats.sort((a, b) => b.bat.runs - a.bat.runs);
-
-    stats.forEach(p => {
-      if (p.bat.innings === 0) return;
-      const avg = (p.bat.innings - p.bat.notOuts) > 0 ? (p.bat.runs / (p.bat.innings - p.bat.notOuts)).toFixed(1) : (p.bat.runs > 0 ? '∞' : '0.0');
-      const sr = p.bat.balls > 0 ? ((p.bat.runs / p.bat.balls) * 100).toFixed(1) : '0.0';
-      const hsStr = `${p.bat.highScore}${p.bat.hsNotOut ? '*' : ''}`;
-
-      html += `<div class="ps-card">
-        <div class="ps-card-header">
-          <div class="ps-avatar">${p.name.charAt(0).toUpperCase()}</div>
-          <div class="ps-card-info">
-            <div class="ps-player-name">${p.name}</div>
-            <div class="ps-player-team">${p.matches} Matches</div>
-          </div>
-          <div class="ps-card-hs">
-            <div class="ps-hs-runs highlighted">${p.bat.runs}</div>
-            <div class="ps-hs-label">Runs</div>
-          </div>
-        </div>
-        <div class="ps-stats-row">
-          <div class="ps-stat-box"><div class="ps-stat-lbl">Inn</div><div class="ps-stat-val">${p.bat.innings}</div></div>
-          <div class="ps-stat-box"><div class="ps-stat-lbl">Avg</div><div class="ps-stat-val">${avg}</div></div>
-          <div class="ps-stat-box"><div class="ps-stat-lbl">SR</div><div class="ps-stat-val">${sr}</div></div>
-        </div>
-        <div class="ps-stats-row">
-          <div class="ps-stat-box"><div class="ps-stat-lbl">HS</div><div class="ps-stat-val">${hsStr}</div></div>
-          <div class="ps-stat-box"><div class="ps-stat-lbl">50s/100s</div><div class="ps-stat-val">${p.bat.fifties}/${p.bat.hundreds}</div></div>
-          <div class="ps-stat-box"><div class="ps-stat-lbl">4s/6s</div><div class="ps-stat-val">${p.bat.fours}/${p.bat.sixes}</div></div>
-        </div>
-      </div>`;
-    });
-  } else {
-    stats.sort((a, b) => b.bowl.wickets - a.bowl.wickets);
-
-    stats.forEach(p => {
-      if (p.bowl.innings === 0) return;
-      const overs = p.bowl.balls > 0 ? `${Math.floor(p.bowl.balls/6)}.${p.bowl.balls%6}` : '0.0';
-      const eco = p.bowl.balls > 0 ? (p.bowl.runs / (p.bowl.balls / 6)).toFixed(2) : '0.00';
-      const avg = p.bowl.wickets > 0 ? (p.bowl.runs / p.bowl.wickets).toFixed(1) : '—';
-      const best = p.bowl.bestRuns === Infinity ? '—' : `${p.bowl.bestWickets}/${p.bowl.bestRuns}`;
-
-      html += `<div class="ps-card">
-        <div class="ps-card-header">
-          <div class="ps-avatar ps-avatar-bowl">${p.name.charAt(0).toUpperCase()}</div>
-          <div class="ps-card-info">
-            <div class="ps-player-name">${p.name}</div>
-            <div class="ps-player-team">${p.matches} Matches</div>
-          </div>
-          <div class="ps-card-hs">
-            <div class="ps-hs-runs highlighted">${p.bowl.wickets}</div>
-            <div class="ps-hs-label">Wkts</div>
-          </div>
-        </div>
-        <div class="ps-stats-row">
-          <div class="ps-stat-box"><div class="ps-stat-lbl">Inn</div><div class="ps-stat-val">${p.bowl.innings}</div></div>
-          <div class="ps-stat-box"><div class="ps-stat-lbl">Overs</div><div class="ps-stat-val">${overs}</div></div>
-          <div class="ps-stat-box"><div class="ps-stat-lbl">Eco</div><div class="ps-stat-val">${eco}</div></div>
-        </div>
-        <div class="ps-stats-row">
-          <div class="ps-stat-box"><div class="ps-stat-lbl">Avg</div><div class="ps-stat-val">${avg}</div></div>
-          <div class="ps-stat-box"><div class="ps-stat-lbl">Best</div><div class="ps-stat-val">${best}</div></div>
-          <div class="ps-stat-box"><div class="ps-stat-lbl">Runs</div><div class="ps-stat-val">${p.bowl.runs}</div></div>
-        </div>
-      </div>`;
-    });
-  }
-
-  html += '</div>';
-  body.innerHTML = html;
 }
 
 // =====================================================================
