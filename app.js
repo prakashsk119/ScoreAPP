@@ -1958,9 +1958,12 @@ function renderCareerStatsBody() {
   // PERSONAL FILTER: If in My Performance mode, filter by logged in user name
   if (_isPersonalStats) {
     const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
-    const userName = userData.email ? userData.email.split('@')[0].toLowerCase() : '';
+    const userName = (userData.email || "").split('@')[0].toLowerCase();
+    
     if (userName) {
       stats = stats.filter(p => p.name.toLowerCase() === userName);
+    } else {
+      stats = []; // Force empty if no user found
     }
   } else if (query) {
     // Filter by search
