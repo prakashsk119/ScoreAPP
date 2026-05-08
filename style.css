@@ -2311,7 +2311,7 @@ body::before {
   gap: .75rem;
 }
 
-/* Individual player card */
+/* Individual player cards */
 .ps-card {
   background: var(--clr-card);
   border: 1px solid var(--clr-glass-border);
@@ -4042,6 +4042,7 @@ body::before {
     transform: translateY(0);
   }
 }
+
 /* ===================== LOGIN SCREEN ===================== */
 .login-container {
   max-width: 400px;
@@ -4112,14 +4113,31 @@ body::before {
 }
 
 @keyframes fadeInScale {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @keyframes popIn {
-  0% { transform: scale(0); opacity: 0; }
-  70% { transform: scale(1.1); }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+
+  70% {
+    transform: scale(1.1);
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 
@@ -4162,12 +4180,14 @@ body::before {
     transform: translateX(-50%) scale(0.5);
     opacity: 1;
   }
+
   80% {
     bottom: 60%;
     transform: translateX(-50%) scale(5);
     opacity: 0.8;
     filter: blur(2px);
   }
+
   100% {
     bottom: 60%;
     transform: translateX(-50%) scale(8);
@@ -4177,10 +4197,23 @@ body::before {
 }
 
 @keyframes contentShake {
-  0%, 100% { transform: translate(0, 0); }
-  25% { transform: translate(-5px, 5px); }
-  50% { transform: translate(5px, -5px); }
-  75% { transform: translate(-5px, -5px); }
+
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+
+  25% {
+    transform: translate(-5px, 5px);
+  }
+
+  50% {
+    transform: translate(5px, -5px);
+  }
+
+  75% {
+    transform: translate(-5px, -5px);
+  }
 }
 
 .animated-ball::after {
@@ -4238,4 +4271,3 @@ body::before {
   transform: scale(1.05) translateY(-3px);
   box-shadow: 0 15px 35px rgba(0, 212, 106, 0.4);
 }
-

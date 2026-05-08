@@ -2411,10 +2411,147 @@ function copyToClipboard(text) {
       document.execCommand("copy");
       toast("📋 Result copied to clipboard!");
     } catch (err) {
+  }
       toast("Failed to copy result.");
     }
     document.body.removeChild(textArea);
   }
+
+function downloadPDFScorecard() {
+  if (!match || !match.innings || !match.innings[0]) {
+    toast("No match data to export!");
+    return;
+  }
+
+  toast("Generating PDF scorecard...");
+
+  const element = document.createElement('div');
+  element.style.padding = '40px';
+  element.style.background = '#fff';
+  element.style.color = '#000';
+  element.style.fontFamily = 'Arial, sans-serif';
+  element.style.position = 'absolute';
+  element.style.left = '-9999px';
+  element.style.width = '800px';
+
+  let html = `
+    <div style="text-align: center; border-bottom: 2px solid #00D46A; padding-bottom: 20px; margin-bottom: 30px;">
+      <h1 style="margin: 0; color: #00D46A; font-size: 28px;">CRICSCORE</h1>
+      <p style="margin: 5px 0; color: #666; font-size: 14px;">Official Match Scorecard</p>
+      <h2 style="margin: 15px 0 5px; font-size: 20px;">${match.team1.name} vs ${match.team2.name}</h2>
+      <p style="margin: 0; font-weight: bold; color: #e11d48;">${match.result || 'Match Completed'}</p>
+    </div>
+  `;
+
+  for (let idx = 0; idx < 2; idx++) {
+    const inn = match.innings[idx];
+    if (!inn) continue;
+
+    html += `
+      <div style="margin-bottom: 40px; page-break-inside: avoid;">
+        <div style="background: #f4f4f5; padding: 10px 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <span style="font-size: 18px; font-weight: 800;">${inn.battingTeamName}</span>
+          <span style="font-size: 18px; font-weight: 800; color: #00D46A;">${inn.runs}/${inn.wickets} (${oversString(inn.balls)} ov)</span>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px;">
+          <thead style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+            <tr>
+              <th style="text-align: left; padding: 10px;">Batter</th>
+              <th style="text-align: left; padding: 10px;">Dismissal</th>
+              <th style="text-align: center; padding: 10px;">R</th>
+              <th style="text-align: center; padding: 10px;">B</th>
+              <th style="text-align: center; padding: 10px;">4s</th>
+              <th style="text-align: center; padding: 10px;">6s</th>
+              <th style="text-align: center; padding: 10px;">SR</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    inn.battedList.forEach(name => {
+      const b = inn.batters[name];
+      if (!b) return;
+      const sr = b.balls > 0 ? ((b.runs / b.balls) * 100).toFixed(1) : '0.0';
+      const dis = b.isOut ? b.dismissal : (inn.isComplete ? 'not out' : 'batting');
+      html += `
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px; font-weight: bold;">${b.name}</td>
+          <td style="padding: 10px; color: #64748b; font-style: italic;">${dis}</td>
+          <td style="padding: 10px; text-align: center; font-weight: bold;">${b.runs}</td>
+          <td style="padding: 10px; text-align: center;">${b.balls}</td>
+          <td style="padding: 10px; text-align: center;">${b.fours}</td>
+          <td style="padding: 10px; text-align: center;">${b.sixes}</td>
+          <td style="padding: 10px; text-align: center;">${sr}</td>
+        </tr>
+      `;
+    });
+
+    html += `
+          </tbody>
+        </table>
+
+        <div style="font-size: 12px; margin-bottom: 20px; color: #475569;">
+          <strong>Extras:</strong> ${inn.totalExtras} (Wd ${inn.extras.wide}, NB ${inn.extras.noBall}, B ${inn.extras.bye}, LB ${inn.extras.legBye})
+        </div>
+
+        <h3 style="font-size: 16px; margin-bottom: 10px; border-left: 4px solid #00D46A; padding-left: 10px;">Bowling</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 13px;">
+          <thead style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+            <tr>
+              <th style="text-align: left; padding: 10px;">Bowler</th>
+              <th style="text-align: center; padding: 10px;">O</th>
+              <th style="text-align: center; padding: 10px;">M</th>
+              <th style="text-align: center; padding: 10px;">R</th>
+              <th style="text-align: center; padding: 10px;">W</th>
+              <th style="text-align: center; padding: 10px;">Eco</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    Object.values(inn.bowlers).forEach(bw => {
+      const eco = bw.balls > 0 ? (bw.runs / (bw.balls / 6)).toFixed(2) : '0.00';
+      html += `
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px; font-weight: bold;">${bw.name}</td>
+          <td style="padding: 10px; text-align: center;">${oversString(bw.balls)}</td>
+          <td style="padding: 10px; text-align: center;">${bw.maidens}</td>
+          <td style="padding: 10px; text-align: center; font-weight: bold;">${bw.runs}</td>
+          <td style="padding: 10px; text-align: center; font-weight: bold; color: #00D46A;">${bw.wickets}</td>
+          <td style="padding: 10px; text-align: center;">${eco}</td>
+        </tr>
+      `;
+    });
+
+    html += '</tbody></table></div>';
+  }
+
+  html += `
+    <div style="text-align: center; margin-top: 50px; border-top: 1px solid #e2e8f0; padding-top: 20px; color: #94a3b8; font-size: 11px;">
+      Generated by CricScore App � Digital Cricket Scoring Solution.
+    </div>
+  `;
+
+  element.innerHTML = html;
+  document.body.appendChild(element);
+
+  const opt = {
+    margin:       10,
+    filename:     `${match.team1.name}_vs_${match.team2.name}_Scorecard.pdf`,
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2, useCORS: true },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  html2pdf().set(opt).from(element).save().then(() => {
+    document.body.removeChild(element);
+    toast("? PDF Downloaded!");
+  }).catch(err => {
+    console.error("PDF Error:", err);
+    toast("? Failed to generate PDF.");
+    document.body.removeChild(element);
+  });
 }
 
 // ===== ADVANCED SETTINGS =====
