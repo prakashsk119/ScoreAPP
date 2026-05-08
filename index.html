@@ -652,6 +652,10 @@
         </div>
 
         <button class="btn-primary" onclick="saveProfile()" style="margin-top: 1rem;">Save Profile Settings</button>
+        
+        <button class="btn-secondary" onclick="showCareerStats(true)" style="margin-top: 0.75rem; border-color: var(--clr-primary); color: var(--clr-primary);">
+          <span style="margin-right: 0.5rem;">📊</span> View My Detailed Stats
+        </button>
       </div>
 
       <div class="setup-card" style="background: rgba(0, 212, 106, 0.05); border: 1px solid rgba(0, 212, 106, 0.2);">
@@ -1023,7 +1027,7 @@
       <span class="nav-icon">📋</span>
       <span class="nav-label">History</span>
     </button>
-    <button class="nav-item" onclick="showCareerStats(); updateNav(this);">
+    <button class="nav-item" onclick="showProfile(); updateNav(this);">
       <span class="nav-icon">👤</span>
       <span class="nav-label">Profile</span>
     </button>
