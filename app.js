@@ -124,6 +124,48 @@ function renderPlayerInputs() {
 }
 
 // Run on page load
+function updateDashboardStats() {
+  const matchesEl = $('dash-total-matches');
+  if (!matchesEl) return;
+
+  const history = loadHistory();
+  const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
+  const loginName = (userData.email || "").split('@')[0];
+  const profile = JSON.parse(localStorage.getItem('cricscore_profile_' + loginName) || '{}');
+  const searchName = (profile.matchName || loginName).toLowerCase();
+
+  let totalMatches = 0;
+  let totalRuns = 0;
+  let totalWkts = 0;
+
+  if (searchName) {
+    // PERSONAL STATS for home dashboard
+    const allStats = aggregateCareerStats();
+    const myStats = allStats.find(p => p.name.toLowerCase() === searchName);
+    
+    if (myStats) {
+      totalMatches = myStats.matches;
+      totalRuns = myStats.bat.runs;
+      totalWkts = myStats.bowl.wickets;
+    }
+  } else {
+    // Global totals if not logged in or no name set
+    totalMatches = history.length;
+    history.forEach(m => {
+      m.innings.forEach(inn => {
+        if (inn) {
+          totalRuns += inn.runs;
+          totalWkts += inn.wickets;
+        }
+      });
+    });
+  }
+
+  $('dash-total-matches').innerText = totalMatches;
+  $('dash-total-runs').innerText = totalRuns;
+  $('dash-total-wkts').innerText = totalWkts;
+}
+
 function initAuth() {
   console.log("Checking for persistent login...");
   try {
@@ -133,6 +175,7 @@ function initAuth() {
       if (user && user.loggedIn) {
         console.log("Persistent login found for:", user.email);
         showScreen('screen-home');
+        updateDashboardStats();
         // Update sidebar name if needed
         const profileName = document.querySelector('.sidebar-profile-name');
         if (profileName) {
@@ -2412,14 +2455,7 @@ function renderLeaderboard() {
     return;
   }
 
-  // Populate dash stats
-  if ($('dash-total-matches')) {
-    const totalRuns = Object.values(batMap).reduce((acc, p) => acc + p.runs, 0);
-    const totalWkts = Object.values(bowlMap).reduce((acc, p) => acc + p.wickets, 0);
-    $('dash-total-matches').innerText = history.length;
-    $('dash-total-runs').innerText = totalRuns;
-    $('dash-total-wkts').innerText = totalWkts;
-  }
+  updateDashboardStats();
 
   // Populate Podium (Top 3)
   const top3 = rows.slice(0, 3);
