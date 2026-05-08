@@ -2411,11 +2411,11 @@ function copyToClipboard(text) {
       document.execCommand("copy");
       toast("📋 Result copied to clipboard!");
     } catch (err) {
-  }
       toast("Failed to copy result.");
     }
     document.body.removeChild(textArea);
   }
+}
 
 function downloadPDFScorecard() {
   if (!match || !match.innings || !match.innings[0]) {
@@ -2430,8 +2430,12 @@ function downloadPDFScorecard() {
   element.style.background = '#fff';
   element.style.color = '#000';
   element.style.fontFamily = 'Arial, sans-serif';
-  element.style.position = 'absolute';
-  element.style.left = '-9999px';
+  
+  element.style.position = 'fixed';
+  element.style.top = '0';
+  element.style.left = '0';
+  element.style.zIndex = '-1';
+  element.style.opacity = '0.01';
   element.style.width = '800px';
 
   let html = `
