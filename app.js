@@ -123,7 +123,11 @@ function initAuth() {
         showScreen('screen-home');
         // Update sidebar name if needed
         const profileName = document.querySelector('.sidebar-profile-name');
-        if (profileName) profileName.textContent = user.email.split('@')[0];
+        if (profileName) {
+            const name = user.email.split('@')[0];
+            profileName.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+        }
+        return true; // Login found
       }
     }
   } catch (err) {
@@ -1887,18 +1891,13 @@ function aggregateCareerStats() {
       Object.values(inn.bowlers || {}).forEach(bw => {
         if (bw.balls > 0) {
           if (!players[bw.name]) players[bw.name] = initCareerPlayer(bw.name);
-          matchParticipants.add(bw.name);
+          if (!matchParticipants.has(bw.name)) {
+            p.matches++;
+            matchParticipants.add(bw.name);
+          }
           const p = players[bw.name];
           
-          if (p.bowl.innings === 0 || p.matches < p.bat.innings) {
-            // increment match if didn't bat and this is the first time bowling in this match iteration
-            // This logic is slightly fuzzy if they bowl in both innings of a test match, 
-            // but fine for limited overs.
-            const previousTotalInnings = p.bat.innings + (p.bowl.innings > 0 ? 1 : 0);
-          }
-          // Assuming 1 Match = 1 Bat Innings + 1 Bowl Innings max for now
-          // We already incremented matches in batting. If they only bowled:
-          if (p.bat.innings === 0 && p.bowl.innings === 0) p.matches++;
+
 
           p.bowl.innings++;
           p.bowl.balls += bw.balls;
@@ -2726,6 +2725,9 @@ function handleAuth() {
 
 function handleSignOut() {
   localStorage.removeItem('cricscore_user');
-  showScreen('screen-login');
   toast("Signed out successfully");
+  // Reload the page to clear all in-memory states
+  setTimeout(() => {
+    window.location.reload();
+  }, 500);
 }
