@@ -1950,7 +1950,8 @@ function aggregateCareerStats() {
       });
 
       // Fielding Stats (from Ball Log)
-      inn.ballLog.forEach(ball => {
+      if (inn.ballLog && Array.isArray(inn.ballLog)) {
+        inn.ballLog.forEach(ball => {
         if (ball.isWicket && ball.fielder) {
           const fName = ball.fielder;
           if (!players[fName]) players[fName] = initCareerPlayer(fName);
@@ -1967,6 +1968,7 @@ function aggregateCareerStats() {
           p.field.total++;
         }
       });
+      }
     });
   });
 
@@ -2306,9 +2308,17 @@ function copyRoomCode() {
 
 // ── Kick off socket connection and UI when DOM is ready ──
 document.addEventListener('DOMContentLoaded', () => {
-  initRealtime();
-  renderLeaderboard(); // Ensure leaderboard data is ready for landing page
-  initAuth(); // Handle persistent login after everything is ready
+  try {
+    initRealtime();
+  } catch(e) { console.error("Realtime init failed", e); }
+  
+  try {
+    renderLeaderboard(); 
+  } catch(e) { console.error("Leaderboard render failed", e); }
+  
+  try {
+    initAuth(); 
+  } catch(e) { console.error("Auth init failed", e); }
 });
 
 // =====================================================
