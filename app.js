@@ -1833,7 +1833,8 @@ function formatHistoryDate(iso) {
 // ============  CAREER STATS FEATURE  ===============
 // ===================================================
 
-let careerTab = 'batting'; // 'batting' or 'bowling'
+let careerTab = 'batting';
+let _isPersonalStats = false; // 'batting' or 'bowling'
 
 function showCareerStats() {
   careerTab = 'batting';
@@ -1864,6 +1865,7 @@ function aggregateCareerStats() {
       // Batting Stats
       Object.values(inn.batters || {}).forEach(b => {
         if (!players[b.name]) players[b.name] = initCareerPlayer(b.name);
+          matchParticipants.add(b.name);
         const p = players[b.name];
         
         p.matches++;
@@ -1885,6 +1887,7 @@ function aggregateCareerStats() {
       Object.values(inn.bowlers || {}).forEach(bw => {
         if (bw.balls > 0) {
           if (!players[bw.name]) players[bw.name] = initCareerPlayer(bw.name);
+          matchParticipants.add(bw.name);
           const p = players[bw.name];
           
           if (p.bowl.innings === 0 || p.matches < p.bat.innings) {
@@ -1910,6 +1913,26 @@ function aggregateCareerStats() {
           }
         }
       });
+
+      // Fielding Stats (from Ball Log)
+      inn.ballLog.forEach(ball => {
+        if (ball.isWicket && ball.fielder) {
+          const fName = ball.fielder;
+          if (!players[fName]) players[fName] = initCareerPlayer(fName);
+          const p = players[fName];
+          
+          if (!matchParticipants.has(fName)) {
+            p.matches++;
+            matchParticipants.add(fName);
+          }
+
+          if (ball.wicketType === 'Caught') p.field.catches++;
+          else if (ball.wicketType === 'Run Out') p.field.runOuts++;
+          else if (ball.wicketType === 'Stumped') p.field.stumpings++;
+          p.field.total++;
+        }
+      });
+
     });
   });
 
@@ -1921,7 +1944,8 @@ function initCareerPlayer(name) {
     name: name,
     matches: 0,
     bat: { innings: 0, notOuts: 0, runs: 0, balls: 0, fours: 0, sixes: 0, highScore: 0, hsNotOut: false, fifties: 0, hundreds: 0 },
-    bowl: { innings: 0, balls: 0, runs: 0, wickets: 0, maidens: 0, bestWickets: 0, bestRuns: Infinity }
+    bowl: { innings: 0, balls: 0, runs: 0, wickets: 0, maidens: 0, bestWickets: 0, bestRuns: Infinity },
+    field: { catches: 0, runOuts: 0, stumpings: 0, total: 0 }
   };
 }
 
@@ -1931,8 +1955,15 @@ function renderCareerStatsBody() {
   
   let stats = aggregateCareerStats();
   
-  // Filter by search
-  if (query) {
+  // PERSONAL FILTER: If in My Performance mode, filter by logged in user name
+  if (_isPersonalStats) {
+    const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
+    const userName = userData.email ? userData.email.split('@')[0].toLowerCase() : '';
+    if (userName) {
+      stats = stats.filter(p => p.name.toLowerCase() === userName);
+    }
+  } else if (query) {
+    // Filter by search
     stats = stats.filter(p => p.name.toLowerCase().includes(query));
   }
 

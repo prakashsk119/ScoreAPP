@@ -637,6 +637,12 @@
         </svg>
         Bowling
       </button>
+      <button class="ps-tab" id="tab-career-fielding" onclick="switchCareerTab('fielding')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+        </svg>
+        Fielding
+      </button>
     </div>
 
     <!-- Stats Search -->
@@ -880,7 +886,7 @@
         <span class="sidebar-item-label">Match History</span>
       </button>
 
-      <button class="sidebar-item" onclick="closeSidebar(); showCareerStats();">
+      <button class="sidebar-item" onclick="closeSidebar(); showCareerStats(true);">
         <span class="sidebar-item-icon">📊</span>
         <span class="sidebar-item-label">My Performance</span>
       </button>
