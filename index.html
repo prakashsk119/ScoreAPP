@@ -19,7 +19,24 @@
 <body>
 
   <!-- ===================== SCREEN: LOGIN ===================== -->
-  <div id="screen-login" class="screen active">
+  <div id="screen-login" class="screen">
+    <script>
+      // Immediate check to prevent login flash
+      if (localStorage.getItem('cricscore_user')) {
+        try {
+          const user = JSON.parse(localStorage.getItem('cricscore_user'));
+          if (user && user.loggedIn) {
+            document.getElementById('screen-login').classList.remove('active');
+          } else {
+            document.getElementById('screen-login').classList.add('active');
+          }
+        } catch(e) {
+          document.getElementById('screen-login').classList.add('active');
+        }
+      } else {
+        document.getElementById('screen-login').classList.add('active');
+      }
+    </script>
     <div class="setup-bg"></div>
     <div class="login-container">
       <div class="login-header">

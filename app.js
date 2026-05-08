@@ -112,21 +112,29 @@ function renderPlayerInputs() {
 }
 
 // Run on page load
+function initAuth() {
+  console.log("Checking for persistent login...");
+  try {
+    const userData = localStorage.getItem('cricscore_user');
+    if (userData) {
+      const user = JSON.parse(userData);
+      if (user && user.loggedIn) {
+        console.log("Persistent login found for:", user.email);
+        showScreen('screen-home');
+        // Update sidebar name if needed
+        const profileName = document.querySelector('.sidebar-profile-name');
+        if (profileName) profileName.textContent = user.email.split('@')[0];
+      }
+    }
+  } catch (err) {
+    console.error("Auth persistence error:", err);
+    localStorage.removeItem('cricscore_user');
+  }
+}
+
 (function initSetup() {
   renderPlayerInputs();
   
-  // Check for persistent login
-  const userData = localStorage.getItem('cricscore_user');
-  if (userData) {
-    const user = JSON.parse(userData);
-    if (user.loggedIn) {
-      showScreen('screen-home');
-      // Update sidebar name if needed
-      const profileName = document.querySelector('.sidebar-profile-name');
-      if (profileName) profileName.textContent = user.email.split('@')[0];
-    }
-  }
-
   const setupContainer = document.querySelector('#screen-setup .setup-container');
   if (setupContainer) {
     setupContainer.style.maxHeight = '95vh';
@@ -2185,6 +2193,7 @@ function copyRoomCode() {
 document.addEventListener('DOMContentLoaded', () => {
   initRealtime();
   renderLeaderboard(); // Ensure leaderboard data is ready for landing page
+  initAuth(); // Handle persistent login after everything is ready
 });
 
 // =====================================================
