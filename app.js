@@ -2412,9 +2412,11 @@ function switchLbTab(tab) {
 
 function renderLeaderboard() {
   const body = $('leaderboard-body');
-  const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+  const podium = $('leaderboard-podium');
+  const history = loadHistory();
 
   if (!history.length) {
+    podium.innerHTML = '';
     body.innerHTML = `<div class="ps-empty" style="margin-top:3rem;">
       <div style="font-size:3rem;">🏆</div>
       <div class="ps-empty-title">No Data Yet</div>
@@ -2423,30 +2425,31 @@ function renderLeaderboard() {
     return;
   }
 
-  const batMap = {};
-  const bowlMap = {};
-
-  history.forEach(m => {
-    const teams = [m.team1, m.team2];
-    teams.forEach(t => {
-      t.players.forEach(p => {
-        if (!p.name) return;
-        if (!batMap[p.name]) batMap[p.name] = { name: p.name, team: t.name, runs: 0 };
-        batMap[p.name].runs += (p.runs || 0);
-
-        if (!bowlMap[p.name]) bowlMap[p.name] = { name: p.name, team: t.name, wickets: 0 };
-        bowlMap[p.name].wickets += (p.wickets || 0);
-      });
-    });
-  });
-
-  const podium = $('leaderboard-podium');
+  // Use aggregateCareerStats for consistent and correct aggregation
+  const allStats = aggregateCareerStats();
   let rows = [];
 
   if (_lbTab === 'bat') {
-    rows = Object.values(batMap).sort((a, b) => b.runs - a.runs);
+    // Filter and map to the format expected by the leaderboard UI
+    rows = allStats
+      .filter(p => p.bat.innings > 0)
+      .map(p => ({
+        name: p.name,
+        score: p.bat.runs,
+        matches: p.matches,
+        subLabel: 'runs'
+      }))
+      .sort((a, b) => b.score - a.score);
   } else {
-    rows = Object.values(bowlMap).sort((a, b) => b.wickets - a.wickets);
+    rows = allStats
+      .filter(p => p.bowl.innings > 0)
+      .map(p => ({
+        name: p.name,
+        score: p.bowl.wickets,
+        matches: p.matches,
+        subLabel: 'wickets'
+      }))
+      .sort((a, b) => b.score - a.score);
   }
 
   if (!rows.length) {
@@ -2473,8 +2476,8 @@ function renderLeaderboard() {
       <div class="podium-avatar">${p.rank === 1 ? '🥇' : '👤'}</div>
       <div class="podium-bar">
         <div class="podium-name" style="text-overflow:ellipsis; overflow:hidden; white-space:nowrap; width:100%;">${p.name}</div>
-        <div class="podium-score">${_lbTab === 'bat' ? p.runs : p.wickets}</div>
-        <div style="font-size:0.6rem;opacity:0.7;">${_lbTab === 'bat' ? 'Runs' : 'Wkts'}</div>
+        <div class="podium-score">${p.score}</div>
+        <div style="font-size:0.6rem;opacity:0.7;">${p.subLabel}</div>
       </div>
     </div>
   `).join('');
@@ -2485,11 +2488,11 @@ function renderLeaderboard() {
       <div class="lb-rank">${i + 4}</div>
       <div class="lb-name-wrap" style="flex:1;min-width:0;">
         <div class="lb-name">${p.name}</div>
-        <div class="lb-team">${p.team}</div>
+        <div class="lb-team">${p.matches} Matches</div>
       </div>
       <div class="lb-stat">
-        ${_lbTab === 'bat' ? p.runs : p.wickets}<br>
-        <span class="lb-stat-label">${_lbTab === 'bat' ? 'runs' : 'wickets'}</span>
+        ${p.score}<br>
+        <span class="lb-stat-label">${p.subLabel}</span>
       </div>
     </div>`).join('');
 }
