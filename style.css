@@ -600,8 +600,8 @@ body::before {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: .8rem;
-  padding: 1rem 1.2rem;
+  gap: 0;
+  padding: .3rem .5rem;
   overflow-y: auto;
 }
 
@@ -643,14 +643,14 @@ body::before {
 /* ===== Main Score Block ===== */
 .main-score-block {
   text-align: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.25rem;
 }
 
 .batting-team-name {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: var(--clr-text);
-  margin-bottom: .15rem;
+  margin-bottom: .1rem;
 }
 
 .score-display {
@@ -659,11 +659,11 @@ body::before {
   align-items: baseline;
   gap: .1rem;
   line-height: 1;
-  margin-bottom: .2rem;
+  margin-bottom: .1rem;
 }
 
 .score-display .runs {
-  font-size: 3.2rem;
+  font-size: 2.8rem;
   font-weight: 900;
   color: var(--clr-green);
 }
@@ -719,17 +719,17 @@ body::before {
   background: var(--clr-glass);
   border: 1px solid var(--clr-glass-border);
   border-radius: var(--radius);
-  padding: .7rem .85rem;
-  margin-bottom: .7rem;
+  padding: 0.4rem 0.6rem;
+  margin-bottom: 0.3rem;
 }
 
 .card-label {
-  font-size: .7rem;
+  font-size: .65rem;
   font-weight: 600;
   color: var(--clr-text2);
   text-transform: uppercase;
   letter-spacing: .7px;
-  margin-bottom: .45rem;
+  margin-bottom: .25rem;
 }
 
 .batter-row,
@@ -833,46 +833,49 @@ body::before {
 
 /* ===== Section labels in input panel ===== */
 .section-label {
-  font-size: .72rem;
-  font-weight: 600;
+  font-size: .65rem;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .8px;
   color: var(--clr-text2);
+  margin-top: .15rem;
+  margin-bottom: .1rem;
 }
 
 /* ===== Runs grid ===== */
 .runs-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.8rem;
-  margin-bottom: 1rem;
+  gap: 0.25rem;
+  margin-bottom: .2rem;
+  justify-items: center;
 }
 
 .wicket-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.6rem;
-  margin-bottom: 1.5rem;
+  gap: 0.25rem;
+  margin-bottom: .3rem;
+  justify-items: center;
 }
 
 .run-btn,
 .extra-btn,
 .wicket-btn {
-  width: 52px;
-  height: 52px;
+  width: 42px;
+  height: 42px;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.15rem;
+  font-size: 1rem;
   font-weight: 800;
   font-family: inherit;
   color: #fff;
   background: rgba(255, 255, 255, 0.05);
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  margin: 0 auto;
 }
 
 .run-btn:hover,
@@ -881,6 +884,14 @@ body::before {
   background: rgba(255, 255, 255, 0.15);
   transform: scale(1.1);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.wicket-btn {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444 !important;
+  border-color: rgba(239, 68, 68, 0.3);
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
 .run-btn:active {
@@ -911,32 +922,23 @@ body::before {
 .extras-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 0.5rem;
+  gap: 0.2rem;
+  margin-bottom: .2rem;
+  justify-items: center;
 }
 
 .extra-btn {
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   font-size: 0.85rem;
   background: rgba(99, 102, 241, 0.1);
   color: #818cf8;
   border-color: rgba(99, 102, 241, 0.3);
 }
 
-/* Wicket section in input panel */
-.wicket-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.wicket-btn {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  border-color: rgba(239, 68, 68, 0.3);
-  font-size: 0.85rem;
-  font-weight: 700;
+/* Wicket section spacing fix */
+.tab-content {
+  padding-bottom: 2.5rem;
 }
 
 /* Undo */
@@ -2153,7 +2155,8 @@ body::before {
     width: 100%;
     border-right: none;
     border-bottom: 1px solid var(--clr-glass-border);
-    max-height: 42vh;
+    max-height: 32vh;
+    padding: 0.4rem 0.6rem;
     flex-shrink: 0;
   }
 

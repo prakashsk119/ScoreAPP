@@ -176,6 +176,7 @@ function initAuth() {
         console.log("Persistent login found for:", user.email);
         showScreen('screen-home');
         updateDashboardStats();
+        renderLeaderboard();
         // Update sidebar name if needed
         const profileName = document.querySelector('.sidebar-profile-name');
         if (profileName) {
@@ -546,6 +547,7 @@ function confirmWicket() {
   else if (wType === 'Run Out') dismissal = `run out (${fielder})`;
   else if (wType === 'Stumped') dismissal = `st ${fielder} b ${inn.currentBowlerName}`;
   else if (wType === 'Hit Wicket') dismissal = `hit wicket b ${inn.currentBowlerName}`;
+  else if (wType === 'Retired Hurt') dismissal = `retired hurt`;
 
   const ball = {
     type: 'wicket',
@@ -567,7 +569,10 @@ function confirmWicket() {
   // Update runs
   inn.runs += runs;
   inn.balls += 1;
-  inn.wickets += 1;
+  
+  if (wType !== 'Retired Hurt') {
+    inn.wickets += 1;
+  }
 
   // Batter stats
   inn.batters[inn.strikerName].balls += 1;
@@ -580,7 +585,7 @@ function confirmWicket() {
   // Bowler stats
   inn.bowlers[inn.currentBowlerName].balls += 1;
   inn.bowlers[inn.currentBowlerName].runs += runs;
-  if (wType !== 'Run Out') {
+  if (wType !== 'Run Out' && wType !== 'Retired Hurt') {
     inn.bowlers[inn.currentBowlerName].wickets += 1;
   }
 
@@ -594,12 +599,14 @@ function confirmWicket() {
   inn.batters[outBatsman].dismissal = dismissal;
 
   // FOW
-  inn.fow.push({
-    runs: inn.runs,
-    wickets: inn.wickets,
-    overs: oversString(inn.balls),
-    batter: outBatsman
-  });
+  if (wType !== 'Retired Hurt') {
+    inn.fow.push({
+      runs: inn.runs,
+      wickets: inn.wickets,
+      overs: oversString(inn.balls),
+      batter: outBatsman
+    });
+  }
 
   // Reset Partnership for the next pair
   inn.currentPartnership = { runs: 0, balls: 0, names: [inn.strikerName, inn.nonStrikerName] };
@@ -1195,7 +1202,7 @@ function undoLastBall() {
 
 // ===== DISPLAY HELPERS =====
 function formatBallDisplay(ball) {
-  if (ball.isWicket) return 'W';
+  if (ball.isWicket) return ball.wicketType === 'Retired Hurt' ? 'RH' : 'W';
   if (ball.extraType === 'wide') return 'Wd';
   if (ball.extraType === 'noBall') return 'NB';
   if (ball.extraType === 'bye') return 'B';
@@ -1207,6 +1214,7 @@ function formatBallDisplay(ball) {
 
 function ballClass(display) {
   if (display === 'W') return 'ball-wicket';
+  if (display === 'RH') return 'ball-extra';
   if (display === '4') return 'ball-four';
   if (display === '6') return 'ball-six';
   if (display === 'Wd' || display === 'NB' || display === 'B' || display === 'LB') return 'ball-extra';
@@ -1219,7 +1227,7 @@ function showLastBall(ball) {
   const display = formatBallDisplay(ball);
   el.style.display = 'block';
   el.className = `last-ball-indicator ${ballClass(display)}`;
-  el.textContent = display === '0' ? '• Dot Ball' : display === 'W' ? '🔴 WICKET!' : display;
+  el.textContent = display === '0' ? '• Dot Ball' : display === 'W' ? '🔴 WICKET!' : display === 'RH' ? '🩹 RETIRED HURT' : display;
   setTimeout(() => { el.style.display = 'none'; }, 1800);
 }
 
@@ -1672,9 +1680,13 @@ function saveMatchToHistory() {
   const inn2 = match.innings[1];
   if (!inn1 || !inn2) return;
 
+  const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
+  const userEmail = userData.email || 'guest';
+
   const entry = {
     id: Date.now(),
     date: new Date().toISOString(),
+    owner: userEmail,
     teams: { t1: match.team1.name, t2: match.team2.name },
     overs: match.totalOvers,
     playersPerTeam: match.playersPerTeam,
@@ -1709,7 +1721,16 @@ function snapshotInnings(inn) {
 
 function loadHistory() {
   try {
-    return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+    const allHistory = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+    const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
+    const userEmail = userData.email || 'guest';
+
+    // Filter history to only show matches owned by the current user
+    // We also show matches without an owner (legacy) only if the user is a guest
+    return allHistory.filter(m => {
+      if (userEmail === 'guest') return !m.owner || m.owner === 'guest';
+      return m.owner === userEmail;
+    });
   } catch { return []; }
 }
 
@@ -2838,13 +2859,29 @@ function handleAuth() {
     
     if (authMode === "register") {
       toast("Account created successfully!");
+      // TRACKING: Notify server of registration
+      fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      }).catch(err => console.error("Tracking error:", err));
+
       // Switch to login mode after registration
       toggleAuthMode();
     } else {
       // PERSISTENCE: Save login state
       localStorage.setItem('cricscore_user', JSON.stringify({ email, loggedIn: true }));
       
+      // TRACKING: Notify server of login
+      fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      }).catch(err => console.error("Tracking error:", err));
+
       showScreen("screen-home");
+      updateDashboardStats();
+      renderLeaderboard();
       toast(`Welcome back, ${email.split("@")[0]}!`);
     }
   }, 1500);
