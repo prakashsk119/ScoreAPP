@@ -6,15 +6,35 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 const path       = require('path');
 const fs         = require('fs');
+const multer     = require('multer');
 
 const app        = express();
 const httpServer = createServer(app);
 const io         = new Server(httpServer, { cors: { origin: '*' } });
 
+// Configure Multer for profile photos
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = './uploads';
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `avatar-${Date.now()}${ext}`);
+  }
+});
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 2 * 1024 * 1024 } // 2MB limit
+});
+
 // Middleware
 app.use(express.json());
 // Serve static files from the same directory
 app.use(express.static(path.join(__dirname)));
+// Serve uploads folder
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ── User management logic ──
 const USERS_FILE = path.join(__dirname, 'users.json');
@@ -105,6 +125,23 @@ app.post('/api/update-profile', (req, res) => {
   
   console.log(`[AUTH] Profile updated: ${email}`);
   res.json({ success: true });
+});
+
+// API to upload avatar
+app.post('/api/upload-avatar', upload.single('avatar'), (req, res) => {
+  const { email } = req.body;
+  if (!email || !req.file) return res.status(400).json({ error: 'Email and file required' });
+
+  const users = getUsers();
+  const userIndex = users.findIndex(u => u.email === email);
+  if (userIndex === -1) return res.status(404).json({ error: 'User not found' });
+
+  const avatarUrl = `/uploads/${req.file.filename}`;
+  users[userIndex].profile.avatar = avatarUrl;
+  saveUsers(users);
+
+  console.log(`[AUTH] Avatar uploaded for: ${email}`);
+  res.json({ success: true, avatarUrl });
 });
 
 // API to view all users (for admin/debug)

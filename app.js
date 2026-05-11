@@ -2920,7 +2920,69 @@ function showProfile() {
   if (profile.battingHand) $('profile-batting-hand').value = profile.battingHand;
   if (profile.bowlingType) $('profile-bowling-type').value = profile.bowlingType;
 
+  // Update avatar previews
+  updateAvatarUI(profile.avatar);
+
   showScreen('screen-profile');
+}
+
+function updateAvatarUI(avatarUrl) {
+  const profilePreview = $('profile-avatar-preview');
+  const sidebarPreview = $('sidebar-avatar-preview');
+  
+  if (avatarUrl) {
+    const imgHtml = `<img src="${avatarUrl}" style="width:100%; height:100%; object-fit:cover;">`;
+    if (profilePreview) profilePreview.innerHTML = imgHtml;
+    if (sidebarPreview) sidebarPreview.innerHTML = imgHtml;
+  } else {
+    if (profilePreview) profilePreview.innerHTML = '?';
+    if (sidebarPreview) sidebarPreview.innerHTML = '🏏';
+  }
+}
+
+async function handleAvatarUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  if (file.size > 2 * 1024 * 1024) {
+    toast("Image too large. Max 2MB.");
+    return;
+  }
+
+  const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
+  const email = userData.email;
+  if (!email) return;
+
+  const formData = new FormData();
+  formData.append('avatar', file);
+  formData.append('email', email);
+
+  try {
+    toast("Uploading photo...");
+    const response = await fetch('/api/upload-avatar', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      const result = await response.json();
+      throw new Error(result.error || 'Upload failed');
+    }
+
+    const result = await response.json();
+    
+    // Update local data
+    if (!userData.profile) userData.profile = {};
+    userData.profile.avatar = result.avatarUrl;
+    localStorage.setItem('cricscore_user', JSON.stringify(userData));
+    
+    // Update UI
+    updateAvatarUI(result.avatarUrl);
+    toast("Photo updated successfully!");
+  } catch (err) {
+    toast(err.message);
+    console.error("Avatar upload error:", err);
+  }
 }
 
 async function saveProfile() {

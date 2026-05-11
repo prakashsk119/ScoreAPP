@@ -1411,47 +1411,78 @@ body::before {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 72px;
-  background: rgba(10, 15, 28, 0.95);
+  height: 70px;
+  background: rgba(10, 15, 28, 0.8);
   backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   align-items: center;
   justify-content: space-around;
-  z-index: 1000;
+  z-index: 9999;
   padding-bottom: env(safe-area-inset-bottom);
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3);
 }
 
 .nav-item {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.4);
   cursor: pointer;
   padding: 8px 12px;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 25%;
+  position: relative;
 }
 
 .nav-item.active {
-  color: #fff;
+  color: #00D46A;
 }
 
 .nav-icon {
-  font-size: 1.4rem;
-  transition: transform 0.2s;
+  font-size: 1.5rem;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .nav-item.active .nav-icon {
-  transform: translateY(-4px);
-  color: #f97316;
+  transform: translateY(-5px) scale(1.1);
+  filter: drop-shadow(0 0 8px rgba(0, 212, 106, 0.5));
 }
 
 .nav-label {
   font-size: 0.7rem;
-  font-weight: 600;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.8;
+}
+
+.nav-item.active .nav-label {
+  opacity: 1;
+}
+
+/* Nav Item Indicator */
+.nav-item::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 3px;
+  background: var(--clr-green);
+  border-radius: 10px 10px 0 0;
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+  box-shadow: 0 0 10px rgba(0, 212, 106, 0.5);
+}
+
+.nav-item.active::after {
+  width: 20px;
 }
 
 /* ===================== LEADERBOARD PODIUM ===================== */
@@ -3185,54 +3216,7 @@ body::before {
   box-shadow: 0 8px 24px rgba(234, 88, 12, 0.3);
 }
 
-/* ===================== BOTTOM NAV ===================== */
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 72px;
-  background: rgba(10, 15, 28, 0.95);
-  backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  z-index: 1000;
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-.nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.5);
-  cursor: pointer;
-  padding: 8px 12px;
-  transition: all 0.2s;
-}
-
-.nav-item.active {
-  color: #fff;
-}
-
-.nav-icon {
-  font-size: 1.4rem;
-  transition: transform 0.2s;
-}
-
-.nav-item.active .nav-icon {
-  transform: translateY(-4px);
-  color: #f97316;
-}
-
-.nav-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-}
+/* Duplicated bottom-nav removed */
 
 /* ===================== LEADERBOARD PODIUM ===================== */
 .lb-podium {
