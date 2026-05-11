@@ -2833,16 +2833,16 @@ function toggleAuthMode() {
   }
 }
 
-function handleAuth() {
+async function handleAuth() {
   const email = $("login-email").value.trim();
-  const pass = $("login-pass").value.trim();
+  const password = $("login-pass").value.trim();
   
-  if (!email || !pass) {
+  if (!email || !password) {
     toast("Please fill in all fields");
     return;
   }
   
-  if (pass.length < 6) {
+  if (password.length < 6) {
     toast("Password must be at least 6 characters");
     return;
   }
@@ -2852,39 +2852,43 @@ function handleAuth() {
   btn.textContent = authMode === "login" ? "Authenticating..." : "Creating Account...";
   btn.disabled = true;
   
-  // Simulate network request
-  setTimeout(() => {
-    btn.textContent = originalText;
-    btn.disabled = false;
-    
-    if (authMode === "register") {
-      toast("Account created successfully!");
-      // TRACKING: Notify server of registration
-      fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      }).catch(err => console.error("Tracking error:", err));
+  try {
+    const endpoint = authMode === "register" ? '/api/register' : '/api/login';
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
 
-      // Switch to login mode after registration
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || 'Authentication failed');
+    }
+
+    if (authMode === "register") {
+      toast("Account created successfully! Please login.");
       toggleAuthMode();
     } else {
-      // PERSISTENCE: Save login state
-      localStorage.setItem('cricscore_user', JSON.stringify({ email, loggedIn: true }));
+      // Success Login
+      localStorage.setItem('cricscore_user', JSON.stringify({ 
+        email: result.user.email, 
+        profile: result.user.profile,
+        loggedIn: true 
+      }));
       
-      // TRACKING: Notify server of login
-      fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      }).catch(err => console.error("Tracking error:", err));
-
       showScreen("screen-home");
       updateDashboardStats();
       renderLeaderboard();
       toast(`Welcome back, ${email.split("@")[0]}!`);
     }
-  }, 1500);
+  } catch (err) {
+    toast(err.message);
+    console.error("Auth error:", err);
+  } finally {
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
 }
 
 
@@ -2905,12 +2909,13 @@ function showProfile() {
     return;
   }
 
-  const name = userData.email.split('@')[0];
+  const email = userData.email;
+  const name = email.split('@')[0];
   $('profile-display-name').textContent = name.charAt(0).toUpperCase() + name.slice(1);
-  $('profile-display-email').textContent = userData.email;
+  $('profile-display-email').textContent = email;
 
-  // Load saved preferences
-  const profile = JSON.parse(localStorage.getItem('cricscore_profile_' + name) || '{}');
+  // Use profile from synced user data
+  const profile = userData.profile || {};
   $('profile-match-name').value = profile.matchName || name;
   if (profile.battingHand) $('profile-batting-hand').value = profile.battingHand;
   if (profile.bowlingType) $('profile-bowling-type').value = profile.bowlingType;
@@ -2918,10 +2923,10 @@ function showProfile() {
   showScreen('screen-profile');
 }
 
-function saveProfile() {
+async function saveProfile() {
   const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
-  const loginName = (userData.email || "").split('@')[0];
-  if (!loginName) return;
+  const email = userData.email;
+  if (!email) return;
 
   const profile = {
     matchName: $('profile-match-name').value.trim(),
@@ -2929,7 +2934,26 @@ function saveProfile() {
     bowlingType: $('profile-bowling-type').value
   };
 
-  localStorage.setItem('cricscore_profile_' + loginName, JSON.stringify(profile));
-  toast("Profile updated successfully!");
-  showScreen('screen-home');
+  try {
+    const response = await fetch('/api/update-profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, profile })
+    });
+
+    if (!response.ok) {
+      const result = await response.json();
+      throw new Error(result.error || 'Failed to update profile');
+    }
+
+    // Update local storage
+    userData.profile = profile;
+    localStorage.setItem('cricscore_user', JSON.stringify(userData));
+    
+    toast("Profile updated successfully!");
+    showScreen('screen-home');
+  } catch (err) {
+    toast(err.message);
+    console.error("Profile update error:", err);
+  }
 }

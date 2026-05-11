@@ -16,7 +16,7 @@ app.use(express.json());
 // Serve static files from the same directory
 app.use(express.static(path.join(__dirname)));
 
-// ── User tracking logic ──
+// ── User management logic ──
 const USERS_FILE = path.join(__dirname, 'users.json');
 
 function getUsers() {
@@ -30,36 +30,91 @@ function getUsers() {
   }
 }
 
-function saveUser(email, ip) {
-  const users = getUsers();
-  const newUser = {
-    email,
-    ip,
-    timestamp: new Date().toISOString()
-  };
-  users.push(newUser);
+function saveUsers(users) {
   try {
     fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
   } catch (err) {
-    console.error("Error saving user:", err);
+    console.error("Error saving users:", err);
   }
 }
 
-// API to record login
-app.post('/api/login', (req, res) => {
-  const { email } = req.body;
-  if (!email) return res.status(400).json({ error: 'Email required' });
+// API to register
+app.post('/api/register', (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
   
+  const users = getUsers();
+  if (users.find(u => u.email === email)) {
+    return res.status(400).json({ error: 'User already exists' });
+  }
+
+  const newUser = {
+    email,
+    password, // In a real app, hash this!
+    profile: {
+      matchName: email.split('@')[0],
+      battingHand: 'Right Hand',
+      bowlingType: 'Right-arm Fast'
+    },
+    created: new Date().toISOString(),
+    logins: []
+  };
+
+  users.push(newUser);
+  saveUsers(users);
+  
+  console.log(`[AUTH] New user registered: ${email}`);
+  res.json({ success: true, user: { email: newUser.email, profile: newUser.profile } });
+});
+
+// API to login
+app.post('/api/login', (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+  
+  const users = getUsers();
+  const user = users.find(u => u.email === email);
+  
+  if (!user || user.password !== password) {
+    return res.status(401).json({ error: 'Invalid email or password' });
+  }
+
+  // Update login history
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-  saveUser(email, ip);
+  user.logins.push({ timestamp: new Date().toISOString(), ip });
+  if (user.logins.length > 10) user.logins.shift(); // Keep last 10
+  
+  saveUsers(users);
   
   console.log(`[AUTH] User logged in: ${email}`);
+  res.json({ success: true, user: { email: user.email, profile: user.profile } });
+});
+
+// API to update profile
+app.post('/api/update-profile', (req, res) => {
+  const { email, profile } = req.body;
+  if (!email || !profile) return res.status(400).json({ error: 'Email and profile required' });
+
+  const users = getUsers();
+  const userIndex = users.findIndex(u => u.email === email);
+  
+  if (userIndex === -1) return res.status(404).json({ error: 'User not found' });
+
+  users[userIndex].profile = { ...users[userIndex].profile, ...profile };
+  saveUsers(users);
+  
+  console.log(`[AUTH] Profile updated: ${email}`);
   res.json({ success: true });
 });
 
-// API to view logged-in users
+// API to view all users (for admin/debug)
 app.get('/api/users', (req, res) => {
-  res.json(getUsers());
+  // Filter out passwords for safety even in debug
+  const users = getUsers().map(u => {
+    const { password, ...safeUser } = u;
+    return safeUser;
+  });
+  res.json(users);
 });
 
 // ── Room store: code → { hostId, state, viewers } ──

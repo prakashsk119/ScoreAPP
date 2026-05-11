@@ -1,32 +1,34 @@
 [
   {
     "email": "test@example.com",
-    "ip": "::1",
-    "timestamp": "2026-05-10T13:57:20.041Z"
+    "password": "password123",
+    "profile": {
+      "matchName": "Champion",
+      "battingHand": "Right Hand",
+      "bowlingType": "Right-arm Fast"
+    },
+    "created": "2026-05-11T05:33:44.663Z",
+    "logins": [
+      {
+        "timestamp": "2026-05-11T05:34:05.510Z",
+        "ip": "::1"
+      }
+    ]
   },
   {
-    "email": "prakashsk119@gmail.cdemo@example.comom",
-    "ip": "::1",
-    "timestamp": "2026-05-10T14:02:44.999Z"
-  },
-  {
-    "email": "demo@example.com",
-    "ip": "::1",
-    "timestamp": "2026-05-10T14:03:57.871Z"
-  },
-  {
-    "email": "sanjay@gmail.com",
-    "ip": "::1",
-    "timestamp": "2026-05-10T14:13:11.281Z"
-  },
-  {
-    "email": "prakashsk119@gmail.cuser1@example.comom",
-    "ip": "::1",
-    "timestamp": "2026-05-10T14:44:10.887Z"
-  },
-  {
-    "email": "user1@example.com",
-    "ip": "::1",
-    "timestamp": "2026-05-10T14:47:35.647Z"
+    "email": "prakashsk119@gmail.com",
+    "password": "pass1234",
+    "profile": {
+      "matchName": "Prakash",
+      "battingHand": "Right Hand",
+      "bowlingType": "Right-arm Off-Spin"
+    },
+    "created": "2026-05-11T05:37:31.519Z",
+    "logins": [
+      {
+        "timestamp": "2026-05-11T05:37:34.973Z",
+        "ip": "::1"
+      }
+    ]
   }
 ]
