@@ -2944,8 +2944,9 @@ async function handleAvatarUpload(input) {
   const file = input.files[0];
   if (!file) return;
 
-  if (file.size > 2 * 1024 * 1024) {
-    toast("Image too large. Max 2MB.");
+  if (file.size > 10 * 1024 * 1024) {
+    toast("Image too large. Max 10MB.");
+    input.value = '';
     return;
   }
 
@@ -2982,6 +2983,8 @@ async function handleAvatarUpload(input) {
   } catch (err) {
     toast(err.message);
     console.error("Avatar upload error:", err);
+  } finally {
+    input.value = '';
   }
 }
 

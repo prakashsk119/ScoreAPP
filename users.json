@@ -5,7 +5,8 @@
     "profile": {
       "matchName": "Champion",
       "battingHand": "Right Hand",
-      "bowlingType": "Right-arm Fast"
+      "bowlingType": "Right-arm Fast",
+      "avatar": "/uploads/avatar-1778557596826.jpg"
     },
     "created": "2026-05-11T05:33:44.663Z",
     "logins": [
@@ -21,12 +22,17 @@
     "profile": {
       "matchName": "Prakash",
       "battingHand": "Right Hand",
-      "bowlingType": "Right-arm Off-Spin"
+      "bowlingType": "Right-arm Off-Spin",
+      "avatar": "/uploads/avatar-1778557700677.png"
     },
     "created": "2026-05-11T05:37:31.519Z",
     "logins": [
       {
         "timestamp": "2026-05-11T05:37:34.973Z",
+        "ip": "::1"
+      },
+      {
+        "timestamp": "2026-05-12T03:48:06.454Z",
         "ip": "::1"
       }
     ]
