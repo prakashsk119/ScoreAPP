@@ -200,6 +200,26 @@ io.on('connection', (socket) => {
     socket.to(code).emit('state-sync', state);
   });
 
+  // WebRTC Signaling: Viewer requests audio
+  socket.on('viewer-request-audio', ({ code }) => {
+    const room = rooms.get(code);
+    if (!room) return;
+    // Send request to the host
+    socket.to(room.hostId).emit('viewer-request-audio', { viewerId: socket.id });
+  });
+
+  // WebRTC Signaling: Relay ICE and SDP
+  socket.on('webrtc-signal', ({ targetId, signal }) => {
+    socket.to(targetId).emit('webrtc-signal', { from: socket.id, signal });
+  });
+
+  // Host toggles commentary state
+  socket.on('commentary-state', ({ code, isLive }) => {
+    const room = rooms.get(code);
+    if (!room || room.hostId !== socket.id) return;
+    socket.to(code).emit('commentary-state', isLive);
+  });
+
   // Cleanup
   socket.on('disconnect', () => {
     const code = socket.data.code;

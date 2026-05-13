@@ -2220,6 +2220,35 @@ function initRealtime() {
     const badge = $('viewer-count-badge');
     if (badge) badge.textContent = `👁 ${count}`;
   });
+
+  // WebRTC Signaling: Viewer requesting audio (Host side)
+  _socket.on('viewer-request-audio', ({ viewerId }) => {
+    if (typeof handleViewerAudioRequest === 'function') {
+      handleViewerAudioRequest(viewerId);
+    }
+  });
+
+  // WebRTC Signaling: Relay (Both sides)
+  _socket.on('webrtc-signal', ({ from, signal }) => {
+    if (typeof handleWebRTCSignal === 'function') {
+      handleWebRTCSignal(from, signal);
+    }
+  });
+
+  // Receive commentary state
+  _socket.on('commentary-state', (isLive) => {
+    const btn = $('btn-listen');
+    const btnSc = $('btn-listen-scorecard');
+    if (isLive) {
+      if (btn) btn.style.display = 'inline-flex';
+      if (btnSc) btnSc.style.display = 'inline-flex';
+      toast('🎙️ Live Commentary is now available!');
+    } else {
+      if (btn) btn.style.display = 'none';
+      if (btnSc) btnSc.style.display = 'none';
+      if (typeof isListening !== 'undefined' && isListening) toggleListening();
+    }
+  });
 }
 
 // Host: create a room on the server when match starts
@@ -3020,5 +3049,201 @@ async function saveProfile() {
   } catch (err) {
     toast(err.message);
     console.error("Profile update error:", err);
+  }
+}
+
+/* ============================================================
+   LIVE VOICE COMMENTARY (WebRTC P2P)
+   ============================================================ */
+let localStream = null;
+let isCommentaryLive = false;
+let isListening = false;
+let peerConnections = {}; // host's connections: viewerId -> RTCPeerConnection
+let viewerPC = null;      // viewer's connection
+let audioEl = null;
+
+// ----- HOST LOGIC -----
+async function toggleCommentary() {
+  if (isCommentaryLive) {
+    stopCommentary();
+  } else {
+    await startCommentary();
+  }
+}
+
+async function startCommentary() {
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    isCommentaryLive = true;
+    $('btn-mic').classList.add('mic-active');
+    toast("Live Commentary Started");
+    
+    if (typeof _socket !== 'undefined' && _roomCode) {
+      _socket.emit('commentary-state', { code: _roomCode, isLive: true });
+    }
+  } catch (err) {
+    console.error("Mic error:", err);
+    toast("Microphone access denied.");
+  }
+}
+
+function stopCommentary() {
+  if (localStream) {
+    localStream.getTracks().forEach(t => t.stop());
+    localStream = null;
+  }
+  Object.values(peerConnections).forEach(pc => pc.close());
+  peerConnections = {};
+  isCommentaryLive = false;
+  $('btn-mic').classList.remove('mic-active');
+  toast("Live Commentary Stopped");
+  
+  if (typeof _socket !== 'undefined' && _roomCode) {
+    _socket.emit('commentary-state', { code: _roomCode, isLive: false });
+  }
+}
+
+async function handleViewerAudioRequest(viewerId) {
+  if (!isCommentaryLive || !localStream) return;
+  
+  const iceServers = [{ urls: ['stun:stun.l.google.com:19302', 'stun:global.stun.twilio.com:3478'] }];
+  const pc = new RTCPeerConnection({ iceServers });
+  peerConnections[viewerId] = pc;
+  
+  localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+  
+  pc.onicecandidate = (e) => {
+    if (e.candidate && typeof _socket !== 'undefined') {
+      _socket.emit('webrtc-signal', { targetId: viewerId, signal: { type: 'candidate', candidate: e.candidate } });
+    }
+  };
+  
+  try {
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    if (typeof _socket !== 'undefined') {
+      _socket.emit('webrtc-signal', { targetId: viewerId, signal: { type: 'offer', offer } });
+    }
+  } catch (err) {
+    console.error("Host WebRTC error:", err);
+  }
+}
+
+// ----- VIEWER LOGIC -----
+function toggleListening() {
+  isListening = !isListening;
+  const btn = $('btn-listen');
+  const btnSc = $('btn-listen-scorecard');
+  
+  if (isListening) {
+    if (btn) btn.classList.add('listen-active');
+    if (btnSc) btnSc.classList.add('listen-active');
+    toast("Connecting to live stream...");
+    
+    // Create Audio element synchronously and attach to DOM (Crucial for iOS Safari)
+    if (!audioEl) {
+      audioEl = document.createElement('audio');
+      audioEl.autoplay = true;
+      audioEl.playsInline = true;
+      audioEl.style.display = 'none';
+      document.body.appendChild(audioEl);
+    }
+    
+    if (typeof _socket !== 'undefined' && _roomCode) {
+      _socket.emit('viewer-request-audio', { code: _roomCode });
+    }
+  } else {
+    if (btn) btn.classList.remove('listen-active');
+    if (btnSc) btnSc.classList.remove('listen-active');
+    toast("Commentary Muted");
+    if (viewerPC) {
+      viewerPC.close();
+      viewerPC = null;
+    }
+    if (audioEl) {
+      audioEl.pause();
+      audioEl.srcObject = null;
+      if (audioEl.parentNode) audioEl.parentNode.removeChild(audioEl);
+      audioEl = null;
+    }
+  }
+}
+
+// ----- COMMON SIGNALING LOGIC -----
+let viewerIceQueue = [];
+
+async function handleWebRTCSignal(from, signal) {
+  // Host receiving answer/candidate
+  if (isCommentaryLive && peerConnections[from]) {
+    const pc = peerConnections[from];
+    try {
+      if (signal.type === 'answer') {
+        await pc.setRemoteDescription(new RTCSessionDescription(signal.answer));
+        if (pc.iceQueue) {
+          pc.iceQueue.forEach(c => pc.addIceCandidate(c).catch(e => console.error(e)));
+          pc.iceQueue = [];
+        }
+      } else if (signal.type === 'candidate') {
+        const candidate = new RTCIceCandidate(signal.candidate);
+        if (pc.remoteDescription) {
+          await pc.addIceCandidate(candidate);
+        } else {
+          if (!pc.iceQueue) pc.iceQueue = [];
+          pc.iceQueue.push(candidate);
+        }
+      }
+    } catch(e) { console.error("Host signal error", e); }
+  }
+  
+  // Viewer receiving offer/candidate
+  if (isListening && !isCommentaryLive) {
+    try {
+      if (signal.type === 'offer') {
+        const iceServers = [{ urls: ['stun:stun.l.google.com:19302', 'stun:global.stun.twilio.com:3478'] }];
+        viewerPC = new RTCPeerConnection({ iceServers });
+        viewerIceQueue = []; // Reset queue
+        
+        viewerPC.onicecandidate = (e) => {
+          if (e.candidate && typeof _socket !== 'undefined') {
+            _socket.emit('webrtc-signal', { targetId: from, signal: { type: 'candidate', candidate: e.candidate } });
+          }
+        };
+        
+        viewerPC.ontrack = (e) => {
+          if (audioEl) {
+            audioEl.srcObject = e.streams[0];
+            audioEl.play().catch(err => {
+               console.error("Audio autoplay prevented:", err);
+               toast("Tap anywhere to enable audio");
+               const enableAudio = () => {
+                 if (audioEl) audioEl.play().catch(e => console.error(e));
+                 document.removeEventListener('click', enableAudio);
+               };
+               document.addEventListener('click', enableAudio);
+            });
+            toast("Live Audio Connected");
+          }
+        };
+        
+        await viewerPC.setRemoteDescription(new RTCSessionDescription(signal.offer));
+        const answer = await viewerPC.createAnswer();
+        await viewerPC.setLocalDescription(answer);
+        
+        // Add queued candidates
+        viewerIceQueue.forEach(c => viewerPC.addIceCandidate(c).catch(err => console.error(err)));
+        viewerIceQueue = [];
+        
+        if (typeof _socket !== 'undefined') {
+          _socket.emit('webrtc-signal', { targetId: from, signal: { type: 'answer', answer } });
+        }
+      } else if (signal.type === 'candidate') {
+        const candidate = new RTCIceCandidate(signal.candidate);
+        if (viewerPC && viewerPC.remoteDescription) {
+          await viewerPC.addIceCandidate(candidate);
+        } else {
+          viewerIceQueue.push(candidate);
+        }
+      }
+    } catch(e) { console.error("Viewer signal error", e); }
   }
 }
