@@ -124,7 +124,8 @@ function renderPlayerInputs() {
 }
 
 // Run on page load
-function updateDashboardStats() {
+async function updateDashboardStats() {
+  await fetchGlobalHistory();
   const matchesEl = $('dash-total-matches');
   if (!matchesEl) return;
 
@@ -192,7 +193,8 @@ function initAuth() {
   }
 }
 
-(function initSetup() {
+(async function initSetup() {
+  await fetchGlobalHistory();
   renderPlayerInputs();
   
   const setupContainer = document.querySelector('#screen-setup .setup-container');
@@ -1679,15 +1681,30 @@ function renderPlayerStatsBody() {
 // ============  MATCH HISTORY FEATURE  ==============
 // ===================================================
 
-const HISTORY_KEY = 'cricscore_match_history';
-const MAX_HISTORY  = 50;   // keep last 50 matches
+// ── Global Match History State ──
+let globalMatchHistory = [];
 
-// ── Save snapshot of the just-completed match into localStorage ──
-function saveMatchToHistory() {
+async function fetchGlobalHistory() {
+  try {
+    const res = await fetch('/api/matches');
+    if (res.ok) {
+      const data = await res.json();
+      globalMatchHistory = data.reverse(); // Newest first
+    }
+  } catch(e) {
+    console.error("Failed to fetch global history:", e);
+  }
+}
+
+function loadHistory() {
+  return globalMatchHistory;
+}
+
+async function saveMatchToHistory() {
+  if (_isViewer) return;
   const inn1 = match.innings[0];
   const inn2 = match.innings[1];
-  if (!inn1 || !inn2) return;
-
+  
   const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
   const userEmail = userData.email || 'guest';
 
@@ -1695,8 +1712,9 @@ function saveMatchToHistory() {
     id: Date.now(),
     date: new Date().toISOString(),
     owner: userEmail,
-    teams: { t1: match.team1.name, t2: match.team2.name },
-    overs: match.totalOvers,
+    team1: match.team1,
+    team2: match.team2,
+    overs: match.overs,
     playersPerTeam: match.playersPerTeam,
     result: match.result,
     innings: [
@@ -1705,10 +1723,16 @@ function saveMatchToHistory() {
     ]
   };
 
-  let history = loadHistory();
-  history.unshift(entry);          // newest first
-  if (history.length > MAX_HISTORY) history = history.slice(0, MAX_HISTORY);
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  try {
+    await fetch('/api/matches', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry)
+    });
+    await fetchGlobalHistory();
+  } catch(e) {
+    console.error("Failed to save match to server:", e);
+  }
 }
 
 function snapshotInnings(inn) {
@@ -1723,27 +1747,14 @@ function snapshotInnings(inn) {
     battedList: [...inn.battedList],
     batters: JSON.parse(JSON.stringify(inn.batters)),
     bowlers: JSON.parse(JSON.stringify(inn.bowlers)),
+    ballLog: inn.ballLog ? JSON.parse(JSON.stringify(inn.ballLog)) : [],
     fow: [...inn.fow]
   };
 }
 
-function loadHistory() {
-  try {
-    const allHistory = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-    const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
-    const userEmail = userData.email || 'guest';
-
-    // Filter history to only show matches owned by the current user
-    // We also show matches without an owner (legacy) only if the user is a guest
-    return allHistory.filter(m => {
-      if (userEmail === 'guest') return !m.owner || m.owner === 'guest';
-      return m.owner === userEmail;
-    });
-  } catch { return []; }
-}
-
 // ── Navigation ──
-function showHistory() {
+async function showHistory() {
+  await fetchGlobalHistory();
   renderHistoryScreen();
   showScreen('screen-history');
 }
@@ -1924,8 +1935,9 @@ function formatHistoryDate(iso) {
 let careerTab = 'batting';
 let _isPersonalStats = false; // 'batting' or 'bowling'
 
-function showCareerStats(isPersonal = false) {
+async function showCareerStats(isPersonal = false) {
   try {
+    await fetchGlobalHistory();
     console.log("showCareerStats called with isPersonal:", isPersonal);
     _isPersonalStats = isPersonal;
     careerTab = 'batting';
@@ -2439,7 +2451,8 @@ function shareApp() {
 // =====================================================
 let _lbTab = 'bat';
 
-function showLeaderboard() {
+async function showLeaderboard() {
+  await fetchGlobalHistory();
   showScreen('screen-leaderboard');
   _lbTab = 'bat';
   $('lb-tab-bat').classList.add('active');

@@ -58,6 +58,46 @@ function saveUsers(users) {
   }
 }
 
+// ── Match history management logic ──
+const MATCHES_FILE = path.join(__dirname, 'matches.json');
+
+function getMatches() {
+  try {
+    if (!fs.existsSync(MATCHES_FILE)) return [];
+    const data = fs.readFileSync(MATCHES_FILE, 'utf8');
+    return JSON.parse(data || '[]');
+  } catch (err) {
+    console.error("Error reading matches file:", err);
+    return [];
+  }
+}
+
+function saveMatches(matches) {
+  try {
+    fs.writeFileSync(MATCHES_FILE, JSON.stringify(matches, null, 2));
+  } catch (err) {
+    console.error("Error saving matches:", err);
+  }
+}
+
+// API to get match history
+app.get('/api/matches', (req, res) => {
+  res.json(getMatches());
+});
+
+// API to save a match
+app.post('/api/matches', (req, res) => {
+  const match = req.body;
+  if (!match) return res.status(400).json({ error: 'Match data required' });
+  
+  const matches = getMatches();
+  matches.push(match);
+  saveMatches(matches);
+  
+  console.log(`[DATA] Match saved globally`);
+  res.json({ success: true });
+});
+
 // API to register
 app.post('/api/register', (req, res) => {
   const { email, password } = req.body;
