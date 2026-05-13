@@ -102,7 +102,7 @@ function renderPlayerInputs() {
 
   // Get profile name for auto-fill
   const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
-  const loginName = (userData.email || "").split('@')[0];
+  const loginName = userData.phone || "";
   const profile = JSON.parse(localStorage.getItem('cricscore_profile_' + loginName) || '{}');
   const matchName = profile.matchName || loginName;
 
@@ -131,7 +131,7 @@ async function updateDashboardStats() {
 
   const history = loadHistory();
   const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
-  const loginName = (userData.email || "").split('@')[0];
+  const loginName = userData.phone || "";
   const profile = JSON.parse(localStorage.getItem('cricscore_profile_' + loginName) || '{}');
   const searchName = (profile.matchName || loginName).toLowerCase();
 
@@ -174,14 +174,14 @@ function initAuth() {
     if (userData) {
       const user = JSON.parse(userData);
       if (user && user.loggedIn) {
-        console.log("Persistent login found for:", user.email);
+        console.log("Persistent login found for:", user.phone);
         showScreen('screen-home');
         updateDashboardStats();
         renderLeaderboard();
         // Update sidebar name if needed
         const profileName = document.querySelector('.sidebar-profile-name');
         if (profileName) {
-            const name = user.email.split('@')[0];
+            const name = user.phone;
             profileName.textContent = name.charAt(0).toUpperCase() + name.slice(1);
         }
         return true; // Login found
@@ -1706,12 +1706,12 @@ async function saveMatchToHistory() {
   const inn2 = match.innings[1];
   
   const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
-  const userEmail = userData.email || 'guest';
+  const userPhone = userData.phone || 'guest';
 
   const entry = {
     id: Date.now(),
     date: new Date().toISOString(),
-    owner: userEmail,
+    owner: userPhone,
     team1: match.team1,
     team2: match.team2,
     overs: match.overs,
@@ -2084,7 +2084,7 @@ function renderCareerStatsBody() {
     let profileHeaderHtml = '';
     if (_isPersonalStats) {
       const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
-      const loginName = (userData.email || "").split('@')[0];
+      const loginName = userData.phone || "";
       const profile = JSON.parse(localStorage.getItem('cricscore_profile_' + loginName) || '{}');
       
             if (profile.matchName || profile.battingHand || profile.bowlingType) {
@@ -2107,7 +2107,7 @@ function renderCareerStatsBody() {
 
     if (_isPersonalStats) {
       const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
-      const loginName = (userData.email || "").split('@')[0];
+      const loginName = userData.phone || "";
       const profile = JSON.parse(localStorage.getItem('cricscore_profile_' + loginName) || '{}');
       const searchName = (profile.matchName || loginName).toLowerCase();
       if (searchName) {
@@ -2939,16 +2939,16 @@ function handleSignOut() {
 
 function showProfile() {
   const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
-  if (!userData.email) {
+  if (!userData.phone) {
     toast("Please login first");
     showScreen('screen-login');
     return;
   }
 
-  const email = userData.email;
-  const name = email.split('@')[0];
-  $('profile-display-name').textContent = name.charAt(0).toUpperCase() + name.slice(1);
-  $('profile-display-email').textContent = email;
+  const phone = userData.phone;
+  const name = phone;
+  $('profile-display-name').textContent = userData.profile?.matchName || name;
+  $('profile-display-phone').textContent = phone;
 
   // Use profile from synced user data
   const profile = userData.profile || {};
@@ -2987,12 +2987,12 @@ async function handleAvatarUpload(input) {
   }
 
   const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
-  const email = userData.email;
-  if (!email) return;
+  const phone = userData.phone;
+  if (!phone) return;
 
   const formData = new FormData();
   formData.append('avatar', file);
-  formData.append('email', email);
+  formData.append('phone', phone);
 
   try {
     toast("Uploading photo...");
@@ -3026,8 +3026,8 @@ async function handleAvatarUpload(input) {
 
 async function saveProfile() {
   const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
-  const email = userData.email;
-  if (!email) return;
+  const phone = userData.phone;
+  if (!phone) return;
 
   const profile = {
     matchName: $('profile-match-name').value.trim(),
@@ -3039,7 +3039,7 @@ async function saveProfile() {
     const response = await fetch('/api/update-profile', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, profile })
+      body: JSON.stringify({ phone, profile })
     });
 
     if (!response.ok) {

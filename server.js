@@ -100,19 +100,19 @@ app.post('/api/matches', (req, res) => {
 
 // API to register
 app.post('/api/register', (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+  const { phone, password } = req.body;
+  if (!phone || !password) return res.status(400).json({ error: 'Mobile number and password required' });
   
   const users = getUsers();
-  if (users.find(u => u.email === email)) {
+  if (users.find(u => u.phone === phone)) {
     return res.status(400).json({ error: 'User already exists' });
   }
 
   const newUser = {
-    email,
+    phone,
     password, // In a real app, hash this!
     profile: {
-      matchName: email.split('@')[0],
+      matchName: phone,
       battingHand: 'Right Hand',
       bowlingType: 'Right-arm Fast'
     },
@@ -123,20 +123,20 @@ app.post('/api/register', (req, res) => {
   users.push(newUser);
   saveUsers(users);
   
-  console.log(`[AUTH] New user registered: ${email}`);
-  res.json({ success: true, user: { email: newUser.email, profile: newUser.profile } });
+  console.log(`[AUTH] New user registered: ${phone}`);
+  res.json({ success: true, user: { phone: newUser.phone, profile: newUser.profile } });
 });
 
 // API to login
 app.post('/api/login', (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+  const { phone, password } = req.body;
+  if (!phone || !password) return res.status(400).json({ error: 'Mobile number and password required' });
   
   const users = getUsers();
-  const user = users.find(u => u.email === email);
+  const user = users.find(u => u.phone === phone);
   
   if (!user || user.password !== password) {
-    return res.status(401).json({ error: 'Invalid email or password' });
+    return res.status(401).json({ error: 'Invalid mobile number or password' });
   }
 
   // Update login history
@@ -146,41 +146,41 @@ app.post('/api/login', (req, res) => {
   
   saveUsers(users);
   
-  console.log(`[AUTH] User logged in: ${email}`);
-  res.json({ success: true, user: { email: user.email, profile: user.profile } });
+  console.log(`[AUTH] User logged in: ${phone}`);
+  res.json({ success: true, user: { phone: user.phone, profile: user.profile } });
 });
 
 // API to update profile
 app.post('/api/update-profile', (req, res) => {
-  const { email, profile } = req.body;
-  if (!email || !profile) return res.status(400).json({ error: 'Email and profile required' });
+  const { phone, profile } = req.body;
+  if (!phone || !profile) return res.status(400).json({ error: 'Mobile number and profile required' });
 
   const users = getUsers();
-  const userIndex = users.findIndex(u => u.email === email);
+  const userIndex = users.findIndex(u => u.phone === phone);
   
   if (userIndex === -1) return res.status(404).json({ error: 'User not found' });
 
   users[userIndex].profile = { ...users[userIndex].profile, ...profile };
   saveUsers(users);
   
-  console.log(`[AUTH] Profile updated: ${email}`);
+  console.log(`[AUTH] Profile updated: ${phone}`);
   res.json({ success: true });
 });
 
 // API to upload avatar
 app.post('/api/upload-avatar', upload.single('avatar'), (req, res) => {
-  const { email } = req.body;
-  if (!email || !req.file) return res.status(400).json({ error: 'Email and file required' });
+  const { phone } = req.body;
+  if (!phone || !req.file) return res.status(400).json({ error: 'Mobile number and file required' });
 
   const users = getUsers();
-  const userIndex = users.findIndex(u => u.email === email);
+  const userIndex = users.findIndex(u => u.phone === phone);
   if (userIndex === -1) return res.status(404).json({ error: 'User not found' });
 
   const avatarUrl = `/uploads/${req.file.filename}`;
   users[userIndex].profile.avatar = avatarUrl;
   saveUsers(users);
 
-  console.log(`[AUTH] Avatar uploaded for: ${email}`);
+  console.log(`[AUTH] Avatar uploaded for: ${phone}`);
   res.json({ success: true, avatarUrl });
 });
 
