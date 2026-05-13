@@ -854,18 +854,32 @@ body::before {
 .wicket-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.25rem;
-  margin-bottom: .3rem;
-  justify-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+  justify-items: stretch;
+}
+
+.run-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+}
+
+.extra-btn,
+.wicket-btn {
+  width: 100%;
+  height: 42px;
+  border-radius: 12px;
+  padding: 0 0.25rem;
+  text-align: center;
+  line-height: 1.1;
+  white-space: normal;
 }
 
 .run-btn,
 .extra-btn,
 .wicket-btn {
-  width: 42px;
-  height: 42px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -882,7 +896,7 @@ body::before {
 .extra-btn:hover,
 .wicket-btn:hover {
   background: rgba(255, 255, 255, 0.15);
-  transform: scale(1.1);
+  transform: scale(1.05);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
@@ -890,7 +904,7 @@ body::before {
   background: rgba(239, 68, 68, 0.1);
   color: #ef4444 !important;
   border-color: rgba(239, 68, 68, 0.3);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 700;
 }
 
@@ -911,26 +925,17 @@ body::before {
   border-color: rgba(249, 115, 22, 0.3);
 }
 
-.wicket-btn {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  border-color: rgba(239, 68, 68, 0.3);
-  font-size: 0.85rem;
-}
-
 /* Extras */
 .extras-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 0.2rem;
-  margin-bottom: .2rem;
-  justify-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.4rem;
+  justify-items: stretch;
 }
 
 .extra-btn {
-  width: 38px;
-  height: 38px;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   background: rgba(99, 102, 241, 0.1);
   color: #818cf8;
   border-color: rgba(99, 102, 241, 0.3);
