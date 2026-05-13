@@ -2870,10 +2870,10 @@ function toggleAuthMode() {
 }
 
 async function handleAuth() {
-  const email = $("login-email").value.trim();
+  const phone = $("login-phone").value.trim();
   const password = $("login-pass").value.trim();
   
-  if (!email || !password) {
+  if (!phone || !password) {
     toast("Please fill in all fields");
     return;
   }
@@ -2893,7 +2893,7 @@ async function handleAuth() {
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ phone, password })
     });
 
     const result = await response.json();
@@ -2908,7 +2908,7 @@ async function handleAuth() {
     } else {
       // Success Login
       localStorage.setItem('cricscore_user', JSON.stringify({ 
-        email: result.user.email, 
+        phone: result.user.phone, 
         profile: result.user.profile,
         loggedIn: true 
       }));
@@ -2916,7 +2916,7 @@ async function handleAuth() {
       showScreen("screen-home");
       updateDashboardStats();
       renderLeaderboard();
-      toast(`Welcome back, ${email.split("@")[0]}!`);
+      toast(`Welcome back, ${phone}!`);
     }
   } catch (err) {
     toast(err.message);

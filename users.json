@@ -36,5 +36,21 @@
         "ip": "::1"
       }
     ]
+  },
+  {
+    "phone": "6383572077",
+    "password": "App123",
+    "profile": {
+      "matchName": "Prakash",
+      "battingHand": "Right Hand",
+      "bowlingType": "Right-arm Fast"
+    },
+    "created": "2026-05-13T12:16:25.077Z",
+    "logins": [
+      {
+        "timestamp": "2026-05-13T12:16:27.847Z",
+        "ip": "127.0.0.1"
+      }
+    ]
   }
 ]
