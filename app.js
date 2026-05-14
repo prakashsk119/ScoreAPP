@@ -2907,7 +2907,6 @@ async function requestOTP() {
 async function handleAuth() {
   const phone = $("login-phone").value.trim();
   const password = $("login-pass").value.trim();
-  const name = $("login-name").value.trim();
   const otp = $("login-otp").value.trim();
   
   if (!phone || !password) {
@@ -2916,8 +2915,8 @@ async function handleAuth() {
   }
   
   if (authMode === "register") {
-    if (!name || !otp) {
-      toast("Player Name and OTP are required for registration");
+    if (!otp) {
+      toast("OTP is required for registration");
       return;
     }
   }
@@ -2934,7 +2933,7 @@ async function handleAuth() {
   
   try {
     const endpoint = authMode === "register" ? '/api/register' : '/api/login';
-    const payload = authMode === "register" ? { phone, password, otp, name } : { phone, password };
+    const payload = authMode === "register" ? { phone, password, otp } : { phone, password };
     
     const response = await fetch(endpoint, {
       method: 'POST',

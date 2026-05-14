@@ -122,10 +122,10 @@ app.post('/api/send-otp', (req, res) => {
 
 // API to register
 app.post('/api/register', (req, res) => {
-  const { phone, password, otp, name } = req.body;
+  const { phone, password, otp } = req.body;
   
-  if (!phone || !password || !otp || !name) {
-    return res.status(400).json({ error: 'All fields (Mobile, Name, OTP, Password) are required' });
+  if (!phone || !password || !otp) {
+    return res.status(400).json({ error: 'All fields (Mobile, OTP, Password) are required' });
   }
   
   // Validate OTP
@@ -142,7 +142,7 @@ app.post('/api/register', (req, res) => {
     phone,
     password, // In a real app, hash this!
     profile: {
-      matchName: name, // Save the actual name they provided
+      matchName: phone, // Save phone by default
       battingHand: 'Right Hand',
       bowlingType: 'Right-arm Fast'
     },
@@ -156,7 +156,7 @@ app.post('/api/register', (req, res) => {
   // Clear OTP
   delete otps[phone];
   
-  console.log(`[AUTH] New user registered: ${phone} (${name})`);
+  console.log(`[AUTH] New user registered: ${phone}`);
   res.json({ success: true, user: { phone: newUser.phone, profile: newUser.profile } });
 });
 
