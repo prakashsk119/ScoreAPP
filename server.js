@@ -7,8 +7,14 @@ const { Server } = require('socket.io');
 const path       = require('path');
 const fs         = require('fs');
 const multer     = require('multer');
+const twilio     = require('twilio');
 
 const app        = express();
+
+// Twilio Setup (Optional: requires ENV vars to actually send SMS)
+const twilioClient = (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN)
+  ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
+  : null;
 const httpServer = createServer(app);
 const io         = new Server(httpServer, { cors: { origin: '*' } });
 
@@ -102,7 +108,7 @@ app.post('/api/matches', (req, res) => {
 const otps = {};
 
 // API to send OTP
-app.post('/api/send-otp', (req, res) => {
+app.post('/api/send-otp', async (req, res) => {
   const { phone } = req.body;
   if (!phone) return res.status(400).json({ error: 'Mobile number required' });
 
@@ -115,9 +121,28 @@ app.post('/api/send-otp', (req, res) => {
   const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
   otps[phone] = otpCode;
 
+  // Attempt to send real SMS if Twilio is configured
+  if (twilioClient && process.env.TWILIO_PHONE_NUMBER) {
+    try {
+      // Ensure phone number has country code for Twilio. Defaulting to +91 (India) if missing.
+      const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
+      
+      await twilioClient.messages.create({
+        body: `Your CricScore verification code is ${otpCode}. Do not share this code with anyone.`,
+        from: process.env.TWILIO_PHONE_NUMBER,
+        to: formattedPhone
+      });
+      
+      console.log(`[AUTH] REAL SMS sent to ${formattedPhone}`);
+      return res.json({ success: true, message: 'OTP sent via SMS', realSMS: true });
+    } catch (err) {
+      console.error(`[AUTH] Failed to send real SMS: ${err.message}. Falling back to MOCK SMS.`);
+      // Fallback to mock SMS below
+    }
+  }
+
   console.log(`[AUTH] MOCK SMS sent to ${phone}. OTP: ${otpCode}`);
-  
-  res.json({ success: true, message: 'OTP sent', otp: otpCode });
+  res.json({ success: true, message: 'OTP sent', otp: otpCode, realSMS: false });
 });
 
 // API to register
