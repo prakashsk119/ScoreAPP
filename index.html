@@ -42,9 +42,20 @@
       </div>
       
       <div class="login-form">
+        <div class="form-group register-only" style="display: none;">
+          <label for="login-name">Player Name (For Scorecards)</label>
+          <input type="text" id="login-name" class="form-input" placeholder="e.g. Prakash">
+        </div>
         <div class="form-group">
           <label for="login-phone">Mobile Number</label>
-          <input type="tel" id="login-phone" class="form-input" placeholder="Enter your mobile number">
+          <div style="display: flex; gap: 10px;">
+            <input type="tel" id="login-phone" class="form-input" placeholder="Enter your mobile number" style="flex: 1;">
+            <button class="btn-secondary register-only" id="btn-send-otp" style="display: none; white-space: nowrap; padding: 0 1rem;" onclick="requestOTP()">Send OTP</button>
+          </div>
+        </div>
+        <div class="form-group register-only" style="display: none;">
+          <label for="login-otp">Enter OTP</label>
+          <input type="text" id="login-otp" class="form-input" placeholder="4-digit code" maxlength="4">
         </div>
         <div class="form-group">
           <label for="login-pass">Password</label>

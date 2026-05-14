@@ -98,10 +98,40 @@ app.post('/api/matches', (req, res) => {
   res.json({ success: true });
 });
 
+// In-memory OTP storage (for demonstration, resets on server restart)
+const otps = {};
+
+// API to send OTP
+app.post('/api/send-otp', (req, res) => {
+  const { phone } = req.body;
+  if (!phone) return res.status(400).json({ error: 'Mobile number required' });
+
+  const users = getUsers();
+  if (users.find(u => u.phone === phone)) {
+    return res.status(400).json({ error: 'User already exists' });
+  }
+
+  // Generate 4-digit OTP
+  const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
+  otps[phone] = otpCode;
+
+  console.log(`[AUTH] MOCK SMS sent to ${phone}. OTP: ${otpCode}`);
+  
+  res.json({ success: true, message: 'OTP sent', otp: otpCode });
+});
+
 // API to register
 app.post('/api/register', (req, res) => {
-  const { phone, password } = req.body;
-  if (!phone || !password) return res.status(400).json({ error: 'Mobile number and password required' });
+  const { phone, password, otp, name } = req.body;
+  
+  if (!phone || !password || !otp || !name) {
+    return res.status(400).json({ error: 'All fields (Mobile, Name, OTP, Password) are required' });
+  }
+  
+  // Validate OTP
+  if (otps[phone] !== otp) {
+    return res.status(400).json({ error: 'Invalid or expired OTP' });
+  }
   
   const users = getUsers();
   if (users.find(u => u.phone === phone)) {
@@ -112,7 +142,7 @@ app.post('/api/register', (req, res) => {
     phone,
     password, // In a real app, hash this!
     profile: {
-      matchName: phone,
+      matchName: name, // Save the actual name they provided
       battingHand: 'Right Hand',
       bowlingType: 'Right-arm Fast'
     },
@@ -123,7 +153,10 @@ app.post('/api/register', (req, res) => {
   users.push(newUser);
   saveUsers(users);
   
-  console.log(`[AUTH] New user registered: ${phone}`);
+  // Clear OTP
+  delete otps[phone];
+  
+  console.log(`[AUTH] New user registered: ${phone} (${name})`);
   res.json({ success: true, user: { phone: newUser.phone, profile: newUser.profile } });
 });
 

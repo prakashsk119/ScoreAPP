@@ -2867,15 +2867,59 @@ function toggleAuthMode() {
     btn.textContent = "Login to Account";
     toggleText.innerHTML = `Don't have an account? <a href="#" onclick="toggleAuthMode()">Register Now</a>`;
   }
+  
+  // Show/Hide specific fields based on mode
+  document.querySelectorAll('.register-only').forEach(el => {
+    el.style.display = (authMode === "register") ? (el.tagName === 'BUTTON' ? 'inline-block' : 'block') : 'none';
+  });
+}
+
+async function requestOTP() {
+  const phone = $("login-phone").value.trim();
+  if (!phone || phone.length < 10) {
+    toast("Please enter a valid mobile number first.");
+    return;
+  }
+  
+  const btn = $("btn-send-otp");
+  btn.disabled = true;
+  btn.textContent = "Sending...";
+  
+  try {
+    const response = await fetch('/api/send-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone })
+    });
+    
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Failed to send OTP');
+    
+    toast(`MOCK SMS: Your CricScore OTP is ${result.otp}`);
+  } catch (err) {
+    toast(err.message);
+  } finally {
+    btn.textContent = "Send OTP";
+    btn.disabled = false;
+  }
 }
 
 async function handleAuth() {
   const phone = $("login-phone").value.trim();
   const password = $("login-pass").value.trim();
+  const name = $("login-name").value.trim();
+  const otp = $("login-otp").value.trim();
   
   if (!phone || !password) {
-    toast("Please fill in all fields");
+    toast("Mobile number and password are required");
     return;
+  }
+  
+  if (authMode === "register") {
+    if (!name || !otp) {
+      toast("Player Name and OTP are required for registration");
+      return;
+    }
   }
   
   if (password.length < 6) {
@@ -2890,10 +2934,12 @@ async function handleAuth() {
   
   try {
     const endpoint = authMode === "register" ? '/api/register' : '/api/login';
+    const payload = authMode === "register" ? { phone, password, otp, name } : { phone, password };
+    
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, password })
+      body: JSON.stringify(payload)
     });
 
     const result = await response.json();
