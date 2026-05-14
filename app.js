@@ -61,11 +61,34 @@ function createBowlerStats(name) {
 
 // ===== UTILITIES =====
 function $(id) { return document.getElementById(id); }
+function isLoggedIn() {
+  try {
+    const userData = localStorage.getItem('cricscore_user');
+    if (!userData) return false;
+    const user = JSON.parse(userData);
+    return user && user.loggedIn;
+  } catch (e) {
+    return false;
+  }
+}
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  $(id).classList.add('active');
+  const target = $(id);
+  if (target) target.classList.add('active');
+  
   closeSidebar(); // Auto-close sidebar on navigation
+
+  // Manage Bottom Nav visibility
+  const bottomNav = document.querySelector('.bottom-nav');
+  if (bottomNav) {
+    const dashboardScreens = ['screen-home', 'screen-leaderboard', 'screen-history', 'screen-profile'];
+    if (dashboardScreens.includes(id)) {
+      bottomNav.style.display = 'flex';
+    } else {
+      bottomNav.style.display = 'none';
+    }
+  }
 }
 
 function toast(msg) {
@@ -1754,6 +1777,11 @@ function snapshotInnings(inn) {
 
 // ── Navigation ──
 async function showHistory() {
+  if (!isLoggedIn()) {
+    toast("Please login to view match history");
+    showScreen('screen-login');
+    return;
+  }
   await fetchGlobalHistory();
   renderHistoryScreen();
   showScreen('screen-history');
@@ -2452,6 +2480,11 @@ function shareApp() {
 let _lbTab = 'bat';
 
 async function showLeaderboard() {
+  if (!isLoggedIn()) {
+    toast("Please login to view statistics");
+    showScreen('screen-login');
+    return;
+  }
   await fetchGlobalHistory();
   showScreen('screen-leaderboard');
   _lbTab = 'bat';
@@ -2978,6 +3011,10 @@ async function handleAuth() {
 
 
 function showHome() {
+  if (!isLoggedIn()) {
+    showScreen('screen-login');
+    return;
+  }
   showScreen('screen-home');
   updateDashboardStats();
 }
