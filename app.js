@@ -2896,7 +2896,7 @@ async function requestOTP() {
     if (!response.ok) throw new Error(result.error || 'Failed to send OTP');
     
     if (result.realSMS) {
-      toast("SMS sent! Please check your phone for the 4-digit code.");
+      toast("SMS sent! Please check your phone for the 6-digit code.");
     } else {
       toast(`MOCK SMS: Your CricScore OTP is ${result.otp}`);
     }

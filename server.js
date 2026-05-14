@@ -117,8 +117,8 @@ app.post('/api/send-otp', async (req, res) => {
     return res.status(400).json({ error: 'User already exists' });
   }
 
-  // Generate 4-digit OTP
-  const otpCode = Math.floor(1000 + Math.random() * 9000).toString();
+  // Generate 6-digit OTP
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
   otps[phone] = otpCode;
 
   // Attempt to send real SMS if Twilio is configured
