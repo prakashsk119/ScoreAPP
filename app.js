@@ -103,7 +103,7 @@ function renderPlayerInputs() {
   // Get profile name for auto-fill
   const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
   const loginName = userData.phone || "";
-  const profile = JSON.parse(localStorage.getItem('cricscore_profile_' + loginName) || '{}');
+  const profile = userData.profile || {};
   const matchName = profile.matchName || loginName;
 
   t1.innerHTML = '';
@@ -132,7 +132,7 @@ async function updateDashboardStats() {
   const history = loadHistory();
   const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
   const loginName = userData.phone || "";
-  const profile = JSON.parse(localStorage.getItem('cricscore_profile_' + loginName) || '{}');
+  const profile = userData.profile || {};
   const searchName = (profile.matchName || loginName).toLowerCase();
 
   let totalMatches = 0;
@@ -2085,7 +2085,7 @@ function renderCareerStatsBody() {
     if (_isPersonalStats) {
       const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
       const loginName = userData.phone || "";
-      const profile = JSON.parse(localStorage.getItem('cricscore_profile_' + loginName) || '{}');
+      const profile = userData.profile || {};
       
             if (profile.matchName || profile.battingHand || profile.bowlingType) {
         const displayName = profile.matchName || loginName;
@@ -2108,7 +2108,7 @@ function renderCareerStatsBody() {
     if (_isPersonalStats) {
       const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
       const loginName = userData.phone || "";
-      const profile = JSON.parse(localStorage.getItem('cricscore_profile_' + loginName) || '{}');
+      const profile = userData.profile || {};
       const searchName = (profile.matchName || loginName).toLowerCase();
       if (searchName) {
         stats = stats.filter(p => p.name.toLowerCase() === searchName);
