@@ -167,7 +167,7 @@
     
     <header class="scoring-header">
       <div class="header-left">
-        <button class="btn-icon" onclick="showScreen('screen-home')" title="Back">
+        <button class="btn-icon" onclick="showHome()" title="Back">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <polyline points="15,18 9,12 15,6" />
           </svg>
@@ -612,7 +612,7 @@
   <div id="screen-profile" class="screen">
     <header class="scoring-header">
       <div class="header-left">
-        <button class="btn-icon" onclick="showScreen('screen-home')" title="Back">
+        <button class="btn-icon" onclick="showHome()" title="Back">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <polyline points="15,18 9,12 15,6" />
           </svg>
@@ -935,7 +935,7 @@
 
     <!-- Menu items -->
     <nav class="sidebar-nav">
-      <button class="sidebar-item sidebar-item-primary" onclick="closeSidebar(); showScreen('screen-home');">
+      <button class="sidebar-item sidebar-item-primary" onclick="closeSidebar(); showHome();">
         <span class="sidebar-item-icon">🏏</span>
         <span class="sidebar-item-label">Home Dashboard</span>
         <span class="sidebar-item-badge">Free</span>
@@ -1085,7 +1085,7 @@
 
   <!-- ===================== BOTTOM NAV ===================== -->
   <nav class="bottom-nav">
-    <button class="nav-item active" onclick="showScreen('screen-home'); updateNav(this);">
+    <button class="nav-item active" onclick="showHome(); updateNav(this);">
       <span class="nav-icon">🏠</span>
       <span class="nav-label">Home</span>
     </button>

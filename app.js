@@ -2977,6 +2977,11 @@ async function handleAuth() {
 }
 
 
+function showHome() {
+  showScreen('screen-home');
+  updateDashboardStats();
+}
+
 function handleSignOut() {
   localStorage.removeItem('cricscore_user');
   toast("Signed out successfully");
@@ -3101,7 +3106,7 @@ async function saveProfile() {
     localStorage.setItem('cricscore_user', JSON.stringify(userData));
     
     toast("Profile updated successfully!");
-    showScreen('screen-home');
+    showHome();
   } catch (err) {
     toast(err.message);
     console.error("Profile update error:", err);
