@@ -156,7 +156,7 @@ async function updateDashboardStats() {
   const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
   const loginName = userData.phone || "";
   const profile = userData.profile || {};
-  const searchName = (profile.matchName || loginName).toLowerCase();
+  const searchName = (profile.matchName || loginName).trim().toLowerCase();
 
   let totalMatches = 0;
   let totalRuns = 0;
@@ -2088,7 +2088,7 @@ function switchCareerTab(tab) {
 
 function aggregateCareerStats() {
   const history = loadHistory();
-  const players = {}; // map of playerName -> stats
+  const players = {}; // map of normalizedName -> stats
 
   history.forEach(match => {
     const matchParticipants = new Set();
@@ -2096,12 +2096,13 @@ function aggregateCareerStats() {
     match.innings.forEach((inn, idx) => {
       // Batting Stats
       Object.values(inn.batters || {}).forEach(b => {
-        if (!players[b.name]) players[b.name] = initCareerPlayer(b.name);
-        const p = players[b.name];
+        const normName = b.name.trim().toLowerCase();
+        if (!players[normName]) players[normName] = initCareerPlayer(b.name.trim());
+        const p = players[normName];
         
-        if (!matchParticipants.has(b.name)) {
+        if (!matchParticipants.has(normName)) {
           p.matches++;
-          matchParticipants.add(b.name);
+          matchParticipants.add(normName);
         }
 
         p.bat.innings++;
@@ -2121,12 +2122,13 @@ function aggregateCareerStats() {
       // Bowling Stats
       Object.values(inn.bowlers || {}).forEach(bw => {
         if (bw.balls > 0) {
-          if (!players[bw.name]) players[bw.name] = initCareerPlayer(bw.name);
-          const p = players[bw.name];
+          const normName = bw.name.trim().toLowerCase();
+          if (!players[normName]) players[normName] = initCareerPlayer(bw.name.trim());
+          const p = players[normName];
           
-          if (!matchParticipants.has(bw.name)) {
+          if (!matchParticipants.has(normName)) {
             p.matches++;
-            matchParticipants.add(bw.name);
+            matchParticipants.add(normName);
           }
 
           p.bowl.innings++;
@@ -2146,22 +2148,23 @@ function aggregateCareerStats() {
       // Fielding Stats (from Ball Log)
       if (inn.ballLog && Array.isArray(inn.ballLog)) {
         inn.ballLog.forEach(ball => {
-        if (ball.isWicket && ball.fielder) {
-          const fName = ball.fielder;
-          if (!players[fName]) players[fName] = initCareerPlayer(fName);
-          const p = players[fName];
-          
-          if (!matchParticipants.has(fName)) {
-            p.matches++;
-            matchParticipants.add(fName);
-          }
+          if (ball.isWicket && ball.fielder) {
+            const fName = ball.fielder.trim();
+            const normName = fName.toLowerCase();
+            if (!players[normName]) players[normName] = initCareerPlayer(fName);
+            const p = players[normName];
+            
+            if (!matchParticipants.has(normName)) {
+              p.matches++;
+              matchParticipants.add(normName);
+            }
 
-          if (ball.wicketType === 'Caught') p.field.catches++;
-          else if (ball.wicketType === 'Run Out') p.field.runOuts++;
-          else if (ball.wicketType === 'Stumped') p.field.stumpings++;
-          p.field.total++;
-        }
-      });
+            if (ball.wicketType === 'Caught') p.field.catches++;
+            else if (ball.wicketType === 'Run Out') p.field.runOuts++;
+            else if (ball.wicketType === 'Stumped') p.field.stumpings++;
+            p.field.total++;
+          }
+        });
       }
     });
   });
@@ -2219,7 +2222,7 @@ function renderCareerStatsBody() {
       const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
       const loginName = userData.phone || "";
       const profile = userData.profile || {};
-      const searchName = (profile.matchName || loginName).toLowerCase();
+      const searchName = (profile.matchName || loginName).trim().toLowerCase();
       if (searchName) {
         stats = stats.filter(p => p.name.toLowerCase() === searchName);
       } else {
@@ -3002,9 +3005,12 @@ function toggleAuthMode() {
 }
 
 async function requestOTP() {
-  const phone = $("login-phone").value.trim();
+  let phone = $("login-phone").value.trim();
+  // Remove spaces, dashes, etc for validation and sending
+  phone = phone.replace(/[\s\-\(\)]/g, '');
+
   if (!phone || phone.length < 10) {
-    toast("Please enter a valid mobile number first.");
+    toast("Please enter a valid 10-digit mobile number.");
     return;
   }
   
@@ -3036,10 +3042,13 @@ async function requestOTP() {
 }
 
 async function handleAuth() {
-  const phone = $("login-phone").value.trim();
+  let phone = $("login-phone").value.trim();
   const password = $("login-pass").value.trim();
   const otp = $("login-otp").value.trim();
   
+  // Normalize phone
+  phone = phone.replace(/[\s\-\(\)]/g, '');
+
   if (!phone || !password) {
     toast("Mobile number and password are required");
     return;

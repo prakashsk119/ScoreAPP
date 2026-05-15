@@ -110,12 +110,15 @@ const otps = {};
 
 // API to send OTP
 app.post('/api/send-otp', async (req, res) => {
-  const { phone } = req.body;
+  let { phone } = req.body;
   if (!phone) return res.status(400).json({ error: 'Mobile number required' });
+
+  // Normalize: remove spaces, dashes, etc.
+  phone = phone.replace(/[\s\-\(\)]/g, '');
 
   const users = getUsers();
   if (users.find(u => u.phone === phone)) {
-    return res.status(400).json({ error: 'User already exists' });
+    return res.status(400).json({ error: 'This mobile number is already registered. Please login instead.' });
   }
 
   // Generate 6-digit OTP
@@ -148,11 +151,13 @@ app.post('/api/send-otp', async (req, res) => {
 
 // API to register
 app.post('/api/register', (req, res) => {
-  const { phone, password, otp } = req.body;
+  let { phone, password, otp } = req.body;
   
   if (!phone || !password || !otp) {
     return res.status(400).json({ error: 'All fields (Mobile, OTP, Password) are required' });
   }
+
+  phone = phone.replace(/[\s\-\(\)]/g, '');
   
   // Validate OTP
   if (otps[phone] !== otp) {
@@ -188,8 +193,10 @@ app.post('/api/register', (req, res) => {
 
 // API to login
 app.post('/api/login', (req, res) => {
-  const { phone, password } = req.body;
+  let { phone, password } = req.body;
   if (!phone || !password) return res.status(400).json({ error: 'Mobile number and password required' });
+  
+  phone = phone.replace(/[\s\-\(\)]/g, '');
   
   const users = getUsers();
   const user = users.find(u => u.phone === phone);
