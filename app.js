@@ -2200,7 +2200,7 @@ function renderCareerStatsBody() {
       const loginName = userData.phone || "";
       const profile = userData.profile || {};
       
-            if (profile.matchName || profile.battingHand || profile.bowlingType) {
+      if (profile.matchName || profile.battingHand || profile.bowlingType) {
         const displayName = profile.matchName || loginName;
         profileHeaderHtml = `
           <div style="background: rgba(0, 212, 106, 0.1); border: 1px solid rgba(0, 212, 106, 0.2); border-radius: 12px; padding: 0.75rem 1rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 12px;">
@@ -3318,9 +3318,9 @@ function showDLS() {
   if (currentInn && currentInn.runs > 0) {
       $('dls-team1-score').value = currentInn.runs;
       $('dls-total-overs').value = match.totalOvers;
+      $('dls-revised-overs').value = match.totalOvers;
   }
-  // Trigger initial calculation
-  setTimeout(() => runDLS(), 100);
+  // No auto-trigger as per user request
 }
 
 // Simplified DLS Resource Table (Standard Edition approx)
@@ -3352,6 +3352,13 @@ function getDLSResource(overs, wickets) {
 }
 
 function runDLS() {
+    const resultCard = $('dls-result-container');
+    const resultHeader = $('dls-results-header');
+    if (resultCard) {
+        resultCard.style.display = 'flex';
+        if (resultHeader) resultHeader.style.display = 'block';
+    }
+
     const btn = $('btn-run-dls');
     if (btn) {
         const original = btn.innerHTML;
@@ -3367,14 +3374,16 @@ function runDLS() {
 
     // Use parseFloat to handle balls (e.g. 20.2 overs)
     const s1 = parseFloat($('dls-team1-score').value) || 0;
-    const t1 = parseFloat($('dls-total-overs').value) || 50;
+    const t1 = parseFloat($('dls-total-overs').value) || 0;
     const p2 = parseFloat($('dls-interrupted-overs').value) || 0;
     const w2 = parseInt($('dls-interrupted-wickets').value) || 0;
     const r2 = parseFloat($('dls-revised-overs').value) || t1;
 
-    if (s1 <= 0 || t1 <= 0) {
+    if (s1 <= 0 || t1 <= 0 || r2 <= 0) {
         $('dls-par-score').textContent = '—';
         $('dls-target-score').textContent = '—';
+        if (s1 > 0 && t1 > 0 && r2 <= 0) toast("Revised overs must be greater than 0");
+        else toast("Please enter both Total Score and Overs Scheduled.");
         return;
     }
 
@@ -3396,11 +3405,8 @@ function runDLS() {
     $('dls-target-score').textContent = isNaN(targetScore) ? '—' : targetScore;
     $('dls-target-desc').textContent = `Target for ${r2} overs`;
 
-    // Auto-scroll to results for better visibility
-    const resultCard = $('dls-result-container');
+    // Apply pulse effect
     if (resultCard) {
-        resultCard.style.display = 'flex'; // Ensure visible
-        // Pulse effect
         resultCard.style.transition = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
         resultCard.style.transform = 'scale(1.05)';
         resultCard.style.background = 'rgba(0, 212, 106, 0.15)';
@@ -3429,4 +3435,9 @@ function applyDLS() {
     showScreen('screen-scoring');
     renderScoring();
     syncState();
+}
+
+function goHome() {
+    showScreen('screen-home');
+    updateDashboardStats();
 }

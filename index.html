@@ -857,6 +857,10 @@
             </svg>
             New Match
           </button>
+          
+          <button class="result-action-btn result-action-secondary" onclick="goHome()" style="grid-column: span 2; margin-top: 1rem; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03);">
+            🏠 Back to Dashboard
+          </button>
         </div>
 
       </div>
@@ -1051,11 +1055,11 @@
         <div class="form-row">
           <div class="form-group">
             <label for="dls-team1-score">Total Score</label>
-            <input type="number" id="dls-team1-score" class="form-input" placeholder="e.g. 250" oninput="runDLS()">
+            <input type="number" id="dls-team1-score" class="form-input" placeholder="e.g. 250" min="0">
           </div>
           <div class="form-group">
             <label for="dls-total-overs">Overs Scheduled</label>
-            <input type="number" id="dls-total-overs" class="form-input" value="50" oninput="runDLS()">
+            <input type="number" id="dls-total-overs" class="form-input" value="50" min="1">
           </div>
         </div>
       </div>
@@ -1067,11 +1071,11 @@
         <div class="form-row">
           <div class="form-group">
             <label for="dls-interrupted-overs">Overs Played</label>
-            <input type="number" id="dls-interrupted-overs" class="form-input" placeholder="e.g. 20" oninput="runDLS()">
+            <input type="number" id="dls-interrupted-overs" class="form-input" placeholder="e.g. 20" min="0" step="0.1">
           </div>
           <div class="form-group">
             <label for="dls-interrupted-wickets">Wickets Lost</label>
-            <select id="dls-interrupted-wickets" class="form-input" onchange="runDLS()">
+            <select id="dls-interrupted-wickets" class="form-input">
               <option value="0">0 Wickets</option>
               <option value="1">1 Wicket</option>
               <option value="2">2 Wickets</option>
@@ -1088,22 +1092,22 @@
         </div>
         <div class="form-group" style="margin-top: 0.8rem;">
           <label for="dls-revised-overs">Revised Total Overs (for Team 2)</label>
-          <input type="number" id="dls-revised-overs" class="form-input" placeholder="e.g. 40" oninput="runDLS()">
+          <input type="number" id="dls-revised-overs" class="form-input" placeholder="e.g. 40" min="1">
         </div>
       </div>
 
       <!-- DLS Results (Ensuring high visibility) -->
-      <div style="margin-bottom: 0.5rem; text-align: center;">
+      <div id="dls-results-header" style="margin-bottom: 0.5rem; text-align: center; display: none;">
         <span style="font-size: 0.8rem; font-weight: 700; color: var(--clr-text2); text-transform: uppercase; letter-spacing: 1px;">Calculation Results</span>
       </div>
-      <div id="dls-result-container" class="dls-result-card glass" style="margin-bottom: 1.5rem; background: rgba(0, 212, 106, 0.05); border: 1px solid rgba(0, 212, 106, 0.2); border-radius: 16px; min-height: 120px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-        <div class="dls-result-item" style="text-align: center; padding: 1rem; flex: 1;">
+      <div id="dls-result-container" class="dls-result-card glass" style="margin-bottom: 1.5rem; display: none;">
+        <div class="dls-result-item">
           <span class="dls-result-label" style="color: rgba(255,255,255,0.6); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; display: block;">Par Score</span>
           <span class="dls-result-value" id="dls-par-score" style="color: #ffffff !important; font-size: 2.5rem; font-weight: 800; display: block; margin: 0.5rem 0;">—</span>
           <span class="dls-result-sub" style="color: rgba(255,255,255,0.5); font-size: 0.7rem; display: block;">To be level</span>
         </div>
-        <div style="width: 1px; height: 70px; background: rgba(255, 255, 255, 0.15);"></div>
-        <div class="dls-result-item" style="text-align: center; padding: 1rem; flex: 1;">
+        <div class="dls-result-divider"></div>
+        <div class="dls-result-item">
           <span class="dls-result-label" style="color: rgba(255,255,255,0.6); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; display: block;">Revised Target</span>
           <span class="dls-result-value accent" id="dls-target-score" style="color: #00D46A !important; font-size: 2.5rem; font-weight: 800; display: block; margin: 0.5rem 0;">—</span>
           <span class="dls-result-sub" id="dls-target-desc" style="color: rgba(255,255,255,0.5); font-size: 0.7rem; display: block;">Target score</span>
