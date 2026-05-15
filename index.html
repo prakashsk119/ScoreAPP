@@ -365,22 +365,14 @@
   <!-- ===================== SCREEN: SCORING ===================== -->
   <div id="screen-scoring" class="screen">
     <header class="scoring-header">
-      <div class="header-left">
-        <div class="logo-mini">
-          <svg viewBox="0 0 48 48" fill="none" width="28" height="28">
-            <circle cx="24" cy="24" r="22" fill="url(#lg3)" />
-            <path d="M14 34L24 10L34 34" stroke="white" stroke-width="3" stroke-linecap="round"
-              stroke-linejoin="round" />
-            <path d="M17 27h14" stroke="white" stroke-width="2.5" stroke-linecap="round" />
-            <defs>
-              <linearGradient id="lg3" x1="0" y1="0" x2="48" y2="48">
-                <stop stop-color="#00D46A" />
-                <stop offset="1" stop-color="#0052CC" />
-              </linearGradient>
-            </defs>
+      <div class="header-left" style="gap: 10px;">
+        <button class="btn-icon" onclick="showHome()" title="Go Home (Match will stay active)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
           </svg>
-        </div>
-        <span class="logo-text-mini">CricScore</span>
+        </button>
+        <button class="btn-end-match" onclick="confirmEndMatch()" title="End match and clear data">End Match</button>
       </div>
       <div class="header-center" id="header-match-title">Match</div>
       <div class="header-right">
@@ -532,6 +524,12 @@
               <path d="M3 5C3 5 3 19 19 19" />
             </svg>
             Undo Last Ball
+          </button>
+
+          <!-- DLS Calculator Trigger (Rain Interrupt) -->
+          <button class="btn-dls-trigger" onclick="openDLSFromMatch()">
+            <span class="btn-icon">🌧️</span>
+            DLS Calculator
           </button>
         </div>
 
@@ -963,6 +961,11 @@
         <span class="sidebar-item-label">My Career Stats</span>
       </button>
 
+      <button class="sidebar-item" onclick="closeSidebar(); showDLS();">
+        <span class="sidebar-item-icon">🧮</span>
+        <span class="sidebar-item-label">DLS Calculator</span>
+      </button>
+
       <button class="sidebar-item" onclick="closeSidebar(); showCareerStats(false);">
         <span class="sidebar-item-icon">📊</span>
         <span class="sidebar-item-label">All Players Stats</span>
@@ -1026,6 +1029,101 @@
     <div id="leaderboard-body" class="ps-body" style="padding:1rem; padding-top:0;"></div>
   </div>
 
+  <!-- ===================== SCREEN: DLS CALCULATOR ===================== -->
+  <div id="screen-dls" class="screen">
+    <header class="scoring-header">
+      <div class="header-left">
+        <button class="btn-icon" onclick="showHome()" title="Back">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="15,18 9,12 15,6" />
+          </svg>
+        </button>
+      </div>
+      <div class="header-center">DLS Calculator</div>
+      <div class="header-right"></div>
+    </header>
+
+    <div class="setup-container" style="padding-top: 1rem;">
+      <div class="setup-card" style="margin-bottom: 1.5rem;">
+        <h3 style="font-size: 1rem; margin-bottom: 1.2rem; color: var(--clr-green); display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.2rem;">🏏</span> 1st Innings Data
+        </h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="dls-team1-score">Total Score</label>
+            <input type="number" id="dls-team1-score" class="form-input" placeholder="e.g. 250" oninput="runDLS()">
+          </div>
+          <div class="form-group">
+            <label for="dls-total-overs">Overs Scheduled</label>
+            <input type="number" id="dls-total-overs" class="form-input" value="50" oninput="runDLS()">
+          </div>
+        </div>
+      </div>
+
+      <div class="setup-card" style="margin-bottom: 1.5rem;">
+        <h3 style="font-size: 1rem; margin-bottom: 1.2rem; color: var(--clr-blue); display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.2rem;">⛈️</span> Interruption Details (2nd Innings)
+        </h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="dls-interrupted-overs">Overs Played</label>
+            <input type="number" id="dls-interrupted-overs" class="form-input" placeholder="e.g. 20" oninput="runDLS()">
+          </div>
+          <div class="form-group">
+            <label for="dls-interrupted-wickets">Wickets Lost</label>
+            <select id="dls-interrupted-wickets" class="form-input" onchange="runDLS()">
+              <option value="0">0 Wickets</option>
+              <option value="1">1 Wicket</option>
+              <option value="2">2 Wickets</option>
+              <option value="3">3 Wickets</option>
+              <option value="4">4 Wickets</option>
+              <option value="5">5 Wickets</option>
+              <option value="6">6 Wickets</option>
+              <option value="7">7 Wickets</option>
+              <option value="8">8 Wickets</option>
+              <option value="9">9 Wickets</option>
+              <option value="10">All Out</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top: 0.8rem;">
+          <label for="dls-revised-overs">Revised Total Overs (for Team 2)</label>
+          <input type="number" id="dls-revised-overs" class="form-input" placeholder="e.g. 40" oninput="runDLS()">
+        </div>
+      </div>
+
+      <!-- DLS Results (Ensuring high visibility) -->
+      <div style="margin-bottom: 0.5rem; text-align: center;">
+        <span style="font-size: 0.8rem; font-weight: 700; color: var(--clr-text2); text-transform: uppercase; letter-spacing: 1px;">Calculation Results</span>
+      </div>
+      <div id="dls-result-container" class="dls-result-card glass" style="margin-bottom: 1.5rem; background: rgba(0, 212, 106, 0.05); border: 1px solid rgba(0, 212, 106, 0.2); border-radius: 16px; min-height: 120px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+        <div class="dls-result-item" style="text-align: center; padding: 1rem; flex: 1;">
+          <span class="dls-result-label" style="color: rgba(255,255,255,0.6); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; display: block;">Par Score</span>
+          <span class="dls-result-value" id="dls-par-score" style="color: #ffffff !important; font-size: 2.5rem; font-weight: 800; display: block; margin: 0.5rem 0;">—</span>
+          <span class="dls-result-sub" style="color: rgba(255,255,255,0.5); font-size: 0.7rem; display: block;">To be level</span>
+        </div>
+        <div style="width: 1px; height: 70px; background: rgba(255, 255, 255, 0.15);"></div>
+        <div class="dls-result-item" style="text-align: center; padding: 1rem; flex: 1;">
+          <span class="dls-result-label" style="color: rgba(255,255,255,0.6); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; display: block;">Revised Target</span>
+          <span class="dls-result-value accent" id="dls-target-score" style="color: #00D46A !important; font-size: 2.5rem; font-weight: 800; display: block; margin: 0.5rem 0;">—</span>
+          <span class="dls-result-sub" id="dls-target-desc" style="color: rgba(255,255,255,0.5); font-size: 0.7rem; display: block;">Target score</span>
+        </div>
+      </div>
+
+      <!-- Explicit Calculate Button -->
+      <div style="text-align: center; margin: 1rem 0 2rem 0;">
+        <button class="btn-primary" id="btn-run-dls" onclick="runDLS()" style="width: 100%; padding: 14px; font-weight: 700; border-radius: 12px; background: linear-gradient(135deg, #00D46A, #0052CC); border: none; box-shadow: 0 6px 20px rgba(0, 212, 106, 0.25); font-size: 1rem; cursor: pointer; transition: all 0.3s ease;">
+          ⚡ Calculate Revised Target
+        </button>
+      </div>
+
+      <p style="font-size: 0.75rem; color: var(--clr-text2); text-align: center; margin-top: 1.5rem; line-height: 1.4;">
+        * This calculator uses standard DLS resource tables suitable for amateur matches. 
+        For international matches, professional DLS software is recommended.
+      </p>
+    </div>
+  </div>
+
 
 
   <!-- ===================== MODAL: SHARE CODE ===================== -->
@@ -1079,11 +1177,29 @@
         <button class="btn-secondary" onclick="hideJoinModal()">Cancel</button>
         <button class="btn-primary" style="margin:0;padding:.45rem 1.2rem;width:auto;" onclick="joinMatch()">Join Match</button>
       </div>
-
     </div>
   </div>
 
-  <!-- ===================== BOTTOM NAV ===================== -->
+  <!-- ===================== MODAL: END MATCH CONFIRMATION ===================== -->
+  <div id="modal-end-match" class="modal-overlay" style="display:none;">
+    <div class="modal-card" style="max-width: 340px; text-align: center;">
+      <div class="modal-header">
+        <h3 style="color: var(--clr-danger);">End Match?</h3>
+        <button class="modal-close" onclick="hideEndMatchModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size: 3rem; margin-bottom: 0.5rem;">⚠️</div>
+        <p style="color: var(--clr-text1); font-weight: 600; margin-bottom: 0.5rem;">Are you sure?</p>
+        <p style="font-size: 0.85rem; color: var(--clr-text2); line-height: 1.5;">
+          Ending this match will clear all current progress. This action cannot be undone.
+        </p>
+      </div>
+      <div class="modal-footer" style="display: flex; gap: 10px; padding-top: 1rem;">
+        <button class="btn-secondary" onclick="hideEndMatchModal()" style="flex: 1; margin: 0;">Cancel</button>
+        <button class="btn-primary" style="background: var(--clr-danger); flex: 1; margin: 0; padding: 0.6rem;" onclick="executeEndMatch()">End Match</button>
+      </div>
+    </div>
+  </div>
   <nav class="bottom-nav">
     <button class="nav-item active" onclick="showHome(); updateNav(this);">
       <span class="nav-icon">🏠</span>

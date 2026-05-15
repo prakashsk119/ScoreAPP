@@ -198,6 +198,32 @@ function initAuth() {
       const user = JSON.parse(userData);
       if (user && user.loggedIn) {
         console.log("Persistent login found for:", user.phone);
+        
+        // Check for active match
+        const activeMatchData = localStorage.getItem('cricscore_active_match');
+        if (activeMatchData) {
+          try {
+            const savedMatch = JSON.parse(activeMatchData);
+            if (savedMatch && (savedMatch.phase === 'scoring' || savedMatch.phase === 'setup')) {
+              console.log("Restoring active match...");
+              match = savedMatch;
+              
+              if (match.phase === 'scoring') {
+                $('header-match-title').textContent = `${match.team1.name} vs ${match.team2.name}`;
+                showScreen('screen-scoring');
+                renderScoring();
+                return true;
+              } else if (match.phase === 'setup') {
+                showScreen('screen-setup');
+                return true;
+              }
+            }
+          } catch (e) {
+            console.error("Error restoring match:", e);
+            localStorage.removeItem('cricscore_active_match');
+          }
+        }
+
         showScreen('screen-home');
         updateDashboardStats();
         renderLeaderboard();
@@ -1139,6 +1165,10 @@ function showHistoryFromResult() {
 }
 
 function newMatch() {
+  if (match && match.phase === 'scoring') {
+    if (!confirm("Start new match? Current match progress will be lost.")) return;
+  }
+  clearMatchState();
   match = {
     team1: { name: '', players: [] },
     team2: { name: '', players: [] },
@@ -1147,10 +1177,62 @@ function newMatch() {
     battingFirst: 1,
     currentInnings: 1,
     innings: [null, null],
-
     result: null
   };
   showScreen('screen-setup');
+}
+
+function confirmEndMatch() {
+  const modal = $('modal-end-match');
+  if (modal) modal.style.display = 'flex';
+}
+
+function openDLSFromMatch() {
+  // Auto-populate DLS fields if in a match
+  if (match && match.phase === 'scoring') {
+    const inn1 = match.innings[0];
+    const inn2 = match.innings[1];
+    
+    if (inn1) {
+      $('dls-team1-score').value = inn1.runs;
+      $('dls-total-overs').value = match.totalOvers;
+    }
+    
+    if (match.currentInnings === 2 && inn2) {
+      $('dls-interrupted-overs').value = (inn2.balls / 6).toFixed(1);
+      $('dls-interrupted-wickets').value = inn2.wickets;
+    } else {
+      // Clear 2nd innings fields if not started
+      $('dls-interrupted-overs').value = '';
+      $('dls-interrupted-wickets').value = '0';
+    }
+  }
+  showScreen('screen-dls');
+  // Trigger calculation AFTER showing screen to ensure elements are ready
+  setTimeout(() => runDLS(), 100);
+}
+
+function hideEndMatchModal() {
+  const modal = $('modal-end-match');
+  if (modal) modal.style.display = 'none';
+}
+
+function executeEndMatch() {
+  hideEndMatchModal();
+  clearMatchState();
+  // Reset match object to initial state
+  match = {
+    team1: { name: '', players: [] },
+    team2: { name: '', players: [] },
+    totalOvers: 20,
+    playersPerTeam: 11,
+    battingFirst: 1,
+    currentInnings: 1,
+    innings: [null, null],
+    result: null
+  };
+  toast("Match ended and data cleared");
+  showHome();
 }
 
 // ===== UNDO =====
@@ -2322,9 +2404,21 @@ function shareViaWhatsApp() {
 
 
 // Host: push current match state to all viewers
+// Host: push current match state to all viewers and save locally
 function syncState() {
+  saveMatchState(); // Persist locally for page refreshes
   if (!_socket || !_roomCode || _isViewer) return;
   _socket.emit('push-state', { code: _roomCode, state: JSON.parse(JSON.stringify(match)) });
+}
+
+function saveMatchState() {
+  if (match && (match.phase === 'scoring' || match.phase === 'setup')) {
+    localStorage.setItem('cricscore_active_match', JSON.stringify(match));
+  }
+}
+
+function clearMatchState() {
+  localStorage.removeItem('cricscore_active_match');
 }
 
 // Viewer: join using a code
@@ -3187,4 +3281,109 @@ function playVoiceCommentary(type) {
     utterance.pitch = 1.1;
     window.speechSynthesis.speak(utterance);
   }
+}
+
+/**
+ * =====================================================
+ * DLS CALCULATOR LOGIC
+ * =====================================================
+ */
+function showDLS() {
+  showScreen('screen-dls');
+  // Reset form or use current match data if applicable
+  const currentInn = match.innings[0];
+  if (currentInn && currentInn.runs > 0) {
+      $('dls-team1-score').value = currentInn.runs;
+      $('dls-total-overs').value = match.totalOvers;
+  }
+  // Trigger initial calculation
+  setTimeout(() => runDLS(), 100);
+}
+
+// Simplified DLS Resource Table (Standard Edition approx)
+const DLS_RESOURCES = {
+    50: [100.0, 93.4, 85.1, 74.9, 62.7, 49.0, 34.9, 22.0, 11.9, 4.7, 0],
+    40: [89.3, 84.2, 77.6, 69.1, 58.9, 46.7, 34.1, 22.0, 11.9, 4.7, 0],
+    30: [75.1, 71.8, 67.3, 61.2, 53.4, 43.4, 32.5, 21.6, 11.8, 4.7, 0],
+    20: [56.6, 54.8, 52.1, 48.3, 43.1, 36.1, 28.1, 19.7, 11.3, 4.7, 0],
+    10: [34.1, 33.4, 32.5, 30.8, 28.3, 24.8, 20.2, 15.0, 9.4, 4.3, 0],
+    5:  [18.4, 18.2, 17.9, 17.4, 16.5, 15.0, 12.9, 10.3, 7.1, 3.5, 0],
+    0:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+};
+
+function getDLSResource(overs, wickets) {
+    if (overs <= 0) return 0;
+    if (wickets >= 10) return 0;
+    const keys = Object.keys(DLS_RESOURCES).map(Number).sort((a,b) => b-a);
+    let upper = keys[0];
+    let lower = 0;
+    for (let k of keys) {
+        if (overs >= k) { upper = k; break; }
+        lower = k;
+    }
+    if (upper === overs) return DLS_RESOURCES[upper][wickets];
+    const upperVal = DLS_RESOURCES[upper][wickets];
+    const lowerVal = DLS_RESOURCES[lower] ? DLS_RESOURCES[lower][wickets] : 0;
+    const ratio = (overs - lower) / (upper - lower);
+    return lowerVal + (ratio * (upperVal - lowerVal));
+}
+
+function runDLS() {
+    const btn = $('btn-run-dls');
+    if (btn) {
+        const original = btn.innerHTML;
+        if (!original.includes('Calculating')) {
+            btn.innerHTML = "🔄 Calculating...";
+            btn.style.opacity = '0.7';
+            setTimeout(() => {
+                btn.innerHTML = original;
+                btn.style.opacity = '1';
+            }, 300);
+        }
+    }
+
+    // Use parseFloat to handle balls (e.g. 20.2 overs)
+    const s1 = parseFloat($('dls-team1-score').value) || 0;
+    const t1 = parseFloat($('dls-total-overs').value) || 50;
+    const p2 = parseFloat($('dls-interrupted-overs').value) || 0;
+    const w2 = parseInt($('dls-interrupted-wickets').value) || 0;
+    const r2 = parseFloat($('dls-revised-overs').value) || t1;
+
+    if (s1 <= 0 || t1 <= 0) {
+        $('dls-par-score').textContent = '—';
+        $('dls-target-score').textContent = '—';
+        return;
+    }
+
+    const res1 = getDLSResource(t1, 0);
+    const res2Current = getDLSResource(r2 - p2, w2);
+    const res2Total = getDLSResource(r2, 0);
+
+    if (res1 === 0) {
+        $('dls-par-score').textContent = 'Error';
+        $('dls-target-score').textContent = 'Error';
+        return;
+    }
+
+    const resourcesUsedByTeam2 = Math.max(0, res2Total - res2Current);
+    const parScore = Math.floor(s1 * (resourcesUsedByTeam2 / res1));
+    const targetScore = Math.floor(s1 * (res2Total / res1)) + 1;
+
+    $('dls-par-score').textContent = isNaN(parScore) ? '—' : parScore;
+    $('dls-target-score').textContent = isNaN(targetScore) ? '—' : targetScore;
+    $('dls-target-desc').textContent = `Target for ${r2} overs`;
+
+    // Auto-scroll to results for better visibility
+    const resultCard = $('dls-result-container');
+    if (resultCard) {
+        resultCard.style.display = 'flex'; // Ensure visible
+        // Pulse effect
+        resultCard.style.transition = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        resultCard.style.transform = 'scale(1.05)';
+        resultCard.style.background = 'rgba(0, 212, 106, 0.15)';
+        setTimeout(() => {
+            resultCard.style.transform = 'scale(1)';
+            resultCard.style.background = 'rgba(255, 255, 255, 0.05)';
+        }, 600);
+    }
 }

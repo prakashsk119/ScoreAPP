@@ -4321,3 +4321,128 @@ body::before {
   50% { transform: scale(1.1); opacity: 0.8; }
   100% { transform: scale(1); opacity: 1; }
 }
+
+/* =====================================================
+   DLS CALCULATOR STYLES
+   ===================================================== */
+.dls-result-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  margin-top: 0.5rem;
+  border: 1px solid rgba(0, 212, 106, 0.2);
+}
+
+.dls-result-item {
+  padding: 1.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.dls-result-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--clr-text2);
+  font-weight: 700;
+}
+
+.dls-result-value {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1;
+  margin: 0.5rem 0;
+}
+
+.dls-result-value.accent {
+  color: var(--clr-green);
+  text-shadow: 0 0 20px rgba(0, 212, 106, 0.3);
+}
+
+.dls-result-sub {
+  font-size: 0.8rem;
+  color: var(--clr-text2);
+}
+
+.dls-result-divider {
+  height: 1px;
+  width: 80%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  margin: 0 auto;
+}
+
+@media (min-width: 480px) {
+  .dls-result-card {
+    flex-direction: row;
+  }
+  .dls-result-item {
+    flex: 1;
+  }
+  .dls-result-divider {
+    width: 1px;
+    height: 60px;
+    margin: auto 0;
+    background: linear-gradient(180deg, transparent, rgba(255,255,255,0.1), transparent);
+  }
+}
+
+.btn-end-match {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-end-match:active {
+  transform: scale(0.95);
+  background: rgba(239, 68, 68, 0.3);
+}
+
+.btn-end-match:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+}
+
+.btn-dls-trigger {
+  width: 100%;
+  margin-top: 1rem;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: #818cf8;
+  padding: 12px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.3s ease;
+}
+
+.btn-dls-trigger:hover {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: #818cf8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.btn-dls-trigger .btn-icon {
+  font-size: 1.2rem;
+}
