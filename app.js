@@ -881,7 +881,7 @@ function checkInningsEnd(inn) {
 
   // 2nd innings target achieved
   if (match.currentInnings === 2) {
-    const target = match.innings[0].runs + 1;
+    const target = match.dlsTarget || (match.innings[0].runs + 1);
     if (inn.runs >= target) {
       finishInnings(inn);
       return;
@@ -1364,11 +1364,11 @@ $('score-overs').textContent =
 
   // Target info (2nd innings)
   if (match.currentInnings === 2 && match.innings[0]) {
-    const target = match.innings[0].runs + 1;
+    const target = match.dlsTarget || (match.innings[0].runs + 1);
     const remaining = target - inn.runs;
-    const ballsLeft = (match.totalOvers * 6) - inn.balls;
+    const ballsLeft = Math.max(0, (match.totalOvers * 6) - inn.balls);
     $('target-block').classList.remove('hidden');
-    $('target-info').textContent = `Target: ${target} | Need ${remaining} from ${ballsLeft} balls`;
+    $('target-info').textContent = `Target: ${target} ${match.dlsTarget ? '(DLS)' : ''} | Need ${remaining} from ${ballsLeft} balls`;
     $('required-rr').textContent = `RRR: ${requiredRunRate(target, inn.runs, ballsLeft)}`;
   } else {
     $('target-block').classList.add('hidden');
@@ -3386,4 +3386,24 @@ function runDLS() {
             resultCard.style.background = 'rgba(255, 255, 255, 0.05)';
         }, 600);
     }
+}
+
+function applyDLS() {
+    const targetVal = parseInt($('dls-target-score').textContent);
+    const revisedOvers = parseFloat($('dls-revised-overs').value);
+
+    if (isNaN(targetVal) || isNaN(revisedOvers)) {
+        toast("Please calculate the target first!");
+        return;
+    }
+
+    match.dlsTarget = targetVal;
+    match.totalOvers = revisedOvers;
+
+    toast(`DLS Applied: Target ${targetVal}, Overs ${revisedOvers}`);
+    
+    // Switch to scoring screen and re-render
+    showScreen('screen-scoring');
+    renderScoring();
+    syncState();
 }
