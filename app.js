@@ -3025,6 +3025,13 @@ async function requestOTP() {
       body: JSON.stringify({ phone })
     });
     
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await response.text();
+      console.error("Server returned non-JSON response:", text);
+      throw new Error("Server connection error. Please ensure you are running the app on http://localhost:8080");
+    }
+
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'Failed to send OTP');
     
@@ -3080,6 +3087,13 @@ async function handleAuth() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
+
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const text = await response.text();
+      console.error("Server returned non-JSON response:", text);
+      throw new Error("Server connection error. Please ensure you are running the app on http://localhost:8080");
+    }
 
     const result = await response.json();
 
