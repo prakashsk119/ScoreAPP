@@ -110,15 +110,24 @@ const otps = {};
 
 // API to send OTP
 app.post('/api/send-otp', async (req, res) => {
-  let { phone } = req.body;
+  let { phone, type } = req.body;
   if (!phone) return res.status(400).json({ error: 'Mobile number required' });
 
   // Normalize: remove spaces, dashes, etc.
   phone = phone.replace(/[\s\-\(\)]/g, '');
 
   const users = getUsers();
-  if (users.find(u => u.phone === phone)) {
-    return res.status(400).json({ error: 'This mobile number is already registered. Please login instead.' });
+  const userExists = users.find(u => u.phone === phone);
+
+  if (type === 'reset') {
+    if (!userExists) {
+      return res.status(404).json({ error: 'This mobile number is not registered.' });
+    }
+  } else {
+    // Default is registration
+    if (userExists) {
+      return res.status(400).json({ error: 'This mobile number is already registered. Please login instead.' });
+    }
   }
 
   // Generate 6-digit OTP
@@ -189,6 +198,38 @@ app.post('/api/register', (req, res) => {
   
   console.log(`[AUTH] New user registered: ${phone}`);
   res.json({ success: true, user: { phone: newUser.phone, profile: newUser.profile } });
+});
+
+// API to reset password
+app.post('/api/reset-password', (req, res) => {
+  let { phone, password, otp } = req.body;
+  
+  if (!phone || !password || !otp) {
+    return res.status(400).json({ error: 'All fields (Mobile, OTP, New Password) are required' });
+  }
+
+  phone = phone.replace(/[\s\-\(\)]/g, '');
+  
+  // Validate OTP
+  if (otps[phone] !== otp) {
+    return res.status(400).json({ error: 'Invalid or expired OTP' });
+  }
+
+  const users = getUsers();
+  const userIndex = users.findIndex(u => u.phone === phone);
+  if (userIndex === -1) {
+    return res.status(404).json({ error: 'This mobile number is not registered.' });
+  }
+
+  // Update password
+  users[userIndex].password = password;
+  saveUsers(users);
+  
+  // Clear OTP
+  delete otps[phone];
+  
+  console.log(`[AUTH] Password reset for user: ${phone}`);
+  res.json({ success: true, message: 'Password reset successfully!' });
 });
 
 // API to login

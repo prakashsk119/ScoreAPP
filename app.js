@@ -240,6 +240,7 @@ function initAuth() {
     console.error("Auth persistence error:", err);
     localStorage.removeItem('cricscore_user');
   }
+  setAuthMode('login');
 }
 
 (async function initSetup() {
@@ -2975,33 +2976,47 @@ function renderMatchGraphs() {
   container.innerHTML = html;
 }
 
-// ===== AUTHENTICATION LOGIC (Login & Register) =====
-let authMode = "login"; // "login" or "register"
+// ===== AUTHENTICATION LOGIC (Login, Register & Reset) =====
+let authMode = "login"; // "login", "register", or "reset"
 
-function toggleAuthMode() {
-  authMode = authMode === "login" ? "register" : "login";
+function setAuthMode(mode) {
+  authMode = mode;
   
   const title = $("auth-title");
   const subtitle = $("auth-subtitle");
   const btn = $("btn-auth");
   const toggleText = $("toggle-text");
+  const lblPass = $("lbl-pass");
   
   if (authMode === "register") {
     title.textContent = "Create Account";
     subtitle.textContent = "Join the community of elite scorers.";
     btn.textContent = "Create Free Account";
-    toggleText.innerHTML = `Already have an account? <a href="#" onclick="toggleAuthMode()">Login instead</a>`;
+    if (lblPass) lblPass.textContent = "Password";
+    toggleText.innerHTML = `Already have an account? <a href="#" onclick="setAuthMode('login')">Login instead</a>`;
+  } else if (authMode === "reset") {
+    title.textContent = "Reset Password";
+    subtitle.textContent = "Set a new password using mobile OTP verification.";
+    btn.textContent = "Reset Password";
+    if (lblPass) lblPass.textContent = "New Password";
+    toggleText.innerHTML = `Remembered your password? <a href="#" onclick="setAuthMode('login')">Login instead</a>`;
   } else {
+    // login mode
     title.textContent = "Welcome to CricScore";
     subtitle.textContent = "Elevate your game with professional scoring.";
     btn.textContent = "Login to Account";
-    toggleText.innerHTML = `Don't have an account? <a href="#" onclick="toggleAuthMode()">Register Now</a>`;
+    if (lblPass) lblPass.textContent = "Password";
+    toggleText.innerHTML = `Don't have an account? <a href="#" onclick="setAuthMode('register')">Register Now</a><br><a href="#" onclick="setAuthMode('reset')" style="display: block; margin-top: 8px; color: var(--clr-primary); font-weight: 600; font-size: 0.85rem;">Forgot Password?</a>`;
   }
   
   // Show/Hide specific fields based on mode
   document.querySelectorAll('.register-only').forEach(el => {
-    el.style.display = (authMode === "register") ? (el.tagName === 'BUTTON' ? 'inline-block' : 'block') : 'none';
+    el.style.display = (authMode === "register" || authMode === "reset") ? (el.tagName === 'BUTTON' ? 'inline-block' : 'block') : 'none';
   });
+}
+
+function toggleAuthMode() {
+  setAuthMode(authMode === "login" ? "register" : "login");
 }
 
 async function requestOTP() {
@@ -3022,7 +3037,7 @@ async function requestOTP() {
     const response = await fetch('/api/send-otp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone })
+      body: JSON.stringify({ phone, type: authMode })
     });
     
     const contentType = response.headers.get("content-type");
@@ -3061,9 +3076,9 @@ async function handleAuth() {
     return;
   }
   
-  if (authMode === "register") {
+  if (authMode === "register" || authMode === "reset") {
     if (!otp) {
-      toast("OTP is required for registration");
+      toast("OTP is required");
       return;
     }
   }
@@ -3075,12 +3090,23 @@ async function handleAuth() {
 
   const btn = $("btn-auth");
   const originalText = btn.textContent;
-  btn.textContent = authMode === "login" ? "Authenticating..." : "Creating Account...";
+  
+  let buttonText = "Authenticating...";
+  if (authMode === "register") buttonText = "Creating Account...";
+  if (authMode === "reset") buttonText = "Resetting Password...";
+  btn.textContent = buttonText;
   btn.disabled = true;
   
   try {
-    const endpoint = authMode === "register" ? '/api/register' : '/api/login';
-    const payload = authMode === "register" ? { phone, password, otp } : { phone, password };
+    let endpoint = '/api/login';
+    let payload = { phone, password };
+    if (authMode === "register") {
+      endpoint = '/api/register';
+      payload = { phone, password, otp };
+    } else if (authMode === "reset") {
+      endpoint = '/api/reset-password';
+      payload = { phone, password, otp };
+    }
     
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -3103,7 +3129,10 @@ async function handleAuth() {
 
     if (authMode === "register") {
       toast("Account created successfully! Please login.");
-      toggleAuthMode();
+      setAuthMode("login");
+    } else if (authMode === "reset") {
+      toast("Password reset successfully! Please login.");
+      setAuthMode("login");
     } else {
       // Success Login
       localStorage.setItem('cricscore_user', JSON.stringify({ 
