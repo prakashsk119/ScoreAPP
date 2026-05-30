@@ -4134,7 +4134,7 @@ body::before {
 }
 
 
-/* ===================== CRICKET ANIMATION ===================== */
+/* ===================== NEW PREMIUM 3D CRICKET ANIMATION ===================== */
 .cricket-animation-wrap {
   position: absolute;
   top: 0;
@@ -4144,81 +4144,337 @@ body::before {
   pointer-events: none;
   z-index: 5;
   overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 1000px;
 }
 
+.cricket-scene {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  transform-style: preserve-3d;
+  margin-top: 50px;
+}
+
+/* 3D Pitch Ground */
+.pitch-ground {
+  position: absolute;
+  bottom: 0;
+  width: 320px;
+  height: 60px;
+  background: radial-gradient(ellipse at center, #2e7d32 0%, #1b5e20 100%);
+  border-radius: 50%;
+  transform: rotateX(65deg);
+  border: 4px solid rgba(255,255,255,0.25);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 0 30px rgba(0,0,0,0.4);
+}
+
+/* Wickets Group */
+.wickets-group {
+  position: relative;
+  width: 140px;
+  height: 180px;
+  margin-bottom: 10px;
+  transform-style: preserve-3d;
+  z-index: 2;
+}
+
+/* Stumps (Wickets) styling */
+.stump {
+  position: absolute;
+  bottom: 0;
+  width: 12px;
+  height: 170px;
+  background: linear-gradient(90deg, #d39e5e 0%, #b87d3b 50%, #87511c 100%);
+  border-radius: 6px;
+  box-shadow: 3px 10px 15px rgba(0, 0, 0, 0.4), inset 0 3px 0 rgba(255,255,255,0.3);
+  transform-origin: bottom center;
+  transition: transform 0.1s ease;
+}
+
+.stump-left {
+  left: 20px;
+  transform: rotateZ(-1deg);
+}
+
+.stump-middle {
+  left: 64px;
+}
+
+.stump-right {
+  right: 20px;
+  transform: rotateZ(1deg);
+}
+
+/* Bails */
+.bail {
+  position: absolute;
+  top: 2px;
+  width: 58px;
+  height: 8px;
+  background: linear-gradient(90deg, #b87d3b 0%, #87511c 100%);
+  border-radius: 4px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+  transform-origin: center;
+  z-index: 5;
+}
+
+.left-bail {
+  left: 14px;
+}
+
+.right-bail {
+  right: 14px;
+}
+
+/* Flying Cricket Ball styling */
 .animated-ball {
   position: absolute;
-  width: 40px;
-  height: 40px;
-  background: radial-gradient(circle at 30% 30%, #ef4444, #991b1b);
+  width: 44px;
+  height: 44px;
+  background: radial-gradient(circle at 30% 30%, #ff4d4d 0%, #cc0000 60%, #800000 100%);
   border-radius: 50%;
-  box-shadow: 0 10px 30px rgba(239, 68, 68, 0.4);
-  bottom: -100px;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 25px rgba(255, 77, 77, 0.6);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translate3d(-300px, 150px, -600px) scale(0.2);
 }
 
+/* Realistic White Seam on the ball */
+.ball-seam {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.85);
+  border-top: 1px dashed rgba(0,0,0,0.3);
+  border-bottom: 1px dashed rgba(0,0,0,0.3);
+  transform: rotate(35deg);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+/* Glowing Impact Shockwave */
+.impact-shockwave {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(circle, rgba(0, 212, 106, 0.8) 0%, rgba(0, 82, 204, 0.3) 50%, rgba(0,0,0,0) 70%);
+  border-radius: 50%;
+  top: 55%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  opacity: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+/* Sparkle Blast Particles */
+.blast-particles {
+  position: absolute;
+  top: 55%;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 6;
+}
+
+.particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  opacity: 0;
+}
+
+/* Glowing Victory Banner */
+.victory-banner {
+  position: absolute;
+  top: 20%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0;
+  transform: scale(0.5);
+  z-index: 12;
+  text-align: center;
+}
+
+.victory-title {
+  font-family: 'Montserrat', 'Outfit', sans-serif;
+  font-size: 2.8rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  background: linear-gradient(135deg, #00d46a 0%, #00ff87 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 15px rgba(0, 212, 106, 0.6));
+  animation: glowPulse 2s infinite alternate;
+}
+
+.victory-subtitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fffae6;
+  letter-spacing: 2px;
+  margin-top: 8px;
+  text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
+@keyframes glowPulse {
+  0% { filter: drop-shadow(0 2px 8px rgba(0, 212, 106, 0.4)); }
+  100% { filter: drop-shadow(0 2px 20px rgba(0, 212, 106, 0.9)); }
+}
+
+/* ===================== HIGH-END TIMED KEYFRAMES ===================== */
+
+/* Activate animations only when parent screen is active */
 #screen-get-started.active .animated-ball {
-  animation: ballFly 1.2s cubic-bezier(0.15, 0.85, 0.35, 1) forwards;
+  animation: cricketBallStrike 0.8s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+}
+
+#screen-get-started.active .impact-shockwave {
+  animation: shockwaveExpand 0.5s 0.65s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+
+#screen-get-started.active .victory-banner {
+  animation: victoryPop 0.8s 0.85s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+#screen-get-started.active .stump-left {
+  animation: stumpLeftFly 1.5s 0.65s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+
+#screen-get-started.active .stump-middle {
+  animation: stumpMiddleFly 1.5s 0.65s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+
+#screen-get-started.active .stump-right {
+  animation: stumpRightFly 1.5s 0.65s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+
+#screen-get-started.active .left-bail {
+  animation: bailLeftFly 1.5s 0.64s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+
+#screen-get-started.active .right-bail {
+  animation: bailRightFly 1.5s 0.64s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
 }
 
 #screen-get-started.active .onboarding-content {
-  animation: contentShake 0.4s 1s ease-in-out forwards;
+  animation: successfulEntryShake 0.4s 0.65s ease-in-out forwards;
 }
 
-@keyframes ballFly {
+#screen-get-started.active .particle {
+  animation: blastParticlesSpread 0.8s 0.65s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+
+/* Animations declarations */
+@keyframes cricketBallStrike {
   0% {
-    bottom: -100px;
-    transform: translateX(-50%) scale(0.5);
+    opacity: 0;
+    transform: translate3d(-300px, 150px, -500px) scale(0.2) rotate(0deg);
+  }
+  30% {
     opacity: 1;
   }
-
+  /* Ball hits Middle Stump at 80% (0.64s) */
   80% {
-    bottom: 60%;
-    transform: translateX(-50%) scale(5);
-    opacity: 0.8;
-    filter: blur(2px);
+    opacity: 1;
+    transform: translate3d(-6px, 10px, 0) scale(1) rotate(270deg);
+    filter: none;
   }
-
   100% {
-    bottom: 60%;
-    transform: translateX(-50%) scale(8);
     opacity: 0;
-    filter: blur(20px);
+    transform: translate3d(50px, -60px, 150px) scale(1.6) rotate(360deg);
+    filter: blur(8px);
   }
 }
 
-@keyframes contentShake {
-
-  0%,
-  100% {
-    transform: translate(0, 0);
-  }
-
-  25% {
-    transform: translate(-5px, 5px);
-  }
-
-  50% {
-    transform: translate(5px, -5px);
-  }
-
-  75% {
-    transform: translate(-5px, -5px);
-  }
+@keyframes shockwaveExpand {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
 }
 
-.animated-ball::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 100%;
-  height: 2px;
-  background: rgba(255, 255, 255, 0.4);
-  transform: translate(-50%, -50%) rotate(45deg);
+@keyframes victoryPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
+
+/* Wicket Collisions: Flying Stumps */
+@keyframes stumpLeftFly {
+  0% { transform: rotateZ(-1deg) translate3d(0, 0, 0); }
+  10% { transform: rotateZ(-25deg) translate3d(-20px, -5px, 20px); }
+  100% { transform: rotateZ(-85deg) translate3d(-140px, 80px, 200px) rotateY(-45deg); opacity: 0.7; }
+}
+
+@keyframes stumpMiddleFly {
+  0% { transform: translate3d(0, 0, 0) rotateX(0deg); }
+  10% { transform: translate3d(5px, -15px, 30px) rotateX(-20deg); }
+  100% { transform: translate3d(15px, -180px, 400px) rotateX(-160deg) rotateZ(30deg); opacity: 0.5; }
+}
+
+@keyframes stumpRightFly {
+  0% { transform: rotateZ(1deg) translate3d(0, 0, 0); }
+  10% { transform: rotateZ(35deg) translate3d(20px, -8px, 10px); }
+  100% { transform: rotateZ(95deg) translate3d(150px, 90px, 180px) rotateY(55deg); opacity: 0.7; }
+}
+
+/* Flying Bails */
+@keyframes bailLeftFly {
+  0% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  100% { transform: translate3d(-90px, -240px, 300px) rotate(-720deg); opacity: 0.3; }
+}
+
+@keyframes bailRightFly {
+  0% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  100% { transform: translate3d(100px, -220px, 280px) rotate(680deg); opacity: 0.3; }
+}
+
+/* Camera shake upon hit */
+@keyframes successfulEntryShake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-8px, 6px); }
+  40% { transform: translate(8px, -6px); }
+  60% { transform: translate(-5px, -5px); }
+  80% { transform: translate(5px, 5px); }
+}
+
+/* Spread Blast Particles */
+@keyframes blastParticlesSpread {
+  0% { width: 10px; height: 10px; opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.blast-particles .p1 { background: #00d46a; left: 0; top: 0; animation: p1Fly 0.8s 0.65s cubic-bezier(0.1, 0.8, 0.3, 1) forwards; }
+.blast-particles .p2 { background: #ff4d4d; left: 0; top: 0; animation: p2Fly 0.8s 0.65s cubic-bezier(0.1, 0.8, 0.3, 1) forwards; }
+.blast-particles .p3 { background: #ffe875; left: 0; top: 0; animation: p3Fly 0.8s 0.65s cubic-bezier(0.1, 0.8, 0.3, 1) forwards; }
+.blast-particles .p4 { background: #0052cc; left: 0; top: 0; animation: p4Fly 0.8s 0.65s cubic-bezier(0.1, 0.8, 0.3, 1) forwards; }
+.blast-particles .p5 { background: #ffffff; left: 0; top: 0; animation: p5Fly 0.8s 0.65s cubic-bezier(0.1, 0.8, 0.3, 1) forwards; }
+.blast-particles .p6 { background: #ff6a00; left: 0; top: 0; animation: p6Fly 0.8s 0.65s cubic-bezier(0.1, 0.8, 0.3, 1) forwards; }
+.blast-particles .p7 { background: #3498db; left: 0; top: 0; animation: p7Fly 0.8s 0.65s cubic-bezier(0.1, 0.8, 0.3, 1) forwards; }
+.blast-particles .p8 { background: #00ff87; left: 0; top: 0; animation: p8Fly 0.8s 0.65s cubic-bezier(0.1, 0.8, 0.3, 1) forwards; }
+
+@keyframes p1Fly { to { transform: translate(-100px, -80px) scale(0.2); opacity: 0; } }
+@keyframes p2Fly { to { transform: translate(110px, -90px) scale(0.2); opacity: 0; } }
+@keyframes p3Fly { to { transform: translate(-80px, 120px) scale(0.2); opacity: 0; } }
+@keyframes p4Fly { to { transform: translate(90px, 100px) scale(0.2); opacity: 0; } }
+@keyframes p5Fly { to { transform: translate(-130px, 10px) scale(0.2); opacity: 0; } }
+@keyframes p6Fly { to { transform: translate(120px, -10px) scale(0.2); opacity: 0; } }
+@keyframes p7Fly { to { transform: translate(-20px, -140px) scale(0.2); opacity: 0; } }
+@keyframes p8Fly { to { transform: translate(30px, 130px) scale(0.2); opacity: 0; } }
 
 
 /* Auth Toggle Styles */
@@ -4448,4 +4704,1016 @@ body::before {
 
 .btn-dls-trigger .btn-icon {
   font-size: 1.2rem;
+}
+
+/* ============================================================
+   PREMIUM ANIMATED LOGIN SYSTEM & REACTIVE MASCOT
+   ============================================================ */
+#screen-login {
+  background: #ff9e59 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow-y: auto !important;
+  z-index: 1000 !important;
+  position: fixed !important;
+  inset: 0 !important;
+}
+
+#screen-login:not(.active) {
+  display: none !important;
+}
+
+#screen-login::after, #screen-login::before {
+  display: none !important;
+}
+
+@keyframes floatSphere {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, 30px) scale(1.1); }
+}
+
+.login-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5rem;
+  width: 95%;
+  max-width: 1100px;
+  margin: auto;
+  padding: 2.5rem;
+  position: relative;
+  z-index: 5;
+}
+
+/* Hide original setup-bg inside screen-login if present */
+#screen-login .setup-bg {
+  display: none !important;
+}
+
+/* Desktop columns */
+.mascot-column {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  position: relative;
+}
+
+.login-container {
+  flex: 1;
+  max-width: 450px !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 3rem 1.5rem !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  animation: formPop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.2) !important;
+  color: #fff !important;
+}
+
+@keyframes formPop {
+  from {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Glassmorphism adjustments for internal header */
+.login-title {
+  color: #ffffff !important;
+  font-size: 2.1rem !important;
+  font-weight: 800 !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 0.4rem !important;
+  background: none !important;
+  -webkit-text-fill-color: initial !important;
+}
+
+.login-subtitle {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+}
+
+.form-group label {
+  display: none !important;
+}
+
+/* Modern inputs with icons */
+.input-with-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 10px;
+}
+
+.login-wrapper .btn-secondary {
+  border-radius: 8px !important;
+  height: 52px !important;
+  padding: 0 1.5rem !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+  background: rgba(255,255,255,0.15) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,0.25) !important;
+  transition: all 0.3s ease !important;
+}
+
+.login-wrapper .btn-secondary:hover {
+  background: rgba(255,255,255,0.25) !important;
+  border-color: #ff6a00 !important;
+}
+
+.input-icon {
+  position: absolute;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ff4757 !important;
+  pointer-events: none;
+  z-index: 10;
+  transition: color 0.3s ease;
+}
+
+.form-input.has-icon {
+  padding-left: 48px !important;
+}
+
+.login-wrapper .form-input {
+  background: rgba(255, 255, 255, 0.92) !important;
+  color: #1e293b !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.5) !important;
+  border-radius: 8px !important;
+  height: 52px !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04) !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+}
+
+.login-wrapper .form-input::placeholder {
+  color: #94a3b8 !important;
+  font-weight: 500 !important;
+}
+
+.login-wrapper .form-input:focus {
+  background: #ffffff !important;
+  border-color: #ff6a00 !important;
+  box-shadow: 0 0 0 4px rgba(255, 106, 0, 0.25) !important;
+  outline: none !important;
+}
+
+.login-wrapper .form-input:focus + .input-icon {
+  color: #ff6a00;
+}
+
+/* Action button style */
+.login-btn {
+  background: #ff4757 !important;
+  border: none !important;
+  border-radius: 8px !important;
+  color: #fff !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.8px !important;
+  height: 54px !important;
+  box-shadow: 0 8px 24px rgba(255, 71, 87, 0.35) !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+}
+
+.login-btn:hover {
+  background: #ff2e43 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 12px 30px rgba(255, 71, 87, 0.45) !important;
+}
+
+.login-btn:active {
+  transform: translateY(1px) !important;
+}
+
+.auth-toggle p, .auth-toggle a {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+.auth-toggle a:hover {
+  text-decoration: underline !important;
+}
+
+.login-footer p {
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+/* Mascot Column styling */
+.mascot-container {
+  position: relative;
+  width: 280px;
+  height: 420px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: mascotEntrance 1s cubic-bezier(0.175, 0.885, 0.32, 1.25);
+  margin-right: 2rem;
+}
+
+@keyframes mascotEntrance {
+  from {
+    opacity: 0;
+    transform: translateX(-60px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* Detailed 3D Mascot Character (CSS-built) */
+.mascot-character {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: mascotBreathing 4s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+.mascot-character::after {
+  content: '';
+  position: absolute;
+  bottom: 62px;
+  width: 100px;
+  height: 10px;
+  background: rgba(140, 50, 0, 0.35);
+  border-radius: 50%;
+  filter: blur(4px);
+  z-index: 1;
+}
+
+@keyframes mascotBreathing {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+/* Cartoon Boy Head Container */
+.mascot-head-container {
+  position: absolute;
+  top: 40px;
+  width: 110px;
+  height: 110px;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.mascot-head {
+  position: relative;
+  width: 80px;
+  height: 85px;
+  background: linear-gradient(135deg, #ffeedd 0%, #fcd4b4 100%);
+  border-radius: 42px 42px 35px 35px;
+  box-shadow: inset 0 -6px 0 rgba(0,0,0,0.06), 0 5px 12px rgba(0,0,0,0.12);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.mascot-ears {
+  position: absolute;
+  width: 96px;
+  height: 20px;
+  top: 45px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.ear {
+  width: 16px;
+  height: 20px;
+  background: #fcd4b4;
+  border-radius: 50%;
+  box-shadow: inset 0 -4px 0 rgba(0,0,0,0.05);
+}
+
+/* Slicked-back solid blonde hair style */
+.mascot-hair-back {
+  position: absolute;
+  width: 88px;
+  height: 84px;
+  background: linear-gradient(135deg, #ffeb60 0%, #f1c40f 60%, #c19b05 100%);
+  border-radius: 44px 44px 0 0;
+  top: -4px;
+  z-index: 1;
+  box-shadow: inset 0 -6px 8px rgba(0,0,0,0.08);
+}
+
+.mascot-hair-front {
+  position: absolute;
+  width: 86px;
+  height: 42px;
+  background: linear-gradient(to bottom, #ffeb60 0%, #f1c40f 100%);
+  border-radius: 38px 38px 8px 18px;
+  top: -9px;
+  left: -3px;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.12), inset 0 2px 0 rgba(255,255,255,0.4);
+  z-index: 5;
+}
+
+/* Overlapping modern layered hair bangs! */
+.mascot-hair-front::before {
+  content: '';
+  position: absolute;
+  width: 25px;
+  height: 25px;
+  background: #f1c40f;
+  border-radius: 0 0 15px 0;
+  bottom: -10px;
+  left: 22px;
+  transform: rotate(25deg);
+  box-shadow: 2px 2px 3px rgba(0,0,0,0.06);
+}
+
+.mascot-hair-front::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: #f1c40f;
+  border-radius: 0 0 0 12px;
+  bottom: -8px;
+  right: 18px;
+  transform: rotate(-15deg);
+  box-shadow: -2px 2px 3px rgba(0,0,0,0.06);
+}
+
+/* Eyebrows */
+.mascot-eyebrows {
+  position: absolute;
+  width: 58px;
+  height: 8px;
+  top: 23px;
+  left: 11px;
+  display: flex;
+  justify-content: space-between;
+  z-index: 4;
+}
+
+.eyebrow {
+  width: 22px;
+  height: 4px;
+  background: #d4ac0d;
+  border-radius: 3px;
+}
+
+.eyebrow.left { transform: rotate(4deg); }
+.eyebrow.right { transform: rotate(-44deg); }
+
+/* Expressive Eyes & Reactive Pupils */
+.mascot-eyes {
+  position: absolute;
+  width: 54px;
+  height: 18px;
+  top: 30px;
+  left: 13px;
+  display: flex;
+  justify-content: space-between;
+  z-index: 4;
+}
+
+.eye {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: inset 0 2.5px 0 rgba(0,0,0,0.08);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.pupil {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  background: radial-gradient(circle at 3px 3px, #3498db 0%, #1a5276 70%, #11334c 100%);
+  border-radius: 50%;
+  transform: translate(var(--look-x, 0px), var(--look-y, 0px));
+  transition: transform 0.15s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* Dual high-end sparkles inside pupil! */
+.pupil::before {
+  content: '';
+  position: absolute;
+  top: 1.5px;
+  left: 1.5px;
+  width: 3px;
+  height: 3px;
+  background: #ffffff;
+  border-radius: 50%;
+}
+
+.pupil::after {
+  content: '';
+  position: absolute;
+  bottom: 1.5px;
+  right: 1.5px;
+  width: 1.5px;
+  height: 1.5px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+}
+
+/* Blush Cheeks for professional mascot vibe */
+.mascot-face::before, .mascot-face::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 8px;
+  background: rgba(255, 107, 107, 0.35);
+  border-radius: 50%;
+  filter: blur(1.5px);
+  top: 48px;
+}
+.mascot-face::before { left: 8px; }
+.mascot-face::after { right: 8px; }
+
+/* Nose */
+.mascot-nose {
+  position: absolute;
+  width: 9px;
+  height: 12px;
+  background: linear-gradient(to bottom, #f3a87e, #d4936d);
+  border-radius: 5px;
+  top: 44px;
+  left: 35.5px;
+  z-index: 3;
+  box-shadow: 0 1.5px 2px rgba(0,0,0,0.12);
+}
+
+/* Mouth */
+.mascot-mouth {
+  position: absolute;
+  width: 16px;
+  height: 7px;
+  background: linear-gradient(to bottom, #d94e34, #b02313);
+  border-radius: 1px 1px 9px 9px;
+  top: 63px;
+  left: 32px;
+  z-index: 4;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.15);
+}
+
+/* Smart Grey Blazer Torso */
+.mascot-torso {
+  position: absolute;
+  top: 135px;
+  width: 100px;
+  height: 120px;
+  z-index: 5;
+}
+
+/* Proper Shaded Neck */
+.mascot-torso::before {
+  content: '';
+  position: absolute;
+  width: 22px;
+  height: 24px;
+  background: linear-gradient(to bottom, #e5b38f, #cd9773);
+  top: -18px;
+  left: 39px;
+  z-index: -1;
+  border-radius: 4px;
+  box-shadow: inset 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.mascot-blazer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #243b55 0%, #141e30 100%);
+  border-radius: 30px 30px 12px 12px;
+  box-shadow: inset 0 4px 0 rgba(255,255,255,0.25), 0 5px 15px rgba(0,0,0,0.12);
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Sleek suit lapels */
+.mascot-blazer::before, .mascot-blazer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 28px;
+  height: 60px;
+  background: linear-gradient(to bottom, #2b4563, #18263a);
+  border: 1px solid rgba(0,0,0,0.1);
+  z-index: 4;
+}
+.mascot-blazer::before {
+  left: 10px;
+  border-radius: 0 0 12px 0;
+  transform: rotate(-15deg);
+}
+.mascot-blazer::after {
+  right: 10px;
+  border-radius: 0 0 0 12px;
+  transform: rotate(15deg);
+}
+
+.mascot-shirt {
+  position: absolute;
+  width: 32px;
+  height: 48px;
+  background: #ffffff;
+  top: 0;
+  border-radius: 0 0 12px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 2;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+}
+
+.mascot-collar {
+  position: absolute;
+  width: 100%;
+  height: 12px;
+  display: flex;
+}
+
+.mascot-collar::before, .mascot-collar::after {
+  content: '';
+  flex: 1;
+  height: 100%;
+  background: #ffffff;
+  border-bottom: 2px solid #bdc3c7;
+}
+
+.mascot-collar::before { transform: skewY(20deg); }
+.mascot-collar::after { transform: skewY(-20deg); }
+
+.mascot-tie {
+  position: absolute;
+  width: 10px;
+  height: 38px;
+  background: linear-gradient(to bottom, #ffe875, #d4af37 60%, #aa840a 100%);
+  top: 10px;
+  border-radius: 0 0 5px 5px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+/* Elegant tie knot! */
+.mascot-tie::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: -1px;
+  width: 12px;
+  height: 8px;
+  background: #ffe875;
+  border-radius: 3px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Smart Blazer Arms & Hands */
+.mascot-arms {
+  position: absolute;
+  top: 135px;
+  width: 136px;
+  height: 110px;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 12;
+}
+
+.mascot-arm {
+  width: 20px;
+  height: 88px;
+  background: linear-gradient(to bottom, #243b55, #141e30);
+  border-radius: 10px;
+  box-shadow: inset -2px 0 3px rgba(0,0,0,0.15), 0 3px 6px rgba(0,0,0,0.08);
+  transform-origin: top center;
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+}
+
+/* Crisp white shirt cuffs! */
+.mascot-arm::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  width: 16px;
+  height: 6px;
+  background: #ffffff;
+  border-radius: 2px;
+  z-index: 2;
+}
+
+.mascot-arm.left {
+  transform: rotate(44deg) translateY(12px) translateX(24px);
+  z-index: 6;
+}
+
+.mascot-arm.right {
+  transform: rotate(-44deg) translateY(12px) translateX(-24px);
+  z-index: 5;
+}
+
+.mascot-hand {
+  position: absolute;
+  bottom: -8px;
+  left: -1px;
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(135deg, #ffe0c5 0%, #fcd4b4 100%);
+  border-radius: 50%;
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.06);
+  z-index: 3;
+}
+
+/* Dark Slim Trousers */
+.mascot-legs {
+  position: absolute;
+  top: 250px;
+  width: 80px;
+  height: 90px;
+  display: flex;
+  justify-content: space-between;
+  z-index: 4;
+}
+
+.mascot-leg {
+  width: 24px;
+  height: 100%;
+  background: linear-gradient(to right, #34495e 0%, #2c3e50 70%, #1e2b38 100%);
+  border-radius: 6px;
+  box-shadow: inset -2px 0 4px rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* White Sneakers with Details */
+.mascot-shoes {
+  position: absolute;
+  top: 335px;
+  width: 90px;
+  height: 20px;
+  display: flex;
+  justify-content: space-between;
+  z-index: 4;
+}
+
+.mascot-shoe {
+  width: 34px;
+  height: 20px;
+  background: #ffffff;
+  border-radius: 10px 10px 4px 4px;
+  box-shadow: 0 5px 8px rgba(0,0,0,0.15), inset 0 -4px 0 #bdc3c7;
+  position: relative;
+}
+
+/* Sneaker athletic details */
+.mascot-shoe::before {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  width: 26px;
+  height: 3px;
+  background: #1e90ff;
+  border-radius: 1px;
+}
+
+/* REACTIVE MASKING STATES: Covering eyes when password is focused! */
+#login-mascot.covering-eyes .mascot-arm.left {
+  transform: translateY(-84px) translateX(36px) rotate(138deg) !important;
+}
+
+#login-mascot.covering-eyes .mascot-arm.right {
+  transform: translateY(-84px) translateX(-36px) rotate(-138deg) !important;
+}
+
+#login-mascot.covering-eyes .mascot-mouth {
+  height: 12px;
+  width: 12px;
+  border-radius: 50%;
+  background: #000000;
+}
+
+/* Briefcase styling */
+.briefcase-container {
+  position: absolute;
+  bottom: 30px;
+  right: -10px;
+  width: 65px;
+  height: 65px;
+  animation: briefcaseFloating 3.5s ease-in-out infinite;
+  filter: drop-shadow(0 6px 8px rgba(0,0,0,0.18));
+}
+
+@keyframes briefcaseFloating {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-6px) rotate(3deg); }
+}
+
+.briefcase-svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Automated Entrance Intro Walk-in & Suitcase Placement animations */
+#login-mascot.intro-walking {
+  animation: mascotSlideIn 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards !important;
+}
+
+#login-mascot.intro-walking .mascot-character {
+  animation: mascotWalkBob 0.35s ease-in-out infinite alternate !important;
+}
+
+#login-mascot.intro-walking .mascot-leg.left {
+  animation: mascotLeftLegWalk 0.35s ease-in-out infinite alternate !important;
+}
+
+#login-mascot.intro-walking .mascot-leg.right {
+  animation: mascotRightLegWalk 0.35s ease-in-out infinite alternate !important;
+}
+
+#login-mascot.intro-walking .mascot-arm.left {
+  animation: mascotLeftArmWalk 0.35s ease-in-out infinite alternate !important;
+}
+
+#login-mascot.intro-walking .mascot-arm.right {
+  animation: mascotRightArmWalk 0.35s ease-in-out infinite alternate !important;
+}
+
+#login-mascot.intro-walking .briefcase-container {
+  animation: briefcaseWalkFloat 0.35s ease-in-out infinite alternate !important;
+}
+
+/* Placer State - stopping and placing case down */
+#login-mascot.intro-placing .mascot-character {
+  transform: translateY(0);
+}
+
+#login-mascot.intro-placing .mascot-arm.right {
+  animation: armPlaceDown 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) forwards !important;
+}
+
+#login-mascot.intro-placing .briefcase-container {
+  animation: briefcasePlaceDown 0.6s cubic-bezier(0.25, 0.8, 0.25, 1) forwards !important;
+}
+
+/* Keyframes */
+@keyframes mascotSlideIn {
+  from { transform: translateX(-400px); }
+  to { transform: translateX(0); }
+}
+
+@keyframes mascotWalkBob {
+  0% { transform: translateY(0) scaleY(1); }
+  100% { transform: translateY(-7px) scaleY(0.97); }
+}
+
+@keyframes mascotLeftLegWalk {
+  0% { transform: rotate(-22deg); }
+  100% { transform: rotate(22deg); }
+}
+
+@keyframes mascotRightLegWalk {
+  0% { transform: rotate(22deg); }
+  100% { transform: rotate(-22deg); }
+}
+
+@keyframes mascotLeftArmWalk {
+  0% { transform: rotate(20deg) translateY(6px) translateX(12px); }
+  100% { transform: rotate(50deg) translateY(12px) translateX(24px); }
+}
+
+@keyframes mascotRightArmWalk {
+  0% { transform: rotate(-50deg) translateY(12px) translateX(-24px); }
+  100% { transform: rotate(-20deg) translateY(6px) translateX(-12px); }
+}
+
+@keyframes briefcaseWalkFloat {
+  0% { transform: translate(-15px, -45px) rotate(-8deg); }
+  100% { transform: translate(-10px, -35px) rotate(8deg); }
+}
+
+@keyframes briefcasePlaceDown {
+  from { transform: translate(-12px, -40px) rotate(0deg); }
+  to { transform: translate(0, 0) rotate(0deg); }
+}
+
+@keyframes armPlaceDown {
+  from { transform: rotate(-35deg) translateY(9px) translateX(-18px); }
+  to { transform: rotate(-44deg) translateY(12px) translateX(-24px); }
+}
+
+.mascot-container.error-shake .mascot-character {
+  animation: mascotErrorShake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) both !important;
+}
+
+@keyframes mascotErrorShake {
+  10%, 90% { transform: translate3d(-1px, 0, 0) rotate(-1deg); }
+  20%, 80% { transform: translate3d(2px, 0, 0) rotate(1.5deg); }
+  30%, 50%, 70% { transform: translate3d(-4px, 0, 0) rotate(-2deg); }
+  40%, 60% { transform: translate3d(4px, 0, 0) rotate(2deg); }
+}
+
+/* Mobile responsive alignment & Briefcase Reveal */
+@media (max-width: 850px) {
+  #screen-login {
+    position: fixed !important;
+    inset: 0 !important;
+    overflow-y: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    background: #ff9e59 !important;
+    padding: 0 !important;
+  }
+  
+  .login-wrapper {
+    flex-direction: column !important;
+    gap: 1rem !important;
+    padding: 1.5rem 1rem !important;
+    width: 100% !important;
+    max-width: 450px !important;
+    min-height: 100% !important;
+    margin: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+  
+  .mascot-column {
+    justify-content: center !important;
+    margin-bottom: 0 !important;
+    transform: none !important;
+    width: 100% !important;
+    height: 180px !important;
+    display: flex !important;
+    align-items: center !important;
+    overflow: visible !important;
+    flex-shrink: 0 !important;
+    transition: transform 1s cubic-bezier(0.25, 0.8, 0.25, 1), height 0.3s ease;
+  }
+  
+  .mascot-container {
+    margin: 0 auto !important;
+    width: 280px !important;
+    height: 420px !important;
+    zoom: 0.42 !important;
+  }
+  
+  .login-container {
+    padding: 1.75rem 1.25rem !important;
+    width: 100% !important;
+    max-width: 400px !important;
+    transform: none !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
+    transition: transform 1.2s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 1.2s ease;
+  }
+
+  .logo-large {
+    width: 70px !important;
+    height: 70px !important;
+    margin: 0 auto 1rem !important;
+    transition: all 0.3s ease;
+  }
+
+  /* Vertical transitions for initial-center state on Mobile */
+  .login-wrapper.initial-center .mascot-column {
+    transform: translateY(40px) translateX(0) !important;
+  }
+
+  .login-wrapper.initial-center .login-container {
+    transform: translateY(30px) scale(0) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+}
+
+/* Height-based media query adjustments for landscape and active virtual keyboards */
+@media (max-width: 850px) and (max-height: 680px) {
+  .mascot-column {
+    height: 130px !important;
+  }
+  .mascot-container {
+    zoom: 0.30 !important;
+  }
+  .logo-large {
+    width: 55px !important;
+    height: 55px !important;
+    margin: 0 auto 0.75rem !important;
+  }
+  .login-title {
+    font-size: 1.6rem !important;
+  }
+}
+
+@media (max-width: 850px) and (max-height: 540px) {
+  .mascot-column {
+    display: none !important;
+  }
+  .logo-large {
+    display: none !important;
+  }
+  .login-header {
+    margin-bottom: 0.5rem !important;
+  }
+  .login-container {
+    padding: 1rem !important;
+  }
+}
+
+
+
+/* ============================================================
+   SPLIT-SCREEN BRIEFCASE UNLOCK TRANSITIONS
+   ============================================================ */
+.login-wrapper {
+  perspective: 1500px;
+}
+
+.mascot-column {
+  transition: transform 1s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.login-wrapper.initial-center .mascot-column {
+  transform: translateX(180px);
+}
+
+.login-container {
+  transition: transform 1.2s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 1.2s ease, box-shadow 0.5s;
+  transform: perspective(1000px) rotateY(-8deg);
+  transform-style: preserve-3d;
+}
+
+.login-container:hover {
+  transform: perspective(1000px) rotateY(0deg) translateY(-2px);
+}
+
+.login-wrapper.initial-center .login-container {
+  transform: translateX(100px) scale(0) rotateY(-50deg) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Burst Particle Sparkles on Reveal */
+.burst-particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ffffff;
+  pointer-events: none;
+  z-index: 9999;
+  animation: explode 0.8s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes explode {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+}
+
+/* Start prompt pulse */
+.start-prompt {
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  white-space: nowrap;
+  animation: pulseText 2s infinite;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  pointer-events: none;
+}
+
+@keyframes pulseText {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
 }

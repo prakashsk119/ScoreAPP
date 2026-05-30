@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive 3D-Like Login Animation Demo</title>
+  <!-- Modern Premium Typography -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Demo-specific ambient overrides */
+    body {
+      background: #ff9e59;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow-y: auto;
+      padding: 1rem 0;
+      transition: background 0.8s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    body.dark-mode {
+      background: linear-gradient(135deg, #0a0e17 0%, #16222f 50%, #20354b 100%);
+    }
+    .login-wrapper {
+      box-shadow: 0 25px 60px rgba(0,0,0,0.18);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.08);
+      overflow: hidden;
+      width: 100%;
+      max-width: 950px;
+      min-height: 520px;
+    }
+    .login-column {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 460px;
+      z-index: 5;
+    }
+    @media (max-width: 850px) {
+      body {
+        padding: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        min-height: 100vh !important;
+        overflow-y: auto !important;
+      }
+      .login-wrapper {
+        border-radius: 0;
+        box-shadow: none;
+        background: transparent;
+        border: none;
+        backdrop-filter: none;
+      }
+      .login-column {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background Ambient Glows -->
+  <div class="ambient-sphere"></div>
+  <div class="ambient-sphere second"></div>
+
+  <!-- Dynamic Wrapper: split layout, begins in initial-center mode -->
+  <div class="login-wrapper initial-center" id="login-panel-wrapper">
+    
+    <!-- Mascot Column (Left) -->
+    <div class="mascot-column">
+      <div class="mascot-container" id="login-mascot">
+        <!-- Pulse prompt to click suitcase initially -->
+        
+        <div class="mascot-character">
+          <!-- Head & Face -->
+          <div class="mascot-head-container">
+            <div class="mascot-hair-back"></div>
+            <div class="mascot-ears">
+              <div class="ear left"></div>
+              <div class="ear right"></div>
+            </div>
+            <div class="mascot-head">
+              <div class="mascot-face">
+                <div class="mascot-hair-front"></div>
+                <div class="mascot-eyebrows">
+                  <div class="eyebrow left"></div>
+                  <div class="eyebrow right"></div>
+                </div>
+                <div class="mascot-eyes">
+                  <div class="eye left">
+                    <div class="pupil"></div>
+                  </div>
+                  <div class="eye right">
+                    <div class="pupil"></div>
+                  </div>
+                </div>
+                <div class="mascot-nose"></div>
+                <div class="mascot-mouth"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Smart Suit Torso -->
+          <div class="mascot-torso">
+            <div class="mascot-blazer">
+              <div class="mascot-shirt">
+                <div class="mascot-collar"></div>
+                <div class="mascot-tie"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Smart Blazer Arms & Hands -->
+          <div class="mascot-arms">
+            <div class="mascot-arm left">
+              <div class="mascot-hand"></div>
+            </div>
+            <div class="mascot-arm right">
+              <div class="mascot-hand"></div>
+            </div>
+          </div>
+
+          <!-- Slim Trousers -->
+          <div class="mascot-legs">
+            <div class="mascot-leg left"></div>
+            <div class="mascot-leg right"></div>
+          </div>
+
+          <!-- Sneakers -->
+          <div class="mascot-shoes">
+            <div class="mascot-shoe left"></div>
+            <div class="mascot-shoe right"></div>
+          </div>
+        </div>
+        
+        <!-- Luxury Gold & Leather Executive Suitcase -->
+        <div class="briefcase-container" id="reveal-briefcase">
+          <svg viewBox="0 0 100 100" class="briefcase-svg">
+            <defs>
+              <linearGradient id="briefcaseBody" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#a0522d" />
+                <stop offset="100%" stop-color="#5c2c16" />
+              </linearGradient>
+              <linearGradient id="briefcaseGold" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#ffe875" />
+                <stop offset="100%" stop-color="#d4af37" />
+              </linearGradient>
+              <filter id="caseShadow" x="-10%" y="-10%" width="120%" height="120%">
+                <feDropShadow dx="0" dy="4" stdDeviation="3" flood-opacity="0.25"/>
+              </filter>
+            </defs>
+            <!-- Handle -->
+            <path d="M38 38 V25 C38 21, 62 21, 62 25 V38" fill="none" stroke="#4a220f" stroke-width="5" stroke-linecap="round" />
+            <rect x="36" y="32" width="6" height="6" rx="1" fill="#d4af37" />
+            <rect x="58" y="32" width="6" height="6" rx="1" fill="#d4af37" />
+            
+            <!-- Case Body -->
+            <rect x="20" y="38" width="60" height="44" rx="7" fill="url(#briefcaseBody)" stroke="#3e1a0b" stroke-width="2.5" filter="url(#caseShadow)" />
+            
+            <!-- Leather Straps -->
+            <rect x="29" y="38" width="7" height="44" fill="#4a220f" rx="1" />
+            <rect x="64" y="38" width="7" height="44" fill="#4a220f" rx="1" />
+            
+            <!-- Brass Locks -->
+            <rect x="28" y="52" width="9" height="12" rx="2" fill="url(#briefcaseGold)" stroke="#996515" stroke-width="1" />
+            <rect x="63" y="52" width="9" height="12" rx="2" fill="url(#briefcaseGold)" stroke="#996515" stroke-width="1" />
+            <circle cx="32.5" cy="58" r="1.5" fill="#333" />
+            <circle cx="67.5" cy="58" r="1.5" fill="#333" />
+            
+            <!-- Center Badge / Lock -->
+            <rect x="44" y="38" width="12" height="10" rx="1" fill="url(#briefcaseGold)" stroke="#996515" stroke-width="1" />
+            <rect x="47" y="44" width="6" height="8" fill="#333" rx="1" />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Login Card Column (Right) -->
+    <div class="login-column">
+      <div class="login-container">
+        
+        <div class="login-header">
+          <div class="logo-large">
+            <svg viewBox="0 0 120 120" fill="none">
+              <circle cx="60" cy="60" r="58" fill="url(#lg_login)" />
+              <path d="M35 85L60 25L85 85" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M42 68h36" stroke="white" stroke-width="5" stroke-linecap="round" />
+              <defs>
+                <linearGradient id="lg_login" x1="0" y1="0" x2="120" y2="120">
+                  <stop stop-color="#00D46A" />
+                  <stop offset="1" stop-color="#0052CC" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <h1 class="login-title" id="auth-title">Register Now</h1>
+          <p class="login-subtitle" id="auth-subtitle">Join the elite scoring platform today.</p>
+        </div>
+        
+        <div class="login-form">
+          <div class="form-group">
+            <label for="reg-phone">Mobile Number</label>
+            <div class="input-with-icon-wrapper">
+              <span class="input-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                </svg>
+              </span>
+              <input type="tel" id="reg-phone" class="form-input has-icon" placeholder="Enter mobile number">
+              <button class="btn-secondary" id="btn-send-otp" onclick="requestMockOTP()">Send OTP</button>
+            </div>
+          </div>
+          
+          <div class="form-group" id="otp-group" style="display: none;">
+            <label for="reg-otp">Verification OTP</label>
+            <div class="input-with-icon-wrapper">
+              <span class="input-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </span>
+              <input type="text" id="reg-otp" class="form-input has-icon" placeholder="6-digit verification code" maxlength="6">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="reg-pass">Secure Password</label>
+            <div class="input-with-icon-wrapper">
+              <span class="input-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </span>
+              <input type="password" id="reg-pass" class="form-input has-icon" placeholder="••••••••">
+            </div>
+          </div>
+          
+          <button class="login-btn" onclick="submitMockDemoForm()">
+            NEXT STEP
+          </button>
+          
+          <div class="auth-toggle">
+            <p>Already have an account?<a href="#" onclick="toggleModeAlert()">Login Now</a></p>
+          </div>
+        </div>
+        
+        <div class="login-footer">
+          <p>By continuing, you agree to our terms & conditions.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-wrapper"></div>
+
+  <!-- ============================================================
+       DYNAMIC JAVASCRIPT & Mascot Interactions
+       ============================================================ */ -->
+  <script>
+    // Utility selectors
+    const $ = (id) => document.getElementById(id);
+    const wrapper = $('login-panel-wrapper');
+    const mascot = $('login-mascot');
+    const phoneInput = $('reg-phone');
+    const passInput = $('reg-pass');
+    const otpInput = $('reg-otp');
+    const promptText = $('reveal-prompt');
+    const toastWrapper = $('toast-wrapper');
+
+    let eyeInterval = null;
+    let isRevealed = false;
+
+    // Toast alert utility
+    function makeToast(message) {
+      const alert = document.createElement('div');
+      alert.className = 'toast-alert';
+      alert.textContent = message;
+      toastWrapper.appendChild(alert);
+      setTimeout(() => {
+        alert.style.transition = 'opacity 0.4s, transform 0.4s';
+        alert.style.opacity = '0';
+        alert.style.transform = 'translateY(-20px)';
+        setTimeout(() => alert.remove(), 400);
+      }, 3500);
+    }
+
+    // Toggle theme
+    function toggleTheme() {
+      document.body.classList.toggle('dark-mode');
+      makeToast(`Theme switched to ${document.body.classList.contains('dark-mode') ? 'Dark Core' : 'Vibrant Orange'}`);
+    }
+
+    // Trigger character jump bounce
+    function triggerMascotJump() {
+      if (!mascot) return;
+      mascot.classList.add('submitting');
+      setTimeout(() => mascot.classList.remove('submitting'), 1000);
+    }
+
+    // Trigger disapproval shake
+    function triggerMascotError() {
+      if (!mascot) return;
+      mascot.classList.add('error-shake');
+      setTimeout(() => mascot.classList.remove('error-shake'), 600);
+    }
+
+    // Toggle cover eyes manually
+    function toggleMascotEyes(shouldCover) {
+      if (!mascot) return;
+      if (shouldCover) {
+        if (eyeInterval) clearInterval(eyeInterval);
+        mascot.classList.add('covering-eyes');
+      } else {
+        mascot.classList.remove('covering-eyes');
+        startIdleEyes();
+      }
+    }
+
+    // Reveal Transition: Character slides left, sparkles trigger, and form opens
+    function triggerReveal() {
+      if (isRevealed) return;
+      isRevealed = true;
+
+      if (promptText) promptText.style.display = "none";
+
+      // Disperse particle burst effect from the briefcase
+      const briefcaseContainer = document.querySelector(".briefcase-container");
+      if (briefcaseContainer) {
+        const briefcaseRect = briefcaseContainer.getBoundingClientRect();
+        const originX = briefcaseRect.left + briefcaseRect.width / 2;
+        const originY = briefcaseRect.top + briefcaseRect.height / 2;
+        
+        for (let i = 0; i < 40; i++) {
+          const particle = document.createElement("div");
+          particle.className = "burst-particle";
+          particle.style.left = `${originX}px`;
+          particle.style.top = `${originY}px`;
+          
+          const angle = Math.random() * Math.PI * 2;
+          const radius = 60 + Math.random() * 120;
+          const tx = Math.cos(angle) * radius;
+          const ty = Math.sin(angle) * radius;
+          
+          particle.style.setProperty("--tx", `${tx}px`);
+          particle.style.setProperty("--ty", `${ty}px`);
+          const colors = ["#f1c40f", "#ffffff", "#ff4514", "#00D46A", "#3498db"];
+          particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+          
+          document.body.appendChild(particle);
+          setTimeout(() => particle.remove(), 800);
+        }
+      }
+
+      // Transition wrapper from center view to full split layout
+      setTimeout(() => {
+        wrapper.classList.remove("initial-center");
+        makeToast("Form unlocked! Click inputs to test interactions.");
+      }, 200);
+    }
+
+    // Idle pupil movement to make character feel alive
+    const startIdleEyes = () => {
+      if (eyeInterval) clearInterval(eyeInterval);
+      eyeInterval = setInterval(() => {
+        const active = document.activeElement;
+        if (active && (active === phoneInput || active === passInput || active === otpInput)) {
+          return;
+        }
+        
+        const lx = (Math.random() - 0.5) * 6;
+        const ly = (Math.random() - 0.5) * 4;
+        mascot.style.setProperty('--look-x', `${lx}px`);
+        mascot.style.setProperty('--look-y', `${ly}px`);
+        
+        setTimeout(() => {
+          const currentActive = document.activeElement;
+          if (currentActive && (currentActive === phoneInput || currentActive === passInput || currentActive === otpInput)) {
+            return;
+          }
+          mascot.style.setProperty('--look-x', '0px');
+          mascot.style.setProperty('--look-y', '0px');
+        }, 700);
+      }, 3800);
+    };
+
+    // Reactively track mobile input typing lengths
+    const handlePhoneInput = () => {
+      if (!isRevealed) triggerReveal();
+      const val = phoneInput.value || "";
+      const len = Math.min(val.length, 10);
+      const lookX = -2.5 + (len * 0.5); // ranges from -2.5px to +2.5px
+      const lookY = 3.5; // looking downwards towards the field
+      mascot.style.setProperty('--look-x', `${lookX}px`);
+      mascot.style.setProperty('--look-y', `${lookY}px`);
+    };
+
+    // Event registrations for reactiveness
+    if (phoneInput) {
+      phoneInput.addEventListener('focus', () => {
+        if (!isRevealed) triggerReveal();
+        if (eyeInterval) clearInterval(eyeInterval);
+        mascot.classList.remove('covering-eyes');
+        handlePhoneInput();
+      });
+      phoneInput.addEventListener('input', handlePhoneInput);
+      phoneInput.addEventListener('blur', () => {
+        mascot.style.setProperty('--look-x', '0px');
+        mascot.style.setProperty('--look-y', '0px');
+        startIdleEyes();
+      });
+    }
+
+    if (passInput) {
+      passInput.addEventListener('focus', () => {
+        if (!isRevealed) triggerReveal();
+        if (eyeInterval) clearInterval(eyeInterval);
+        mascot.classList.add('covering-eyes');
+      });
+      passInput.addEventListener('blur', () => {
+        mascot.classList.remove('covering-eyes');
+        startIdleEyes();
+      });
+    }
+
+    if (otpInput) {
+      otpInput.addEventListener('focus', () => {
+        if (eyeInterval) clearInterval(eyeInterval);
+        mascot.classList.remove('covering-eyes');
+        mascot.style.setProperty('--look-x', '0px');
+        mascot.style.setProperty('--look-y', '4.5px');
+      });
+      otpInput.addEventListener('blur', () => {
+        mascot.style.setProperty('--look-x', '0px');
+        mascot.style.setProperty('--look-y', '0px');
+        startIdleEyes();
+      });
+    }
+
+    // OTP mock triggering
+    function requestMockOTP() {
+      const phone = phoneInput.value.trim();
+      if (!phone || phone.length < 10) {
+        makeToast("Error: Valid 10-digit mobile number required!");
+        triggerMascotError();
+        return;
+      }
+      
+      triggerMascotJump();
+      makeToast("MOCK SMS: Your registration verification code is 884729.");
+      
+      // Reveal OTP input
+      document.getElementById('otp-group').style.display = 'block';
+    }
+
+    // Submit demo form verification
+    function submitMockDemoForm() {
+      const phone = phoneInput.value.trim();
+      const pass = passInput.value.trim();
+      const isOtpVisible = document.getElementById('otp-group').style.display === 'block';
+      const otp = otpInput.value.trim();
+
+      if (!phone || !pass) {
+        makeToast("Validation Error: Please fill in all fields.");
+        triggerMascotError();
+        return;
+      }
+
+      if (isOtpVisible && !otp) {
+        makeToast("Validation Error: OTP verification is required.");
+        triggerMascotError();
+        return;
+      }
+
+      if (pass.length < 6) {
+        makeToast("Validation Error: Password must be 6+ characters.");
+        triggerMascotError();
+        return;
+      }
+
+      // Success Trigger jump!
+      triggerMascotJump();
+      setTimeout(() => {
+        makeToast("🎉 Welcome! Demo Login Successful!");
+      }, 300);
+    }
+
+    function toggleModeAlert() {
+      makeToast("Toggled to Login mode! Mascot updated.");
+      triggerMascotJump();
+    }
+
+    // Start the beautiful walk-in automated intro sequence
+    mascot.classList.remove("intro-walking", "intro-placing");
+    mascot.classList.add("intro-walking");
+    mascot.style.setProperty("--look-x", "0px");
+    mascot.style.setProperty("--look-y", "0px");
+
+    // Step 1: Walk in from left for 1.2 seconds, then stop and place suitcase down
+    setTimeout(() => {
+      mascot.classList.remove("intro-walking");
+      mascot.classList.add("intro-placing");
+      
+      // Pupils look down at the briefcase as it is placed down
+      mascot.style.setProperty("--look-x", "-1.5px");
+      mascot.style.setProperty("--look-y", "4px");
+      
+      // Step 2: Placing animation lasts 0.6 seconds (total 1.8 seconds)
+      setTimeout(() => {
+        mascot.classList.remove("intro-placing");
+        
+        // Look back up as the briefcase opens
+        mascot.style.setProperty("--look-x", "0px");
+        mascot.style.setProperty("--look-y", "0px");
+        
+        // Automatically trigger briefcase reveal & particle burst!
+        triggerReveal();
+        startIdleEyes();
+      }, 600);
+    }, 1200);
+  </script>
+</body>
+</html>

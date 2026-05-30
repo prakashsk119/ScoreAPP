@@ -20,57 +20,191 @@
 
   <!-- ===================== SCREEN: LOGIN ===================== -->
   <div id="screen-login" class="screen">
-
-    <div class="setup-bg"></div>
-    <div class="login-container">
-      <div class="login-header">
-        <div class="logo-large">
-          <svg viewBox="0 0 120 120" fill="none">
-            <circle cx="60" cy="60" r="58" fill="url(#lg_login)" />
-            <path d="M35 85L60 25L85 85" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
-            <path d="M42 68h36" stroke="white" stroke-width="5" stroke-linecap="round" />
-            <defs>
-              <linearGradient id="lg_login" x1="0" y1="0" x2="120" y2="120">
-                <stop stop-color="#00D46A" />
-                <stop offset="1" stop-color="#0052CC" />
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-        <h1 class="login-title" id="auth-title">Welcome to CricScore</h1>
-        <p class="login-subtitle" id="auth-subtitle">Elevate your game with professional scoring.</p>
-      </div>
+    <div class="login-wrapper initial-center" id="login-panel-wrapper">
       
-      <div class="login-form">
+      <!-- Mascot Column (Left) -->
+      <div class="mascot-column">
+        <div class="mascot-container" id="login-mascot">
+          <!-- Pulse prompt to click briefcase initially -->
 
-        <div class="form-group">
-          <label for="login-phone">Mobile Number</label>
-          <div style="display: flex; gap: 10px;">
-            <input type="tel" id="login-phone" class="form-input" placeholder="Enter your mobile number" style="flex: 1;">
-            <button class="btn-secondary register-only" id="btn-send-otp" style="display: none; white-space: nowrap; padding: 0 1rem;" onclick="requestOTP()">Send OTP</button>
+          <div class="mascot-character">
+            <!-- Head & Face -->
+            <div class="mascot-head-container">
+              <div class="mascot-hair-back"></div>
+              <div class="mascot-ears">
+                <div class="ear left"></div>
+                <div class="ear right"></div>
+              </div>
+              <div class="mascot-head">
+                <div class="mascot-face">
+                  <div class="mascot-hair-front"></div>
+                  <div class="mascot-eyebrows">
+                    <div class="eyebrow left"></div>
+                    <div class="eyebrow right"></div>
+                  </div>
+                  <div class="mascot-eyes">
+                    <div class="eye left">
+                      <div class="pupil"></div>
+                    </div>
+                    <div class="eye right">
+                      <div class="pupil"></div>
+                    </div>
+                  </div>
+                  <div class="mascot-nose"></div>
+                  <div class="mascot-mouth"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Smart Suit Torso -->
+            <div class="mascot-torso">
+              <div class="mascot-blazer">
+                <div class="mascot-shirt">
+                  <div class="mascot-collar"></div>
+                  <div class="mascot-tie"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Smart Blazer Arms & Hands -->
+            <div class="mascot-arms">
+              <div class="mascot-arm left">
+                <div class="mascot-hand"></div>
+              </div>
+              <div class="mascot-arm right">
+                <div class="mascot-hand"></div>
+              </div>
+            </div>
+
+            <!-- Slim Trousers -->
+            <div class="mascot-legs">
+              <div class="mascot-leg left"></div>
+              <div class="mascot-leg right"></div>
+            </div>
+
+            <!-- Sneakers -->
+            <div class="mascot-shoes">
+              <div class="mascot-shoe left"></div>
+              <div class="mascot-shoe right"></div>
+            </div>
+          </div>
+          
+          <!-- Animated Briefcase next to mascot -->
+          <div class="briefcase-container" id="reveal-briefcase">
+            <svg viewBox="0 0 100 100" class="briefcase-svg">
+              <defs>
+                <linearGradient id="briefcaseBody" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#a0522d" />
+                  <stop offset="100%" stop-color="#5c2c16" />
+                </linearGradient>
+                <linearGradient id="briefcaseGold" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#ffe875" />
+                  <stop offset="100%" stop-color="#d4af37" />
+                </linearGradient>
+                <filter id="caseShadow" x="-10%" y="-10%" width="120%" height="120%">
+                  <feDropShadow dx="0" dy="4" stdDeviation="3" flood-opacity="0.25"/>
+                </filter>
+              </defs>
+              <!-- Handle -->
+              <path d="M38 38 V25 C38 21, 62 21, 62 25 V38" fill="none" stroke="#4a220f" stroke-width="5" stroke-linecap="round" />
+              <rect x="36" y="32" width="6" height="6" rx="1" fill="#d4af37" />
+              <rect x="58" y="32" width="6" height="6" rx="1" fill="#d4af37" />
+              
+              <!-- Case Body -->
+              <rect x="20" y="38" width="60" height="44" rx="7" fill="url(#briefcaseBody)" stroke="#3e1a0b" stroke-width="2.5" filter="url(#caseShadow)" />
+              
+              <!-- Leather Straps -->
+              <rect x="29" y="38" width="7" height="44" fill="#4a220f" rx="1" />
+              <rect x="64" y="38" width="7" height="44" fill="#4a220f" rx="1" />
+              
+              <!-- Brass Locks -->
+              <rect x="28" y="52" width="9" height="12" rx="2" fill="url(#briefcaseGold)" stroke="#996515" stroke-width="1" />
+              <rect x="63" y="52" width="9" height="12" rx="2" fill="url(#briefcaseGold)" stroke="#996515" stroke-width="1" />
+              <circle cx="32.5" cy="58" r="1.5" fill="#333" />
+              <circle cx="67.5" cy="58" r="1.5" fill="#333" />
+              
+              <!-- Center Badge / Lock -->
+              <rect x="44" y="38" width="12" height="10" rx="1" fill="url(#briefcaseGold)" stroke="#996515" stroke-width="1" />
+              <rect x="47" y="44" width="6" height="8" fill="#333" rx="1" />
+            </svg>
           </div>
         </div>
-        <div class="form-group register-only" style="display: none;">
-          <label for="login-otp">Enter OTP</label>
-          <input type="text" id="login-otp" class="form-input" placeholder="6-digit code" maxlength="6">
-        </div>
-        <div class="form-group">
-          <label for="login-pass" id="lbl-pass">Password</label>
-          <input type="password" id="login-pass" class="form-input" placeholder="••••••••">
+      </div>
+
+      <!-- Login Container (Right) -->
+      <div class="login-container">
+        <div class="login-header">
+          <div class="logo-large">
+            <svg viewBox="0 0 120 120" fill="none">
+              <circle cx="60" cy="60" r="58" fill="url(#lg_login)" />
+              <path d="M35 85L60 25L85 85" stroke="white" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M42 68h36" stroke="white" stroke-width="5" stroke-linecap="round" />
+              <defs>
+                <linearGradient id="lg_login" x1="0" y1="0" x2="120" y2="120">
+                  <stop stop-color="#00D46A" />
+                  <stop offset="1" stop-color="#0052CC" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <h1 class="login-title" id="auth-title">Welcome to CricScore</h1>
+          <p class="login-subtitle" id="auth-subtitle">Elevate your game with professional scoring.</p>
         </div>
         
-        <button class="btn-primary login-btn" id="btn-auth" onclick="handleAuth()">
-          Login to Account
-        </button>
+        <div class="login-form">
+          <div class="form-group">
+            <label for="login-phone">Mobile Number</label>
+            <div class="input-with-icon-wrapper">
+              <span class="input-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                </svg>
+              </span>
+              <input type="tel" id="login-phone" class="form-input has-icon" placeholder="Enter mobile number">
+              <button class="btn-secondary register-only" id="btn-send-otp" style="display: none; white-space: nowrap;" onclick="requestOTP()">Send OTP</button>
+            </div>
+          </div>
+          
+          <div class="form-group register-only" style="display: none;">
+            <label for="login-otp">Enter OTP</label>
+            <div class="input-with-icon-wrapper">
+              <span class="input-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </span>
+              <input type="text" id="login-otp" class="form-input has-icon" placeholder="6-digit code" maxlength="6">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="login-pass" id="lbl-pass">Password</label>
+            <div class="input-with-icon-wrapper">
+              <span class="input-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </span>
+              <input type="password" id="login-pass" class="form-input has-icon" placeholder="••••••••">
+            </div>
+          </div>
+          
+          <button class="btn-primary login-btn" id="btn-auth" onclick="handleAuth()">
+            Login to Account
+          </button>
+          
+          <div class="auth-toggle">
+            <p id="toggle-text">Don't have an account? <a href="#" onclick="toggleAuthMode()">Register Now</a></p>
+          </div>
+        </div>
         
-        <div class="auth-toggle">
-          <p id="toggle-text">Don't have an account? <a href="#" onclick="toggleAuthMode()">Register Now</a></p>
+        <div class="login-footer">
+          <p>By continuing, you agree to our Terms of Service.</p>
         </div>
       </div>
       
-      <div class="login-footer">
-        <p>By continuing, you agree to our Terms of Service.</p>
-      </div>
     </div>
   </div>
 
@@ -78,9 +212,51 @@
   <div id="screen-get-started" class="screen">
     <div class="setup-bg"></div>
     
-    <!-- Cricket Animation Layer -->
+    <!-- Advanced 3D Cricket Animation Layer -->
     <div class="cricket-animation-wrap">
-      <div class="animated-ball"></div>
+      <!-- Stumps & Pitch Scene -->
+      <div class="cricket-scene">
+        <!-- 3D Ground Pitch -->
+        <div class="pitch-ground"></div>
+        
+        <!-- Wickets Group -->
+        <div class="wickets-group">
+          <!-- Bails -->
+          <div class="bail left-bail"></div>
+          <div class="bail right-bail"></div>
+          
+          <!-- Stumps -->
+          <div class="stump stump-left"></div>
+          <div class="stump stump-middle"></div>
+          <div class="stump stump-right"></div>
+        </div>
+      </div>
+      
+      <!-- Flying Red Cricket Ball -->
+      <div class="animated-ball">
+        <div class="ball-seam"></div>
+      </div>
+      
+      <!-- Impact Shockwave -->
+      <div class="impact-shockwave"></div>
+      
+      <!-- Burst Particles -->
+      <div class="blast-particles">
+        <span class="particle p1"></span>
+        <span class="particle p2"></span>
+        <span class="particle p3"></span>
+        <span class="particle p4"></span>
+        <span class="particle p5"></span>
+        <span class="particle p6"></span>
+        <span class="particle p7"></span>
+        <span class="particle p8"></span>
+      </div>
+      
+      <!-- Glowing Victory Text Banner -->
+      <div class="victory-banner">
+        <span class="victory-title">CLEAN BOWLED!</span>
+        <span class="victory-subtitle">⚡ Wicket Taken ⚡</span>
+      </div>
     </div>
 
     <div class="onboarding-content">

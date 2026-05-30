@@ -241,6 +241,7 @@ function initAuth() {
     localStorage.removeItem('cricscore_user');
   }
   setAuthMode('login');
+  setupInteractiveMascot();
 }
 
 (async function initSetup() {
@@ -3024,14 +3025,32 @@ async function requestOTP() {
   // Remove spaces, dashes, etc for validation and sending
   phone = phone.replace(/[\s\-\(\)]/g, '');
 
+  const triggerMascotError = () => {
+    const mascot = $('login-mascot');
+    if (mascot) {
+      mascot.classList.add('error-shake');
+      setTimeout(() => mascot.classList.remove('error-shake'), 600);
+    }
+  };
+
+  const triggerMascotJump = () => {
+    const mascot = $('login-mascot');
+    if (mascot) {
+      mascot.classList.add('submitting');
+      setTimeout(() => mascot.classList.remove('submitting'), 1000);
+    }
+  };
+
   if (!phone || phone.length < 10) {
     toast("Please enter a valid 10-digit mobile number.");
+    triggerMascotError();
     return;
   }
   
   const btn = $("btn-send-otp");
   btn.disabled = true;
   btn.textContent = "Sending...";
+  triggerMascotJump();
   
   try {
     const response = await fetch('/api/send-otp', {
@@ -3057,6 +3076,7 @@ async function requestOTP() {
     }
   } catch (err) {
     toast(err.message);
+    triggerMascotError();
   } finally {
     btn.textContent = "Send OTP";
     btn.disabled = false;
@@ -3071,20 +3091,39 @@ async function handleAuth() {
   // Normalize phone
   phone = phone.replace(/[\s\-\(\)]/g, '');
 
+  const triggerMascotError = () => {
+    const mascot = $('login-mascot');
+    if (mascot) {
+      mascot.classList.add('error-shake');
+      setTimeout(() => mascot.classList.remove('error-shake'), 600);
+    }
+  };
+
+  const triggerMascotJump = () => {
+    const mascot = $('login-mascot');
+    if (mascot) {
+      mascot.classList.add('submitting');
+      setTimeout(() => mascot.classList.remove('submitting'), 1000);
+    }
+  };
+
   if (!phone || !password) {
     toast("Mobile number and password are required");
+    triggerMascotError();
     return;
   }
   
   if (authMode === "register" || authMode === "reset") {
     if (!otp) {
       toast("OTP is required");
+      triggerMascotError();
       return;
     }
   }
   
   if (password.length < 6) {
     toast("Password must be at least 6 characters");
+    triggerMascotError();
     return;
   }
 
@@ -3096,6 +3135,7 @@ async function handleAuth() {
   if (authMode === "reset") buttonText = "Resetting Password...";
   btn.textContent = buttonText;
   btn.disabled = true;
+  triggerMascotJump();
   
   try {
     let endpoint = '/api/login';
@@ -3141,18 +3181,190 @@ async function handleAuth() {
         loggedIn: true 
       }));
       
-      showScreen("screen-home");
+      // Route through the spectacular 3D cricket wicket strike onboarding screen!
+      showScreen("screen-get-started");
       updateDashboardStats();
       renderLeaderboard();
-      toast(`Welcome back, ${phone}!`);
+      
+      // Auto-redirect to the home dashboard after 3.8 seconds of gorgeous wicket smash action!
+      setTimeout(() => {
+        showScreen("screen-home");
+        toast(`Welcome back, ${phone}!`);
+      }, 3800);
     }
   } catch (err) {
     toast(err.message);
     console.error("Auth error:", err);
+    triggerMascotError();
   } finally {
     btn.textContent = originalText;
     btn.disabled = false;
   }
+}
+
+function setupInteractiveMascot() {
+  const mascot = $('login-mascot');
+  const phoneInput = $('login-phone');
+  const passInput = $('login-pass');
+  const otpInput = $('login-otp');
+  
+  if (!mascot) return;
+
+  let eyeInterval = null;
+  const startIdleEyes = () => {
+    if (eyeInterval) clearInterval(eyeInterval);
+    eyeInterval = setInterval(() => {
+      const activeEl = document.activeElement;
+      if (activeEl && (activeEl === phoneInput || activeEl === passInput || activeEl === otpInput)) {
+        return;
+      }
+      const lx = (Math.random() - 0.5) * 6;
+      const ly = (Math.random() - 0.5) * 4;
+      mascot.style.setProperty('--look-x', `${lx}px`);
+      mascot.style.setProperty('--look-y', `${ly}px`);
+      
+      setTimeout(() => {
+        const checkActive = document.activeElement;
+        if (checkActive && (checkActive === phoneInput || checkActive === passInput || checkActive === otpInput)) {
+          return;
+        }
+        mascot.style.setProperty('--look-x', '0px');
+        mascot.style.setProperty('--look-y', '0px');
+      }, 700);
+    }, 3800);
+  };
+  
+  const handlePhoneInput = () => {
+    const val = phoneInput.value || "";
+    const len = Math.min(val.length, 10);
+    const lookX = -2.5 + (len * 0.5); // move from -2.5px to +2.5px
+    const lookY = 3.5; // looks down at phone input
+    mascot.style.setProperty('--look-x', `${lookX}px`);
+    mascot.style.setProperty('--look-y', `${lookY}px`);
+  };
+  
+  if (phoneInput) {
+    phoneInput.addEventListener('focus', () => {
+      if (eyeInterval) clearInterval(eyeInterval);
+      mascot.classList.remove('covering-eyes');
+      handlePhoneInput();
+    });
+    phoneInput.addEventListener('input', handlePhoneInput);
+    phoneInput.addEventListener('blur', () => {
+      mascot.style.setProperty('--look-x', '0px');
+      mascot.style.setProperty('--look-y', '0px');
+      startIdleEyes();
+    });
+  }
+  
+  if (passInput) {
+    passInput.addEventListener('focus', () => {
+      if (eyeInterval) clearInterval(eyeInterval);
+      mascot.classList.add('covering-eyes');
+    });
+    passInput.addEventListener('blur', () => {
+      mascot.classList.remove('covering-eyes');
+      startIdleEyes();
+    });
+  }
+  
+  if (otpInput) {
+    otpInput.addEventListener('focus', () => {
+      if (eyeInterval) clearInterval(eyeInterval);
+      mascot.classList.remove('covering-eyes');
+      mascot.style.setProperty('--look-x', '0px');
+      mascot.style.setProperty('--look-y', '4.5px');
+    });
+    otpInput.addEventListener('blur', () => {
+      mascot.style.setProperty('--look-x', '0px');
+      mascot.style.setProperty('--look-y', '0px');
+      startIdleEyes();
+    });
+  }
+
+  // Start the beautiful walk-in automated intro sequence
+  mascot.classList.remove('intro-walking', 'intro-placing');
+  mascot.classList.add('intro-walking');
+  mascot.style.setProperty('--look-x', '0px');
+  mascot.style.setProperty('--look-y', '0px');
+
+  // Step 1: Walk in from left for 1.2 seconds, then stop and place suitcase down
+  setTimeout(() => {
+    mascot.classList.remove('intro-walking');
+    mascot.classList.add('intro-placing');
+    
+    // Pupils look down at the briefcase as it's placed down
+    mascot.style.setProperty('--look-x', '-1.5px');
+    mascot.style.setProperty('--look-y', '4px');
+    
+    // Step 2: Placing animation lasts 0.6 seconds (total 1.8 seconds)
+    setTimeout(() => {
+      mascot.classList.remove('intro-placing');
+      
+      // Look back up as the briefcase opens
+      mascot.style.setProperty('--look-x', '0px');
+      mascot.style.setProperty('--look-y', '0px');
+      
+      // Automatically trigger briefcase reveal & particle burst!
+      triggerReveal();
+      startIdleEyes();
+    }, 800);
+  }, 1800);
+}
+
+function triggerMascotJump() {
+  const mascot = $('login-mascot');
+  if (mascot) {
+    mascot.classList.add('submitting');
+    setTimeout(() => mascot.classList.remove('submitting'), 1000);
+  }
+}
+
+let isRevealed = false;
+function triggerReveal() {
+  if (isRevealed) return;
+  isRevealed = true;
+
+  const mascot = $('login-mascot');
+  const wrapper = $('login-panel-wrapper');
+  const promptText = $('reveal-prompt');
+
+  // Remove manual pulse start prompt if any
+  if (promptText) promptText.style.display = 'none';
+
+  // Disperse particle burst effect from the briefcase
+  const briefcaseContainer = document.querySelector('.briefcase-container');
+  if (briefcaseContainer) {
+    const briefcaseRect = briefcaseContainer.getBoundingClientRect();
+    const originX = briefcaseRect.left + briefcaseRect.width / 2;
+    const originY = briefcaseRect.top + briefcaseRect.height / 2;
+    
+    for (let i = 0; i < 40; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'burst-particle';
+      particle.style.left = `${originX}px`;
+      particle.style.top = `${originY}px`;
+      
+      // Random explosion path
+      const angle = Math.random() * Math.PI * 2;
+      const radius = 60 + Math.random() * 120;
+      const tx = Math.cos(angle) * radius;
+      const ty = Math.sin(angle) * radius;
+      
+      particle.style.setProperty('--tx', `${tx}px`);
+      particle.style.setProperty('--ty', `${ty}px`);
+      const colors = ['#f1c40f', '#ffffff', '#ff4514', '#00D46A', '#3498db'];
+      particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+      
+      document.body.appendChild(particle);
+      setTimeout(() => particle.remove(), 800);
+    }
+  }
+
+  // Transition wrapper from center view to full split layout
+  setTimeout(() => {
+    if (wrapper) wrapper.classList.remove('initial-center');
+  }, 300);
 }
 
 
