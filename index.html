@@ -106,7 +106,72 @@
     </div>
   </div>
 
+  <!-- ===================== SCREEN: GET STARTED ===================== -->
+  <div id="screen-get-started" class="screen">
+    <div class="setup-bg"></div>
+    
+    <!-- Advanced 3D Cricket Animation Layer -->
+    <div class="cricket-animation-wrap">
+      <!-- Stumps & Pitch Scene -->
+      <div class="cricket-scene">
+        <!-- 3D Ground Pitch -->
+        <div class="pitch-ground"></div>
+        
+        <!-- Wickets Group -->
+        <div class="wickets-group">
+          <!-- Bails -->
+          <div class="bail left-bail"></div>
+          <div class="bail right-bail"></div>
+          
+          <!-- Stumps -->
+          <div class="stump stump-left"></div>
+          <div class="stump stump-middle"></div>
+          <div class="stump stump-right"></div>
+        </div>
+      </div>
+      
+      <!-- Flying Red Cricket Ball -->
+      <div class="animated-ball">
+        <div class="ball-seam"></div>
+      </div>
+      
+      <!-- Impact Shockwave -->
+      <div class="impact-shockwave"></div>
+      
+      <!-- Burst Particles -->
+      <div class="blast-particles">
+        <span class="particle p1"></span>
+        <span class="particle p2"></span>
+        <span class="particle p3"></span>
+        <span class="particle p4"></span>
+        <span class="particle p5"></span>
+        <span class="particle p6"></span>
+        <span class="particle p7"></span>
+        <span class="particle p8"></span>
+      </div>
+      
+      <!-- Glowing Victory Text Banner -->
+      <div class="victory-banner">
+        <span class="victory-title">CLEAN BOWLED!</span>
+        <span class="victory-subtitle">⚡ Wicket Taken ⚡</span>
+      </div>
+    </div>
 
+    <div class="onboarding-content">
+      <div class="success-icon-wrap">
+        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="var(--clr-green)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+      </div>
+      <h1 class="onboarding-title">Login Successful!</h1>
+      <p class="onboarding-text">Welcome back, champion. Your cricket dashboard is ready.</p>
+      
+      <button class="btn-primary onboarding-btn" onclick="showScreen('screen-home')">
+        Get Started
+      </button>
+    </div>
+  </div>
 
   <!-- ===================== SCREEN: HOME / DASHBOARD ===================== -->
   <div id="screen-home" class="screen">

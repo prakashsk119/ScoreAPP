@@ -3179,11 +3179,16 @@ async function handleAuth() {
       
       updateSidebarUI({ phone: result.user.phone, profile: result.user.profile });
 
-      // Route directly to the home dashboard
+      // Route through the spectacular 3D cricket wicket strike onboarding screen!
+      showScreen("screen-get-started");
       updateDashboardStats();
       renderLeaderboard();
-      showScreen("screen-home");
-      toast(`Welcome back, ${phone}!`);
+      
+      // Auto-redirect to the home dashboard after 3.8 seconds of gorgeous wicket smash action!
+      setTimeout(() => {
+        showScreen("screen-home");
+        toast(`Welcome back, ${phone}!`);
+      }, 3800);
     }
   } catch (err) {
     toast(err.message);
@@ -3720,11 +3725,16 @@ window.addEventListener('message', async function(event) {
 
                     toast("Login Successful via Visme Forms!");
                     
-                    // Route directly to the home dashboard
+                    // Route through the spectacular 3D cricket wicket strike onboarding screen!
+                    showScreen("screen-get-started");
                     updateDashboardStats();
                     renderLeaderboard();
-                    showScreen("screen-home");
-                    toast(`Welcome back, ${result.user.phone}!`);
+                    
+                    // Auto-redirect to the home dashboard after 3.8 seconds of gorgeous wicket smash action!
+                    setTimeout(() => {
+                        showScreen("screen-home");
+                        toast(`Welcome back, ${result.user.phone}!`);
+                    }, 3800);
                 } else {
                     toast("Failed to log in via Visme User");
                 }
