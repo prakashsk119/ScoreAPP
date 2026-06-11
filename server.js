@@ -160,13 +160,15 @@ app.post('/api/send-otp', async (req, res) => {
 
 // API to register
 app.post('/api/register', (req, res) => {
-  let { phone, password, otp } = req.body;
+  let { phone, password, otp, username, email } = req.body;
   
-  if (!phone || !password || !otp) {
-    return res.status(400).json({ error: 'All fields (Mobile, OTP, Password) are required' });
+  if (!phone || !password || !otp || !username || !email) {
+    return res.status(400).json({ error: 'All fields (Username, Email, Mobile, OTP, Password) are required' });
   }
 
   phone = phone.replace(/[\s\-\(\)]/g, '');
+  username = username.trim();
+  email = email.trim().toLowerCase();
   
   // Validate OTP
   if (otps[phone] !== otp) {
@@ -175,14 +177,22 @@ app.post('/api/register', (req, res) => {
   
   const users = getUsers();
   if (users.find(u => u.phone === phone)) {
-    return res.status(400).json({ error: 'User already exists' });
+    return res.status(400).json({ error: 'User with this mobile number already exists' });
+  }
+  if (users.find(u => u.username && u.username.toLowerCase() === username.toLowerCase())) {
+    return res.status(400).json({ error: 'User with this username already exists' });
+  }
+  if (users.find(u => u.email && u.email.toLowerCase() === email)) {
+    return res.status(400).json({ error: 'User with this email address already exists' });
   }
 
   const newUser = {
     phone,
+    username,
+    email,
     password, // In a real app, hash this!
     profile: {
-      matchName: phone, // Save phone by default
+      matchName: username || phone, // Save username as default match name
       battingHand: 'Right Hand',
       bowlingType: 'Right-arm Fast'
     },
@@ -196,7 +206,7 @@ app.post('/api/register', (req, res) => {
   // Clear OTP
   delete otps[phone];
   
-  console.log(`[AUTH] New user registered: ${phone}`);
+  console.log(`[AUTH] New user registered: ${username} (${phone})`);
   res.json({ success: true, user: { phone: newUser.phone, profile: newUser.profile } });
 });
 
@@ -235,15 +245,21 @@ app.post('/api/reset-password', (req, res) => {
 // API to login
 app.post('/api/login', (req, res) => {
   let { phone, password } = req.body;
-  if (!phone || !password) return res.status(400).json({ error: 'Mobile number and password required' });
+  if (!phone || !password) return res.status(400).json({ error: 'Login ID and password required' });
   
-  phone = phone.replace(/[\s\-\(\)]/g, '');
+  const loginId = phone.trim();
+  const normalizedPhone = loginId.replace(/[\s\-\(\)]/g, '');
   
   const users = getUsers();
-  const user = users.find(u => u.phone === phone);
+  // Find by phone, username, or email
+  const user = users.find(u => 
+    u.phone === normalizedPhone || 
+    (u.username && u.username.toLowerCase() === loginId.toLowerCase()) ||
+    (u.email && u.email.toLowerCase() === loginId.toLowerCase())
+  );
   
   if (!user || user.password !== password) {
-    return res.status(401).json({ error: 'Invalid mobile number or password' });
+    return res.status(401).json({ error: 'Invalid credentials or password' });
   }
 
   // Update login history
@@ -253,7 +269,7 @@ app.post('/api/login', (req, res) => {
   
   saveUsers(users);
   
-  console.log(`[AUTH] User logged in: ${phone}`);
+  console.log(`[AUTH] User logged in: ${user.username || user.phone}`);
   res.json({ success: true, user: { phone: user.phone, profile: user.profile } });
 });
 

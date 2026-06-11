@@ -3038,8 +3038,29 @@ function setAuthMode(mode) {
   
   // Show/Hide specific fields based on mode
   document.querySelectorAll('.register-only').forEach(el => {
-    el.style.display = (authMode === "register" || authMode === "reset") ? (el.tagName === 'BUTTON' ? 'inline-block' : 'block') : 'none';
+    const isRegOnlyField = el.id === 'register-username-group' || el.id === 'register-email-group';
+    if (isRegOnlyField) {
+      el.style.display = (authMode === "register") ? 'block' : 'none';
+    } else {
+      el.style.display = (authMode === "register" || authMode === "reset") ? (el.tagName === 'BUTTON' ? 'inline-block' : 'block') : 'none';
+    }
   });
+
+  // Dynamic label for phone/login input based on mode
+  const lblPhone = document.querySelector('label[for="login-phone"]');
+  const inputPhone = $("login-phone");
+  if (lblPhone) {
+    if (authMode === "login") {
+      lblPhone.textContent = "Mobile, Username or Email";
+      if (inputPhone) inputPhone.placeholder = "Enter mobile, username or email";
+    } else if (authMode === "reset") {
+      lblPhone.textContent = "Mobile Number";
+      if (inputPhone) inputPhone.placeholder = "Enter registered mobile number";
+    } else {
+      lblPhone.textContent = "Mobile Number (for OTP)";
+      if (inputPhone) inputPhone.placeholder = "Enter mobile number";
+    }
+  }
 }
 
 function toggleAuthMode() {
@@ -3114,8 +3135,15 @@ async function handleAuth() {
   const password = $("login-pass").value.trim();
   const otp = $("login-otp").value.trim();
   
-  // Normalize phone
-  phone = phone.replace(/[\s\-\(\)]/g, '');
+  // Normalize phone / loginId
+  if (authMode === "register" || authMode === "reset") {
+    phone = phone.replace(/[\s\-\(\)]/g, '');
+  } else if (authMode === "login") {
+    // If it looks like a phone number, normalize it (only digits, spaces, +, -, parentheses)
+    if (/^[+0-9\s\-\(\)]+$/.test(phone)) {
+      phone = phone.replace(/[\s\-\(\)]/g, '');
+    }
+  }
 
   const triggerMascotError = () => {
     const mascot = $('login-mascot');
@@ -3134,12 +3162,29 @@ async function handleAuth() {
   };
 
   if (!phone || !password) {
-    toast("Mobile number and password are required");
+    const fieldName = (authMode === "login") ? "Username/Email/Mobile" : "Mobile number";
+    toast(`${fieldName} and password are required`);
     triggerMascotError();
     return;
   }
   
-  if (authMode === "register" || authMode === "reset") {
+  let username = "";
+  let email = "";
+  
+  if (authMode === "register") {
+    username = $("register-username").value.trim();
+    email = $("register-email").value.trim();
+    if (!username || !email) {
+      toast("Username and Email are required");
+      triggerMascotError();
+      return;
+    }
+    if (!otp) {
+      toast("OTP is required");
+      triggerMascotError();
+      return;
+    }
+  } else if (authMode === "reset") {
     if (!otp) {
       toast("OTP is required");
       triggerMascotError();
@@ -3168,7 +3213,7 @@ async function handleAuth() {
     let payload = { phone, password };
     if (authMode === "register") {
       endpoint = '/api/register';
-      payload = { phone, password, otp };
+      payload = { phone, password, otp, username, email };
     } else if (authMode === "reset") {
       endpoint = '/api/reset-password';
       payload = { phone, password, otp };
@@ -3196,9 +3241,12 @@ async function handleAuth() {
     if (authMode === "register") {
       toast("Account created successfully! Please login.");
       setAuthMode("login");
-    } else if (authMode === "reset") {
-      toast("Password reset successfully! Please login.");
-      setAuthMode("login");
+    } else {
+      // login or reset mode
+      if (authMode === "reset") {
+        toast("Password reset successfully!");
+      }
+      
       // Success Login
       localStorage.setItem('cricscore_user', JSON.stringify({ 
         phone: result.user.phone, 
@@ -3216,7 +3264,8 @@ async function handleAuth() {
       // Auto-redirect to the home dashboard after 3.8 seconds of gorgeous wicket smash action!
       setTimeout(() => {
         showScreen("screen-home");
-        toast(`Welcome back, ${phone}!`);
+        const displayName = result.user.profile?.matchName || phone;
+        toast(`Welcome back, ${displayName}!`);
       }, 3800);
     }
   } catch (err) {
