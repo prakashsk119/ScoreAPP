@@ -257,6 +257,41 @@ app.post('/api/login', (req, res) => {
   res.json({ success: true, user: { phone: user.phone, profile: user.profile } });
 });
 
+// API to login via Visme Forms success event
+app.post('/api/visme-login', (req, res) => {
+  const phone = "VismeUser";
+  const users = getUsers();
+  let user = users.find(u => u.phone === phone);
+  
+  if (!user) {
+    user = {
+      phone,
+      password: "password123",
+      profile: {
+        matchName: "Visme User",
+        battingHand: 'Right Hand',
+        bowlingType: 'Right-arm Fast'
+      },
+      created: new Date().toISOString(),
+      logins: []
+    };
+    users.push(user);
+    saveUsers(users);
+    console.log(`[AUTH] Created new default VismeUser account`);
+  }
+
+  // Update login history
+  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  user.logins.push({ timestamp: new Date().toISOString(), ip });
+  if (user.logins.length > 10) user.logins.shift();
+  
+  saveUsers(users);
+  
+  console.log(`[AUTH] User logged in via Visme Forms: ${phone}`);
+  res.json({ success: true, user: { phone: user.phone, profile: user.profile } });
+});
+
+
 // API to update profile
 app.post('/api/update-profile', (req, res) => {
   const { phone, profile } = req.body;

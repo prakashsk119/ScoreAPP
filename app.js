@@ -227,12 +227,8 @@ function initAuth() {
         showScreen('screen-home');
         updateDashboardStats();
         renderLeaderboard();
-        // Update sidebar name if needed
-        const profileName = document.querySelector('.sidebar-profile-name');
-        if (profileName) {
-            const name = user.phone;
-            profileName.textContent = name.charAt(0).toUpperCase() + name.slice(1);
-        }
+        // Update sidebar profile UI
+        updateSidebarUI(user);
         return true; // Login found
       }
     }
@@ -242,6 +238,7 @@ function initAuth() {
   }
   setAuthMode('login');
   setupInteractiveMascot();
+  updateSidebarUI(null);
 }
 
 (async function initSetup() {
@@ -3173,7 +3170,6 @@ async function handleAuth() {
     } else if (authMode === "reset") {
       toast("Password reset successfully! Please login.");
       setAuthMode("login");
-    } else {
       // Success Login
       localStorage.setItem('cricscore_user', JSON.stringify({ 
         phone: result.user.phone, 
@@ -3181,16 +3177,13 @@ async function handleAuth() {
         loggedIn: true 
       }));
       
-      // Route through the spectacular 3D cricket wicket strike onboarding screen!
-      showScreen("screen-get-started");
+      updateSidebarUI({ phone: result.user.phone, profile: result.user.profile });
+
+      // Route directly to the home dashboard
       updateDashboardStats();
       renderLeaderboard();
-      
-      // Auto-redirect to the home dashboard after 3.8 seconds of gorgeous wicket smash action!
-      setTimeout(() => {
-        showScreen("screen-home");
-        toast(`Welcome back, ${phone}!`);
-      }, 3800);
+      showScreen("screen-home");
+      toast(`Welcome back, ${phone}!`);
     }
   } catch (err) {
     toast(err.message);
@@ -3396,12 +3389,18 @@ function showProfile() {
 
   const phone = userData.phone;
   const name = phone;
-  $('profile-display-name').textContent = userData.profile?.matchName || name;
-  $('profile-display-phone').textContent = phone;
+  
+  if (phone === "VismeUser") {
+    $('profile-display-name').textContent = userData.profile?.matchName || "Visme User";
+    $('profile-display-phone').textContent = "";
+  } else {
+    $('profile-display-name').textContent = userData.profile?.matchName || name;
+    $('profile-display-phone').textContent = phone;
+  }
 
   // Use profile from synced user data
   const profile = userData.profile || {};
-  $('profile-match-name').value = profile.matchName || name;
+  $('profile-match-name').value = profile.matchName || (phone === "VismeUser" ? "Visme User" : name);
   if (profile.battingHand) $('profile-batting-hand').value = profile.battingHand;
   if (profile.bowlingType) $('profile-bowling-type').value = profile.bowlingType;
 
@@ -3500,6 +3499,8 @@ async function saveProfile() {
     userData.profile = profile;
     localStorage.setItem('cricscore_user', JSON.stringify(userData));
     
+    updateSidebarUI(userData);
+
     toast("Profile updated successfully!");
     showHome();
   } catch (err) {
@@ -3681,4 +3682,90 @@ function applyDLS() {
 function goHome() {
     showScreen('screen-home');
     updateDashboardStats();
+}
+
+// Visme Forms Integration
+function openVismeLogin() {
+    localStorage.removeItem('vismeforms_185122_closed');
+    localStorage.removeItem('vismeforms_185122_submitted');
+    sessionStorage.removeItem('vismeforms_185122_closed');
+    window.location.reload();
+}
+
+// Listen for Visme Form successful submission event
+window.addEventListener('message', async function(event) {
+    if (event.origin && event.origin.indexOf('visme') !== -1) {
+        const t = event.data.type;
+        const r = event.data.id;
+        
+        if (t === "vismeForms:submitSuccess" && r === "185122") {
+            console.log("Visme login form submitted successfully! Form ID:", r);
+            try {
+                const response = await fetch('/api/visme-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    // Save authenticated user details
+                    localStorage.setItem('cricscore_user', JSON.stringify({ 
+                        phone: result.user.phone, 
+                        profile: result.user.profile,
+                        loggedIn: true 
+                    }));
+                    
+                    updateSidebarUI({ phone: result.user.phone, profile: result.user.profile });
+
+                    toast("Login Successful via Visme Forms!");
+                    
+                    // Route directly to the home dashboard
+                    updateDashboardStats();
+                    renderLeaderboard();
+                    showScreen("screen-home");
+                    toast(`Welcome back, ${result.user.phone}!`);
+                } else {
+                    toast("Failed to log in via Visme User");
+                }
+            } catch (err) {
+                console.error("Visme auth error:", err);
+                toast("Connection error during Visme login");
+            }
+        }
+    }
+});
+
+// Update sidebar avatar, name, and subtitle fields
+function updateSidebarUI(user) {
+    if (!user) {
+        const profileName = document.querySelector('.sidebar-profile-name');
+        const profileSub = document.querySelector('.sidebar-profile-sub');
+        if (profileName) profileName.textContent = "CricScore";
+        if (profileSub) profileSub.textContent = "Ball-by-Ball Scorer";
+        updateAvatarUI(null);
+        return;
+    }
+    
+    const profileName = document.querySelector('.sidebar-profile-name');
+    const profileSub = document.querySelector('.sidebar-profile-sub');
+    
+    if (profileName) {
+        const displayName = user.profile?.matchName || user.phone;
+        if (displayName === "VismeUser") {
+            profileName.textContent = "Visme User";
+        } else {
+            profileName.textContent = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+        }
+    }
+    
+    if (profileSub) {
+        if (user.phone === "VismeUser") {
+            profileSub.textContent = "Ball-by-Ball Scorer";
+        } else {
+            profileSub.textContent = user.phone;
+        }
+    }
+    
+    updateAvatarUI(user.profile?.avatar);
 }

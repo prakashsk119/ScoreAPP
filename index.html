@@ -20,116 +20,13 @@
 
   <!-- ===================== SCREEN: LOGIN ===================== -->
   <div id="screen-login" class="screen">
+    <!-- Visme Login Form Embed -->
+    <div class="visme_d" data-title="Login" data-url="koego7gv-login?fullPage=true" data-domain="forms" data-full-page="true" data-min-height="100vh" data-form-id="185122"></div>
+    <script src="https://static-bundles.visme.co/forms/vismeforms-embed.js"></script>
+
     <div class="login-wrapper initial-center" id="login-panel-wrapper">
       
-      <!-- Mascot Column (Left) -->
-      <div class="mascot-column">
-        <div class="mascot-container" id="login-mascot">
-          <!-- Pulse prompt to click briefcase initially -->
 
-          <div class="mascot-character">
-            <!-- Head & Face -->
-            <div class="mascot-head-container">
-              <div class="mascot-hair-back"></div>
-              <div class="mascot-ears">
-                <div class="ear left"></div>
-                <div class="ear right"></div>
-              </div>
-              <div class="mascot-head">
-                <div class="mascot-face">
-                  <div class="mascot-hair-front"></div>
-                  <div class="mascot-eyebrows">
-                    <div class="eyebrow left"></div>
-                    <div class="eyebrow right"></div>
-                  </div>
-                  <div class="mascot-eyes">
-                    <div class="eye left">
-                      <div class="pupil"></div>
-                    </div>
-                    <div class="eye right">
-                      <div class="pupil"></div>
-                    </div>
-                  </div>
-                  <div class="mascot-nose"></div>
-                  <div class="mascot-mouth"></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Smart Suit Torso -->
-            <div class="mascot-torso">
-              <div class="mascot-blazer">
-                <div class="mascot-shirt">
-                  <div class="mascot-collar"></div>
-                  <div class="mascot-tie"></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Smart Blazer Arms & Hands -->
-            <div class="mascot-arms">
-              <div class="mascot-arm left">
-                <div class="mascot-hand"></div>
-              </div>
-              <div class="mascot-arm right">
-                <div class="mascot-hand"></div>
-              </div>
-            </div>
-
-            <!-- Slim Trousers -->
-            <div class="mascot-legs">
-              <div class="mascot-leg left"></div>
-              <div class="mascot-leg right"></div>
-            </div>
-
-            <!-- Sneakers -->
-            <div class="mascot-shoes">
-              <div class="mascot-shoe left"></div>
-              <div class="mascot-shoe right"></div>
-            </div>
-          </div>
-          
-          <!-- Animated Briefcase next to mascot -->
-          <div class="briefcase-container" id="reveal-briefcase">
-            <svg viewBox="0 0 100 100" class="briefcase-svg">
-              <defs>
-                <linearGradient id="briefcaseBody" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stop-color="#a0522d" />
-                  <stop offset="100%" stop-color="#5c2c16" />
-                </linearGradient>
-                <linearGradient id="briefcaseGold" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" stop-color="#ffe875" />
-                  <stop offset="100%" stop-color="#d4af37" />
-                </linearGradient>
-                <filter id="caseShadow" x="-10%" y="-10%" width="120%" height="120%">
-                  <feDropShadow dx="0" dy="4" stdDeviation="3" flood-opacity="0.25"/>
-                </filter>
-              </defs>
-              <!-- Handle -->
-              <path d="M38 38 V25 C38 21, 62 21, 62 25 V38" fill="none" stroke="#4a220f" stroke-width="5" stroke-linecap="round" />
-              <rect x="36" y="32" width="6" height="6" rx="1" fill="#d4af37" />
-              <rect x="58" y="32" width="6" height="6" rx="1" fill="#d4af37" />
-              
-              <!-- Case Body -->
-              <rect x="20" y="38" width="60" height="44" rx="7" fill="url(#briefcaseBody)" stroke="#3e1a0b" stroke-width="2.5" filter="url(#caseShadow)" />
-              
-              <!-- Leather Straps -->
-              <rect x="29" y="38" width="7" height="44" fill="#4a220f" rx="1" />
-              <rect x="64" y="38" width="7" height="44" fill="#4a220f" rx="1" />
-              
-              <!-- Brass Locks -->
-              <rect x="28" y="52" width="9" height="12" rx="2" fill="url(#briefcaseGold)" stroke="#996515" stroke-width="1" />
-              <rect x="63" y="52" width="9" height="12" rx="2" fill="url(#briefcaseGold)" stroke="#996515" stroke-width="1" />
-              <circle cx="32.5" cy="58" r="1.5" fill="#333" />
-              <circle cx="67.5" cy="58" r="1.5" fill="#333" />
-              
-              <!-- Center Badge / Lock -->
-              <rect x="44" y="38" width="12" height="10" rx="1" fill="url(#briefcaseGold)" stroke="#996515" stroke-width="1" />
-              <rect x="47" y="44" width="6" height="8" fill="#333" rx="1" />
-            </svg>
-          </div>
-        </div>
-      </div>
 
       <!-- Login Container (Right) -->
       <div class="login-container">
@@ -197,6 +94,7 @@
           
           <div class="auth-toggle">
             <p id="toggle-text">Don't have an account? <a href="#" onclick="toggleAuthMode()">Register Now</a></p>
+            <p style="margin-top: 8px;"><a href="#" onclick="openVismeLogin()" style="color: var(--clr-primary); font-weight: 700;">Use Visme Login Form</a></p>
           </div>
         </div>
         
@@ -208,72 +106,7 @@
     </div>
   </div>
 
-  <!-- ===================== SCREEN: GET STARTED ===================== -->
-  <div id="screen-get-started" class="screen">
-    <div class="setup-bg"></div>
-    
-    <!-- Advanced 3D Cricket Animation Layer -->
-    <div class="cricket-animation-wrap">
-      <!-- Stumps & Pitch Scene -->
-      <div class="cricket-scene">
-        <!-- 3D Ground Pitch -->
-        <div class="pitch-ground"></div>
-        
-        <!-- Wickets Group -->
-        <div class="wickets-group">
-          <!-- Bails -->
-          <div class="bail left-bail"></div>
-          <div class="bail right-bail"></div>
-          
-          <!-- Stumps -->
-          <div class="stump stump-left"></div>
-          <div class="stump stump-middle"></div>
-          <div class="stump stump-right"></div>
-        </div>
-      </div>
-      
-      <!-- Flying Red Cricket Ball -->
-      <div class="animated-ball">
-        <div class="ball-seam"></div>
-      </div>
-      
-      <!-- Impact Shockwave -->
-      <div class="impact-shockwave"></div>
-      
-      <!-- Burst Particles -->
-      <div class="blast-particles">
-        <span class="particle p1"></span>
-        <span class="particle p2"></span>
-        <span class="particle p3"></span>
-        <span class="particle p4"></span>
-        <span class="particle p5"></span>
-        <span class="particle p6"></span>
-        <span class="particle p7"></span>
-        <span class="particle p8"></span>
-      </div>
-      
-      <!-- Glowing Victory Text Banner -->
-      <div class="victory-banner">
-        <span class="victory-title">CLEAN BOWLED!</span>
-        <span class="victory-subtitle">⚡ Wicket Taken ⚡</span>
-      </div>
-    </div>
 
-    <div class="onboarding-content">
-      <div class="success-icon-wrap">
-        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="var(--clr-green)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-          <polyline points="22 4 12 14.01 9 11.01"></polyline>
-        </svg>
-      </div>
-      <h1 class="onboarding-title">Login Successful!</h1>
-      <p class="onboarding-text">Welcome back, champion. Your cricket dashboard is ready.</p>
-      
-      <button class="btn-primary onboarding-btn" onclick="showScreen('screen-home')">
-        Get Started
-      </button>
-    </div>
-  </div>
 
   <!-- ===================== SCREEN: HOME / DASHBOARD ===================== -->
   <div id="screen-home" class="screen">
