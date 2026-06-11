@@ -3748,34 +3748,38 @@ window.addEventListener('message', async function(event) {
 
 // Update sidebar avatar, name, and subtitle fields
 function updateSidebarUI(user) {
-    if (!user) {
+    try {
+        if (!user) {
+            const profileName = document.querySelector('.sidebar-profile-name');
+            const profileSub = document.querySelector('.sidebar-profile-sub');
+            if (profileName) profileName.textContent = "CricScore";
+            if (profileSub) profileSub.textContent = "Ball-by-Ball Scorer";
+            updateAvatarUI(null);
+            return;
+        }
+        
         const profileName = document.querySelector('.sidebar-profile-name');
         const profileSub = document.querySelector('.sidebar-profile-sub');
-        if (profileName) profileName.textContent = "CricScore";
-        if (profileSub) profileSub.textContent = "Ball-by-Ball Scorer";
-        updateAvatarUI(null);
-        return;
-    }
-    
-    const profileName = document.querySelector('.sidebar-profile-name');
-    const profileSub = document.querySelector('.sidebar-profile-sub');
-    
-    if (profileName) {
-        const displayName = user.profile?.matchName || user.phone;
-        if (displayName === "VismeUser") {
-            profileName.textContent = "Visme User";
-        } else {
-            profileName.textContent = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+        
+        if (profileName) {
+            const displayName = (user.profile && user.profile.matchName) ? user.profile.matchName : (user.phone || "");
+            if (displayName === "VismeUser" || !displayName) {
+                profileName.textContent = "Visme User";
+            } else {
+                profileName.textContent = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+            }
         }
-    }
-    
-    if (profileSub) {
-        if (user.phone === "VismeUser") {
-            profileSub.textContent = "Ball-by-Ball Scorer";
-        } else {
-            profileSub.textContent = user.phone;
+        
+        if (profileSub) {
+            if (user.phone === "VismeUser" || !user.phone) {
+                profileSub.textContent = "Ball-by-Ball Scorer";
+            } else {
+                profileSub.textContent = user.phone;
+            }
         }
+        
+        updateAvatarUI(user.profile ? user.profile.avatar : null);
+    } catch (err) {
+        console.error("Error updating sidebar UI:", err);
     }
-    
-    updateAvatarUI(user.profile?.avatar);
 }
