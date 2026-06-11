@@ -3021,45 +3021,36 @@ function setAuthMode(mode) {
     btn.textContent = "Create Free Account";
     if (lblPass) lblPass.textContent = "Password";
     toggleText.innerHTML = `Already have an account? <a href="#" onclick="setAuthMode('login')">Login instead</a>`;
-  } else if (authMode === "reset") {
-    title.textContent = "Reset Password";
-    subtitle.textContent = "Set a new password using mobile OTP verification.";
-    btn.textContent = "Reset Password";
-    if (lblPass) lblPass.textContent = "New Password";
-    toggleText.innerHTML = `Remembered your password? <a href="#" onclick="setAuthMode('login')">Login instead</a>`;
   } else {
     // login mode
     title.textContent = "Welcome to CricScore";
     subtitle.textContent = "Elevate your game with professional scoring.";
     btn.textContent = "Login to Account";
     if (lblPass) lblPass.textContent = "Password";
-    toggleText.innerHTML = `Don't have an account? <a href="#" onclick="setAuthMode('register')">Register Now</a><br><a href="#" onclick="setAuthMode('reset')" style="display: block; margin-top: 8px; color: var(--clr-primary); font-weight: 600; font-size: 0.85rem;">Forgot Password?</a>`;
+    toggleText.innerHTML = `Don't have an account? <a href="#" onclick="setAuthMode('register')">Register Now</a>`;
   }
   
   // Show/Hide specific fields based on mode
-  document.querySelectorAll('.register-only').forEach(el => {
-    const isRegOnlyField = el.id === 'register-username-group' || el.id === 'register-email-group';
-    if (isRegOnlyField) {
-      el.style.display = (authMode === "register") ? 'block' : 'none';
-    } else {
-      el.style.display = (authMode === "register" || authMode === "reset") ? (el.tagName === 'BUTTON' ? 'inline-block' : 'block') : 'none';
-    }
-  });
+  const usernameGroup = $('register-username-group');
+  const emailGroup = $('register-email-group');
+  const phoneGroup = $('login-phone-group');
+  
+  if (authMode === "register") {
+    if (usernameGroup) usernameGroup.style.display = 'block';
+    if (emailGroup) emailGroup.style.display = 'block';
+    if (phoneGroup) phoneGroup.style.display = 'none'; // Hide phone during registration
+  } else {
+    if (usernameGroup) usernameGroup.style.display = 'none';
+    if (emailGroup) emailGroup.style.display = 'none';
+    if (phoneGroup) phoneGroup.style.display = 'block'; // Show phone (as Username or Email) during login
+  }
 
-  // Dynamic label for phone/login input based on mode
+  // Update label for login-phone
   const lblPhone = document.querySelector('label[for="login-phone"]');
   const inputPhone = $("login-phone");
   if (lblPhone) {
-    if (authMode === "login") {
-      lblPhone.textContent = "Mobile, Username or Email";
-      if (inputPhone) inputPhone.placeholder = "Enter mobile, username or email";
-    } else if (authMode === "reset") {
-      lblPhone.textContent = "Mobile Number";
-      if (inputPhone) inputPhone.placeholder = "Enter registered mobile number";
-    } else {
-      lblPhone.textContent = "Mobile Number (for OTP)";
-      if (inputPhone) inputPhone.placeholder = "Enter mobile number";
-    }
+    lblPhone.textContent = "Username or Email";
+    if (inputPhone) inputPhone.placeholder = "Enter username or email";
   }
 }
 
@@ -3131,20 +3122,8 @@ async function requestOTP() {
 }
 
 async function handleAuth() {
-  let phone = $("login-phone").value.trim();
   const password = $("login-pass").value.trim();
-  const otp = $("login-otp").value.trim();
   
-  // Normalize phone / loginId
-  if (authMode === "register" || authMode === "reset") {
-    phone = phone.replace(/[\s\-\(\)]/g, '');
-  } else if (authMode === "login") {
-    // If it looks like a phone number, normalize it (only digits, spaces, +, -, parentheses)
-    if (/^[+0-9\s\-\(\)]+$/.test(phone)) {
-      phone = phone.replace(/[\s\-\(\)]/g, '');
-    }
-  }
-
   const triggerMascotError = () => {
     const mascot = $('login-mascot');
     if (mascot) {
@@ -3161,35 +3140,10 @@ async function handleAuth() {
     }
   };
 
-  if (!phone || !password) {
-    const fieldName = (authMode === "login") ? "Username/Email/Mobile" : "Mobile number";
-    toast(`${fieldName} and password are required`);
+  if (!password) {
+    toast("Password is required");
     triggerMascotError();
     return;
-  }
-  
-  let username = "";
-  let email = "";
-  
-  if (authMode === "register") {
-    username = $("register-username").value.trim();
-    email = $("register-email").value.trim();
-    if (!username || !email) {
-      toast("Username and Email are required");
-      triggerMascotError();
-      return;
-    }
-    if (!otp) {
-      toast("OTP is required");
-      triggerMascotError();
-      return;
-    }
-  } else if (authMode === "reset") {
-    if (!otp) {
-      toast("OTP is required");
-      triggerMascotError();
-      return;
-    }
   }
   
   if (password.length < 6) {
@@ -3198,27 +3152,44 @@ async function handleAuth() {
     return;
   }
 
+  let endpoint = '';
+  let payload = {};
+  let loginId = '';
+  
+  if (authMode === "register") {
+    const username = $("register-username").value.trim();
+    const email = $("register-email").value.trim();
+    
+    if (!username || !email) {
+      toast("Username and Email are required");
+      triggerMascotError();
+      return;
+    }
+    
+    endpoint = '/api/register';
+    payload = { username, email, password };
+  } else {
+    // login mode
+    loginId = $("login-phone").value.trim();
+    if (!loginId) {
+      toast("Username or Email is required");
+      triggerMascotError();
+      return;
+    }
+    
+    endpoint = '/api/login';
+    payload = { phone: loginId, password }; // keep 'phone' as key to match backend expectation
+  }
+
   const btn = $("btn-auth");
   const originalText = btn.textContent;
   
-  let buttonText = "Authenticating...";
-  if (authMode === "register") buttonText = "Creating Account...";
-  if (authMode === "reset") buttonText = "Resetting Password...";
+  let buttonText = authMode === "register" ? "Creating Account..." : "Authenticating...";
   btn.textContent = buttonText;
   btn.disabled = true;
   triggerMascotJump();
   
   try {
-    let endpoint = '/api/login';
-    let payload = { phone, password };
-    if (authMode === "register") {
-      endpoint = '/api/register';
-      payload = { phone, password, otp, username, email };
-    } else if (authMode === "reset") {
-      endpoint = '/api/reset-password';
-      payload = { phone, password, otp };
-    }
-    
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -3242,11 +3213,6 @@ async function handleAuth() {
       toast("Account created successfully! Please login.");
       setAuthMode("login");
     } else {
-      // login or reset mode
-      if (authMode === "reset") {
-        toast("Password reset successfully!");
-      }
-      
       // Success Login
       localStorage.setItem('cricscore_user', JSON.stringify({ 
         phone: result.user.phone, 
@@ -3264,7 +3230,7 @@ async function handleAuth() {
       // Auto-redirect to the home dashboard after 3.8 seconds of gorgeous wicket smash action!
       setTimeout(() => {
         showScreen("screen-home");
-        const displayName = result.user.profile?.matchName || phone;
+        const displayName = result.user.profile?.matchName || result.user.phone;
         toast(`Welcome back, ${displayName}!`);
       }, 3800);
     }

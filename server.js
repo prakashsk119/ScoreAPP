@@ -160,25 +160,16 @@ app.post('/api/send-otp', async (req, res) => {
 
 // API to register
 app.post('/api/register', (req, res) => {
-  let { phone, password, otp, username, email } = req.body;
+  let { password, username, email } = req.body;
   
-  if (!phone || !password || !otp || !username || !email) {
-    return res.status(400).json({ error: 'All fields (Username, Email, Mobile, OTP, Password) are required' });
+  if (!password || !username || !email) {
+    return res.status(400).json({ error: 'All fields (Username, Email, Password) are required' });
   }
 
-  phone = phone.replace(/[\s\-\(\)]/g, '');
   username = username.trim();
   email = email.trim().toLowerCase();
   
-  // Validate OTP
-  if (otps[phone] !== otp) {
-    return res.status(400).json({ error: 'Invalid or expired OTP' });
-  }
-  
   const users = getUsers();
-  if (users.find(u => u.phone === phone)) {
-    return res.status(400).json({ error: 'User with this mobile number already exists' });
-  }
   if (users.find(u => u.username && u.username.toLowerCase() === username.toLowerCase())) {
     return res.status(400).json({ error: 'User with this username already exists' });
   }
@@ -186,13 +177,16 @@ app.post('/api/register', (req, res) => {
     return res.status(400).json({ error: 'User with this email address already exists' });
   }
 
+  // Set 'phone' to username to maintain backwards compatibility in properties expecting u.phone
+  const phone = username;
+
   const newUser = {
     phone,
     username,
     email,
     password, // In a real app, hash this!
     profile: {
-      matchName: username || phone, // Save username as default match name
+      matchName: username, // Save username as default match name
       battingHand: 'Right Hand',
       bowlingType: 'Right-arm Fast'
     },
@@ -203,10 +197,7 @@ app.post('/api/register', (req, res) => {
   users.push(newUser);
   saveUsers(users);
   
-  // Clear OTP
-  delete otps[phone];
-  
-  console.log(`[AUTH] New user registered: ${username} (${phone})`);
+  console.log(`[AUTH] New user registered: ${username} (${email})`);
   res.json({ success: true, user: { phone: newUser.phone, profile: newUser.profile } });
 });
 
@@ -255,7 +246,8 @@ app.post('/api/login', (req, res) => {
   const user = users.find(u => 
     u.phone === normalizedPhone || 
     (u.username && u.username.toLowerCase() === loginId.toLowerCase()) ||
-    (u.email && u.email.toLowerCase() === loginId.toLowerCase())
+    (u.email && u.email.toLowerCase() === loginId.toLowerCase()) ||
+    (!u.username && u.profile && u.profile.matchName && u.profile.matchName.toLowerCase() === loginId.toLowerCase())
   );
   
   if (!user || user.password !== password) {
