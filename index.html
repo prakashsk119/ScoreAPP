@@ -1303,25 +1303,27 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
       <script>
       // Immediate check to prevent login flash
-      let isLoggedIn = false;
-      if (localStorage.getItem('cricscore_user')) {
-        try {
-          const user = JSON.parse(localStorage.getItem('cricscore_user'));
-          if (user && user.loggedIn) {
-            document.getElementById('screen-login').classList.remove('active');
-            document.getElementById('screen-home').classList.add('active');
-            isLoggedIn = true;
-          }
-        } catch(e) {}
-      }
-      
-      if (!isLoggedIn) {
-        document.getElementById('screen-login').classList.add('active');
-        // Always reset Visme form state on page load/refresh if user is logged out
-        localStorage.removeItem('vismeforms_185122_closed');
-        localStorage.removeItem('vismeforms_185122_submitted');
-        sessionStorage.removeItem('vismeforms_185122_closed');
-      }
+      (function() {
+        let isLoggedInLocal = false;
+        if (localStorage.getItem('cricscore_user')) {
+          try {
+            const user = JSON.parse(localStorage.getItem('cricscore_user'));
+            if (user && user.loggedIn) {
+              document.getElementById('screen-login').classList.remove('active');
+              document.getElementById('screen-home').classList.add('active');
+              isLoggedInLocal = true;
+            }
+          } catch(e) {}
+        }
+        
+        if (!isLoggedInLocal) {
+          document.getElementById('screen-login').classList.add('active');
+          // Always reset Visme form state on page load/refresh if user is logged out
+          localStorage.removeItem('vismeforms_185122_closed');
+          localStorage.removeItem('vismeforms_185122_submitted');
+          sessionStorage.removeItem('vismeforms_185122_closed');
+        }
+      })();
     </script>
   <script src="app.js"></script>
 </body>

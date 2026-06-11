@@ -1501,7 +1501,7 @@ function showScorecard(from) {
     html += `</div>`;
   }
 
-  body.innerHTML = profileHeaderHtml + html;
+  body.innerHTML = html;
   showScreen('screen-scorecard');
 }
 
@@ -1828,7 +1828,7 @@ async function saveMatchToHistory() {
     owner: userPhone,
     team1: match.team1,
     team2: match.team2,
-    overs: match.overs,
+    overs: match.totalOvers,
     playersPerTeam: match.playersPerTeam,
     result: match.result,
     innings: [
@@ -2537,7 +2537,7 @@ function copyRoomCode() {
 }
 
 // ── Kick off socket connection and UI when DOM is ready ──
-document.addEventListener('DOMContentLoaded', () => {
+function initAppListeners() {
   try {
     initRealtime();
   } catch(e) { console.error("Realtime init failed", e); }
@@ -2562,7 +2562,13 @@ document.addEventListener('DOMContentLoaded', () => {
   } catch(e) {
     console.error("Sidebar event bindings failed", e);
   }
-});
+}
+
+if (document.readyState === "complete" || document.readyState === "interactive") {
+  initAppListeners();
+} else {
+  document.addEventListener('DOMContentLoaded', initAppListeners);
+}
 
 // =====================================================
 // SIDEBAR DRAWER
