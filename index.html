@@ -180,7 +180,7 @@
     <!-- Dashboard Header -->
     <header class="scoring-header" style="background:transparent; border-bottom:none;">
       <div class="header-left">
-        <button class="hamburger-btn" onclick="openSidebar()" title="Menu">
+        <button class="hamburger-btn" id="btn-hamburger" title="Menu">
           <span></span><span></span><span></span>
         </button>
       </div>
@@ -996,7 +996,7 @@
   <div id="toast" class="toast"></div>
 
   <!-- ===================== SIDEBAR DRAWER ===================== -->
-  <div id="sidebar-backdrop" class="sidebar-backdrop" onclick="closeSidebar()"></div>
+  <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
   <div id="sidebar" class="sidebar">
     <!-- Profile header -->
     <div class="sidebar-profile">
@@ -1006,7 +1006,7 @@
         <div class="sidebar-profile-sub">Ball-by-Ball Scorer</div>
         <span class="sidebar-free-badge">Free</span>
       </div>
-      <button class="sidebar-close-btn" onclick="closeSidebar()">✕</button>
+      <button class="sidebar-close-btn" id="btn-sidebar-close">✕</button>
     </div>
 
     <!-- Menu items -->

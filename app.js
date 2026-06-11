@@ -124,7 +124,12 @@ function renderPlayerInputs() {
   const prev2 = [...document.querySelectorAll('.team2-player')].map(el => el.value);
 
   // Get profile name for auto-fill
-  const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
+  let userData = {};
+  try {
+    userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
+  } catch(e) {
+    console.error("Failed to parse user session", e);
+  }
   const loginName = userData.phone || "";
   const profile = userData.profile || {};
   const matchName = profile.matchName || loginName;
@@ -153,7 +158,12 @@ async function updateDashboardStats() {
   if (!matchesEl) return;
 
   const history = loadHistory();
-  const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
+  let userData = {};
+  try {
+    userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
+  } catch(e) {
+    console.error("Failed to parse user session in dashboard stats", e);
+  }
   const loginName = userData.phone || "";
   const profile = userData.profile || {};
   const searchName = (profile.matchName || loginName).trim().toLowerCase();
@@ -2539,6 +2549,19 @@ document.addEventListener('DOMContentLoaded', () => {
   try {
     initAuth(); 
   } catch(e) { console.error("Auth init failed", e); }
+
+  try {
+    const hamburger = $('btn-hamburger');
+    if (hamburger) hamburger.addEventListener('click', openSidebar);
+    
+    const backdrop = $('sidebar-backdrop');
+    if (backdrop) backdrop.addEventListener('click', closeSidebar);
+    
+    const closeBtn = $('btn-sidebar-close');
+    if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+  } catch(e) {
+    console.error("Sidebar event bindings failed", e);
+  }
 });
 
 // =====================================================
