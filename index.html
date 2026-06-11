@@ -1331,10 +1331,6 @@
         
         if (!isLoggedInLocal) {
           document.getElementById('screen-login').classList.add('active');
-          // Always reset Visme form state on page load/refresh if user is logged out
-          localStorage.removeItem('vismeforms_185122_closed');
-          localStorage.removeItem('vismeforms_185122_submitted');
-          sessionStorage.removeItem('vismeforms_185122_closed');
         }
       })();
     </script>
