@@ -289,6 +289,12 @@ app.post('/api/visme-login', (req, res) => {
     users.push(user);
     saveUsers(users);
     console.log(`[AUTH] Created new custom VismeUser account: ${userPhone}`);
+  } else {
+    // Update name if a custom name is provided
+    if (name && name !== "Visme User" && user.profile) {
+      user.profile.matchName = name;
+      console.log(`[AUTH] Updated matchName for existing user ${userPhone} to ${name}`);
+    }
   }
 
   // Update login history
