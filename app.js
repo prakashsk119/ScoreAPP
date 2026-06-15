@@ -3458,7 +3458,7 @@ function showProfile() {
   const phone = userData.phone;
   const name = phone;
   
-  if (phone === "VismeUser") {
+  if (phone && phone.startsWith("VismeUser")) {
     $('profile-display-name').textContent = userData.profile?.matchName || "Visme User";
     $('profile-display-phone').textContent = "";
   } else {
@@ -3468,7 +3468,7 @@ function showProfile() {
 
   // Use profile from synced user data
   const profile = userData.profile || {};
-  $('profile-match-name').value = profile.matchName || (phone === "VismeUser" ? "Visme User" : name);
+  $('profile-match-name').value = profile.matchName || ((phone && phone.startsWith("VismeUser")) ? "Visme User" : name);
   if (profile.battingHand) $('profile-batting-hand').value = profile.battingHand;
   if (profile.bowlingType) $('profile-bowling-type').value = profile.bowlingType;
 
@@ -3917,16 +3917,19 @@ function updateSidebarUI(user) {
         const profileSub = document.querySelector('.sidebar-profile-sub');
         
         if (profileName) {
-            const displayName = (user.profile && user.profile.matchName) ? user.profile.matchName : (user.phone || "");
-            if (displayName === "VismeUser" || !displayName) {
-                profileName.textContent = "Visme User";
+            let displayName = (user.profile && user.profile.matchName) ? user.profile.matchName : (user.phone || "");
+            if (displayName && displayName.startsWith("VismeUser")) {
+                displayName = "Visme User";
+            }
+            if ((user.phone && user.phone.startsWith("VismeUser")) || !displayName) {
+                profileName.textContent = displayName || "Visme User";
             } else {
                 profileName.textContent = displayName.charAt(0).toUpperCase() + displayName.slice(1);
             }
         }
         
         if (profileSub) {
-            if (user.phone === "VismeUser" || !user.phone) {
+            if ((user.phone && user.phone.startsWith("VismeUser")) || !user.phone) {
                 profileSub.textContent = "Ball-by-Ball Scorer";
             } else {
                 profileSub.textContent = user.phone;
