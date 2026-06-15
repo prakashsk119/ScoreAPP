@@ -3421,6 +3421,25 @@ function showHome() {
 
 function handleSignOut() {
   localStorage.removeItem('cricscore_user');
+  
+  // Clear all Visme-related keys from localStorage and sessionStorage
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('vismeforms_')) {
+        localStorage.removeItem(key);
+      }
+    }
+    for (let i = sessionStorage.length - 1; i >= 0; i--) {
+      const key = sessionStorage.key(i);
+      if (key && key.startsWith('vismeforms_')) {
+        sessionStorage.removeItem(key);
+      }
+    }
+  } catch (e) {
+    console.error("Error clearing Visme storage keys:", e);
+  }
+
   toast("Signed out successfully");
   // Reload the page to clear all in-memory states
   setTimeout(() => {
@@ -3743,6 +3762,9 @@ function openVismeLogin() {
 
 // Listen for Visme Form successful submission event
 window.addEventListener('message', async function(event) {
+    if (isLoggedIn()) {
+        return;
+    }
     if (event.origin && event.origin.indexOf('visme') !== -1) {
         const t = event.data.type;
         const r = event.data.id;
