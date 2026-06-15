@@ -3772,78 +3772,134 @@ window.addEventListener('message', async function(event) {
         
         if (t === "vismeForms:submitSuccess" && r === "185122") {
             console.log("Visme login form submitted successfully! Form ID:", r, "Data:", event.data);
-            try {
-                // Try to extract name and email from Visme event data
-                let vismeEmail = '';
-                let vismeName = '';
+            
+            // Try to extract name and email from Visme event data
+            let vismeEmail = '';
+            let vismeName = '';
+            
+            if (event.data) {
+                vismeEmail = event.data.email || '';
+                vismeName = event.data.name || event.data.username || '';
                 
-                if (event.data) {
-                    vismeEmail = event.data.email || '';
-                    vismeName = event.data.name || event.data.username || '';
-                    
-                    if (event.data.fields) {
-                        vismeEmail = vismeEmail || event.data.fields.email || '';
-                        vismeName = vismeName || event.data.fields.name || event.data.fields.username || '';
-                    }
-                    if (event.data.data) {
-                        vismeEmail = vismeEmail || event.data.data.email || '';
-                        vismeName = vismeName || event.data.data.name || event.data.data.username || '';
-                    }
-                    if (event.data.answers) {
-                        vismeEmail = vismeEmail || event.data.answers.email || '';
-                        vismeName = vismeName || event.data.answers.name || event.data.answers.username || '';
-                    }
+                if (event.data.fields) {
+                    vismeEmail = vismeEmail || event.data.fields.email || '';
+                    vismeName = vismeName || event.data.fields.name || event.data.fields.username || '';
                 }
+                if (event.data.data) {
+                    vismeEmail = vismeEmail || event.data.data.email || '';
+                    vismeName = vismeName || event.data.data.name || event.data.data.username || '';
+                }
+                if (event.data.answers) {
+                    vismeEmail = vismeEmail || event.data.answers.email || '';
+                    vismeName = vismeName || event.data.answers.name || event.data.answers.username || '';
+                }
+            }
 
-                // Get or generate a unique Visme User ID for this browser
-                let uniqueId = localStorage.getItem('visme_user_id') || vismeEmail;
-                if (!uniqueId) {
-                    uniqueId = 'VismeUser_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
-                }
+            // Get or generate a unique Visme User ID for this browser
+            let uniqueId = localStorage.getItem('visme_user_id') || vismeEmail;
+            if (!uniqueId) {
+                uniqueId = 'VismeUser_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
                 localStorage.setItem('visme_user_id', uniqueId);
+            }
 
-                let displayName = vismeName || 'Visme User';
+            // If we already have a custom saved profile name in localStorage, skip onboarding
+            const storedUser = localStorage.getItem('cricscore_user');
+            if (storedUser) {
+                try {
+                    const parsed = JSON.parse(storedUser);
+                    if (parsed && parsed.profile && parsed.profile.matchName && parsed.profile.matchName !== "Visme User" && !parsed.profile.matchName.startsWith('VismeUser_')) {
+                        proceedVismeLogin(uniqueId, parsed.profile.matchName);
+                        return;
+                    }
+                } catch(e) {}
+            }
 
-                const response = await fetch('/api/visme-login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: uniqueId, name: displayName })
-                });
-                
-                if (response.ok) {
-                    const result = await response.json();
-                    
-                    // Save authenticated user details
-                    localStorage.setItem('cricscore_user', JSON.stringify({ 
-                        phone: result.user.phone, 
-                        profile: result.user.profile,
-                        loggedIn: true 
-                    }));
-                    
-                    updateSidebarUI({ phone: result.user.phone, profile: result.user.profile });
+            // If a name was extracted from the Visme form, skip onboarding and use it
+            if (vismeName && vismeName !== "Visme User") {
+                proceedVismeLogin(uniqueId, vismeName);
+                return;
+            }
 
-                    toast("Login Successful via Visme Forms!");
-                    
-                    // Route through the spectacular 3D cricket wicket strike onboarding screen!
-                    showScreen("screen-get-started");
-                    updateDashboardStats();
-                    renderLeaderboard();
-                    
-                    // Auto-redirect to the home dashboard after 3.8 seconds of gorgeous wicket smash action!
-                    setTimeout(() => {
-                        showScreen("screen-home");
-                        toast(`Welcome back, ${result.user.phone}!`);
-                    }, 3800);
-                } else {
-                    toast("Failed to log in via Visme User");
+            // Otherwise, show the beautiful onboarding name modal
+            const modal = document.getElementById('modal-visme-name');
+            if (modal) {
+                modal.style.display = 'flex';
+                const input = document.getElementById('visme-onboarding-name');
+                if (input) {
+                    input.value = '';
+                    setTimeout(() => input.focus(), 100);
                 }
-            } catch (err) {
-                console.error("Visme auth error:", err);
-                toast("Connection error during Visme login");
+            } else {
+                // Fallback prompt
+                const name = prompt("Please enter your name:") || "Visme User";
+                proceedVismeLogin(uniqueId, name);
             }
         }
     }
 });
+
+async function submitVismeOnboardingName() {
+    const input = document.getElementById('visme-onboarding-name');
+    if (!input) return;
+    
+    const name = input.value.trim();
+    if (!name) {
+        toast("Please enter your name");
+        return;
+    }
+    
+    const modal = document.getElementById('modal-visme-name');
+    if (modal) modal.style.display = 'none';
+    
+    let uniqueId = localStorage.getItem('visme_user_id');
+    if (!uniqueId) {
+        uniqueId = 'VismeUser_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
+        localStorage.setItem('visme_user_id', uniqueId);
+    }
+    
+    await proceedVismeLogin(uniqueId, name);
+}
+
+async function proceedVismeLogin(uniqueId, name) {
+    try {
+        const response = await fetch('/api/visme-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: uniqueId, name: name })
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            
+            // Save authenticated user details
+            localStorage.setItem('cricscore_user', JSON.stringify({ 
+                phone: result.user.phone, 
+                profile: result.user.profile,
+                loggedIn: true 
+            }));
+            
+            updateSidebarUI({ phone: result.user.phone, profile: result.user.profile });
+
+            toast(`Login Successful as ${name}!`);
+            
+            // Route through the spectacular 3D cricket wicket strike onboarding screen!
+            showScreen("screen-get-started");
+            updateDashboardStats();
+            renderLeaderboard();
+            
+            // Auto-redirect to the home dashboard after 3.8 seconds of gorgeous wicket smash action!
+            setTimeout(() => {
+                showScreen("screen-home");
+                toast(`Welcome back, ${name}!`);
+            }, 3800);
+        } else {
+            toast("Failed to log in via Visme User");
+        }
+    } catch (err) {
+        console.error("Visme auth error:", err);
+        toast("Connection error during Visme login");
+    }
+}
 
 // Update sidebar avatar, name, and subtitle fields
 function updateSidebarUI(user) {
