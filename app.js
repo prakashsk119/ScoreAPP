@@ -3016,18 +3016,18 @@ function setAuthMode(mode) {
   const lblPass = $("lbl-pass");
   
   if (authMode === "register") {
-    title.textContent = "Create Account";
-    subtitle.textContent = "Join the community of elite scorers.";
-    btn.textContent = "Create Free Account";
+    if (title) title.textContent = "Create Account";
+    if (subtitle) subtitle.textContent = "Join the community of elite scorers.";
+    if (btn) btn.textContent = "Create Free Account";
     if (lblPass) lblPass.textContent = "Password";
-    toggleText.innerHTML = `Already have an account? <a href="#" onclick="setAuthMode('login')">Login instead</a>`;
+    if (toggleText) toggleText.innerHTML = `Already have an account? <a href="#" onclick="setAuthMode('login')">Login instead</a>`;
   } else {
     // login mode
-    title.textContent = "Welcome to CricScore";
-    subtitle.textContent = "Elevate your game with professional scoring.";
-    btn.textContent = "Login to Account";
+    if (title) title.textContent = "Welcome to CricScore";
+    if (subtitle) subtitle.textContent = "Elevate your game with professional scoring.";
+    if (btn) btn.textContent = "Login to Account";
     if (lblPass) lblPass.textContent = "Password";
-    toggleText.innerHTML = `Don't have an account? <a href="#" onclick="setAuthMode('register')">Register Now</a>`;
+    if (toggleText) toggleText.innerHTML = `Don't have an account? <a href="#" onclick="setAuthMode('register')">Register Now</a>`;
   }
   
   // Show/Hide specific fields based on mode
@@ -3038,11 +3038,11 @@ function setAuthMode(mode) {
   if (authMode === "register") {
     if (usernameGroup) usernameGroup.style.display = 'block';
     if (emailGroup) emailGroup.style.display = 'block';
-    if (phoneGroup) phoneGroup.style.display = 'none'; // Hide phone during registration
+    if (phoneGroup) phoneGroup.style.display = 'none';
   } else {
     if (usernameGroup) usernameGroup.style.display = 'none';
     if (emailGroup) emailGroup.style.display = 'none';
-    if (phoneGroup) phoneGroup.style.display = 'block'; // Show phone (as Username or Email) during login
+    if (phoneGroup) phoneGroup.style.display = 'block';
   }
 
   // Update label for login-phone
@@ -3771,11 +3771,43 @@ window.addEventListener('message', async function(event) {
         const r = event.data.id;
         
         if (t === "vismeForms:submitSuccess" && r === "185122") {
-            console.log("Visme login form submitted successfully! Form ID:", r);
+            console.log("Visme login form submitted successfully! Form ID:", r, "Data:", event.data);
             try {
+                // Try to extract name and email from Visme event data
+                let vismeEmail = '';
+                let vismeName = '';
+                
+                if (event.data) {
+                    vismeEmail = event.data.email || '';
+                    vismeName = event.data.name || event.data.username || '';
+                    
+                    if (event.data.fields) {
+                        vismeEmail = vismeEmail || event.data.fields.email || '';
+                        vismeName = vismeName || event.data.fields.name || event.data.fields.username || '';
+                    }
+                    if (event.data.data) {
+                        vismeEmail = vismeEmail || event.data.data.email || '';
+                        vismeName = vismeName || event.data.data.name || event.data.data.username || '';
+                    }
+                    if (event.data.answers) {
+                        vismeEmail = vismeEmail || event.data.answers.email || '';
+                        vismeName = vismeName || event.data.answers.name || event.data.answers.username || '';
+                    }
+                }
+
+                // Get or generate a unique Visme User ID for this browser
+                let uniqueId = localStorage.getItem('visme_user_id') || vismeEmail;
+                if (!uniqueId) {
+                    uniqueId = 'VismeUser_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
+                }
+                localStorage.setItem('visme_user_id', uniqueId);
+
+                let displayName = vismeName || 'Visme User';
+
                 const response = await fetch('/api/visme-login', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: uniqueId, name: displayName })
                 });
                 
                 if (response.ok) {

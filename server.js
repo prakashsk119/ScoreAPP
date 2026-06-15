@@ -267,16 +267,19 @@ app.post('/api/login', (req, res) => {
 
 // API to login via Visme Forms success event
 app.post('/api/visme-login', (req, res) => {
-  const phone = "VismeUser";
+  const { phone, name } = req.body;
+  const userPhone = phone || "VismeUser";
+  const userName = name || "Visme User";
+  
   const users = getUsers();
-  let user = users.find(u => u.phone === phone);
+  let user = users.find(u => u.phone === userPhone);
   
   if (!user) {
     user = {
-      phone,
+      phone: userPhone,
       password: "password123",
       profile: {
-        matchName: "Visme User",
+        matchName: userName,
         battingHand: 'Right Hand',
         bowlingType: 'Right-arm Fast'
       },
@@ -285,7 +288,7 @@ app.post('/api/visme-login', (req, res) => {
     };
     users.push(user);
     saveUsers(users);
-    console.log(`[AUTH] Created new default VismeUser account`);
+    console.log(`[AUTH] Created new custom VismeUser account: ${userPhone}`);
   }
 
   // Update login history
@@ -295,7 +298,7 @@ app.post('/api/visme-login', (req, res) => {
   
   saveUsers(users);
   
-  console.log(`[AUTH] User logged in via Visme Forms: ${phone}`);
+  console.log(`[AUTH] User logged in via Visme Forms: ${userPhone}`);
   res.json({ success: true, user: { phone: user.phone, profile: user.profile } });
 });
 
