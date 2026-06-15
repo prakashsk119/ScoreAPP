@@ -3754,6 +3754,7 @@ function goHome() {
 
 // Visme Forms Integration
 function openVismeLogin() {
+    localStorage.removeItem('prefer_standard_login');
     localStorage.removeItem('vismeforms_185122_closed');
     localStorage.removeItem('vismeforms_185122_submitted');
     sessionStorage.removeItem('vismeforms_185122_closed');
