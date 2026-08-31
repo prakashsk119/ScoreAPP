@@ -3,9 +3,8 @@
    ============================================================ */
 
 // ===== BACKEND CONFIG =====
-// Points to Koyeb backend for API calls and Socket.io
-// Update this URL after deploying to Koyeb
-const BACKEND_URL = window.CRICSCORE_BACKEND_URL || 'https://YOUR-APP.koyeb.app';
+// Points to Render backend for API calls and Socket.io
+const BACKEND_URL = window.CRICSCORE_BACKEND_URL || 'https://scoreapp-irrc.onrender.com';
 
 // ===== STATE =====
 let match = {
