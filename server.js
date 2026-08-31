@@ -17,18 +17,52 @@ const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/cricscore'
 
 let isMongoConnected = false;
 
-mongoose.connect(MONGO_URI, {
-  serverSelectionTimeoutMS: 10000,
-  socketTimeoutMS: 45000,
-})
-  .then(() => {
-    isMongoConnected = true;
-    console.log('✅ MongoDB connected to:', MONGO_URI.split('@')[1] || 'local');
+function connectMongo() {
+  if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2) return;
+  mongoose.connect(MONGO_URI, {
+    serverSelectionTimeoutMS: 10000,
+    socketTimeoutMS: 45000,
   })
-  .catch(err => console.error('❌ MongoDB connection error:', err.message));
+    .then(() => {
+      isMongoConnected = true;
+      console.log('✅ MongoDB connected');
+    })
+    .catch(err => {
+      isMongoConnected = false;
+      console.error('❌ MongoDB connection error:', err.message);
+    });
+}
+
+connectMongo();
 
 mongoose.connection.on('connected', () => { isMongoConnected = true; });
-mongoose.connection.on('disconnected', () => { isMongoConnected = false; });
+mongoose.connection.on('disconnected', () => { 
+  isMongoConnected = false;
+  console.log('⚠️ MongoDB disconnected. Scheduling reconnect in 5s...');
+  setTimeout(connectMongo, 5000);
+});
+
+// Middleware to ensure DB is connected before processing API requests
+async function ensureDbConnected(req, res, next) {
+  if (mongoose.connection.readyState === 1) {
+    isMongoConnected = true;
+    return next();
+  }
+  console.log('⚠️ MongoDB not connected (readyState:', mongoose.connection.readyState, '). Reconnecting...');
+  try {
+    await mongoose.connect(MONGO_URI, {
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+    });
+    isMongoConnected = true;
+    next();
+  } catch (err) {
+    isMongoConnected = false;
+    console.error('❌ Database reconnect attempt failed:', err.message);
+    return res.status(503).json({ error: 'Database connecting... Please try again in a few seconds.' });
+  }
+}
+
 
 
 // ── Mongoose Schemas ──
@@ -91,8 +125,15 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Protect API routes with auto-reconnect DB middleware (except db-status and health)
+app.use('/api', (req, res, next) => {
+  if (req.path === '/db-status') return next();
+  ensureDbConnected(req, res, next);
+});
+
 // ── Health check ──
 app.get('/health', (req, res) => res.json({ status: 'ok', mongo: isMongoConnected }));
+
 
 // ── DB Status (for debugging) ──
 app.get('/api/db-status', (req, res) => {
