@@ -302,7 +302,7 @@ app.post('/api/login', async (req, res) => {
     res.json({ success: true, user: { phone: user.phone, profile: user.profile } });
   } catch (err) {
     console.error('[DB] login error:', err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: err.message || 'Login failed' });
   }
 });
 
@@ -334,7 +334,7 @@ app.post('/api/visme-login', async (req, res) => {
     res.json({ success: true, user: { phone: user.phone, profile: user.profile } });
   } catch (err) {
     console.error('[DB] visme-login error:', err);
-    res.status(500).json({ error: 'Server error' });
+    res.status(500).json({ error: err.message || 'Visme login failed' });
   }
 });
 
@@ -381,7 +381,8 @@ app.get('/api/users', async (req, res) => {
     const users = await User.find({}, { password: 0 });
     res.json(users);
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    console.error('[DB] users fetch error:', err);
+    res.status(500).json({ error: err.message || 'Failed to fetch users' });
   }
 });
 
