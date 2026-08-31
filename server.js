@@ -9,6 +9,10 @@ const path       = require('path');
 const fs         = require('fs');
 const multer     = require('multer');
 const mongoose   = require('mongoose');
+const dns        = require('dns');
+
+// Prefer IPv4 for DNS resolution (prevents SRV lookup timeout on cloud hosts)
+try { dns.setDefaultResultOrder('ipv4first'); } catch (e) {}
 
 const app        = express();
 
@@ -20,18 +24,20 @@ let isMongoConnected = false;
 function connectMongo() {
   if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2) return;
   mongoose.connect(MONGO_URI, {
-    serverSelectionTimeoutMS: 10000,
+    serverSelectionTimeoutMS: 15000,
     socketTimeoutMS: 45000,
+    family: 4,
   })
     .then(() => {
       isMongoConnected = true;
-      console.log('✅ MongoDB connected');
+      console.log('✅ MongoDB connected successfully');
     })
     .catch(err => {
       isMongoConnected = false;
       console.error('❌ MongoDB connection error:', err.message);
     });
 }
+
 
 connectMongo();
 
@@ -51,8 +57,9 @@ async function ensureDbConnected(req, res, next) {
   console.log('⚠️ MongoDB not connected (readyState:', mongoose.connection.readyState, '). Reconnecting...');
   try {
     await mongoose.connect(MONGO_URI, {
-      serverSelectionTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 15000,
       socketTimeoutMS: 45000,
+      family: 4,
     });
     isMongoConnected = true;
     next();
