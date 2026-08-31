@@ -17,9 +17,13 @@ try { dns.setDefaultResultOrder('ipv4first'); } catch (e) {}
 const app        = express();
 
 // ── MongoDB Connection ──
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/cricscore';
+let MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/cricscore';
+if (MONGO_URI.startsWith('mongodb+srv://') && !MONGO_URI.includes('authSource=')) {
+  MONGO_URI += (MONGO_URI.includes('?') ? '&' : '?') + 'authSource=admin';
+}
 
 let isMongoConnected = false;
+let lastMongoError = null;
 
 function connectMongo() {
   if (mongoose.connection.readyState === 1 || mongoose.connection.readyState === 2) return;
@@ -30,10 +34,12 @@ function connectMongo() {
   })
     .then(() => {
       isMongoConnected = true;
+      lastMongoError = null;
       console.log('✅ MongoDB connected successfully');
     })
     .catch(err => {
       isMongoConnected = false;
+      lastMongoError = err.message;
       console.error('❌ MongoDB connection error:', err.message);
     });
 }
@@ -149,7 +155,8 @@ app.get('/api/db-status', (req, res) => {
     mongoState: mongoose.connection.readyState,
     // 0=disconnected, 1=connected, 2=connecting, 3=disconnecting
     mongoURI: MONGO_URI ? 'set' : 'missing',
-    env_MONGO_URI: process.env.MONGO_URI ? 'set ✅' : 'MISSING ❌'
+    env_MONGO_URI: process.env.MONGO_URI ? 'set ✅' : 'MISSING ❌',
+    lastError: lastMongoError
   });
 });
 
