@@ -15,9 +15,21 @@ const app        = express();
 // ── MongoDB Connection ──
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/cricscore';
 
-mongoose.connect(MONGO_URI)
-  .then(() => console.log('✅ MongoDB connected'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
+let isMongoConnected = false;
+
+mongoose.connect(MONGO_URI, {
+  serverSelectionTimeoutMS: 10000,
+  socketTimeoutMS: 45000,
+})
+  .then(() => {
+    isMongoConnected = true;
+    console.log('✅ MongoDB connected to:', MONGO_URI.split('@')[1] || 'local');
+  })
+  .catch(err => console.error('❌ MongoDB connection error:', err.message));
+
+mongoose.connection.on('connected', () => { isMongoConnected = true; });
+mongoose.connection.on('disconnected', () => { isMongoConnected = false; });
+
 
 // ── Mongoose Schemas ──
 const userSchema = new mongoose.Schema({
@@ -80,7 +92,19 @@ app.use(express.static(path.join(__dirname)));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ── Health check ──
-app.get('/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/health', (req, res) => res.json({ status: 'ok', mongo: isMongoConnected }));
+
+// ── DB Status (for debugging) ──
+app.get('/api/db-status', (req, res) => {
+  res.json({
+    mongoConnected: isMongoConnected,
+    mongoState: mongoose.connection.readyState,
+    // 0=disconnected, 1=connected, 2=connecting, 3=disconnecting
+    mongoURI: MONGO_URI ? 'set' : 'missing',
+    env_MONGO_URI: process.env.MONGO_URI ? 'set ✅' : 'MISSING ❌'
+  });
+});
+
 
 // ─────────────────────────────────────────────────────────────
 //  MATCH HISTORY API
