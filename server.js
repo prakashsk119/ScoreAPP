@@ -72,7 +72,7 @@ async function ensureDbConnected(req, res, next) {
   } catch (err) {
     isMongoConnected = false;
     console.error('❌ Database reconnect attempt failed:', err.message);
-    return res.status(503).json({ error: 'Database connecting... Please try again in a few seconds.' });
+    return res.status(503).json({ error: 'Database connection failed', details: err.message });
   }
 }
 
