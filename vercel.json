@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "buildCommand": "echo 'Static frontend - no build needed'",
+  "outputDirectory": ".",
+  "routes": [
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+}

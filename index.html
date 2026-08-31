@@ -1240,7 +1240,12 @@
     </button>
   </nav>
 
-  <script src="/socket.io/socket.io.js"></script>
+  <!-- Backend URL config: Update this after deploying to Koyeb -->
+  <script>
+    window.CRICSCORE_BACKEND_URL = 'https://YOUR-APP.koyeb.app';
+  </script>
+  <!-- Socket.io CDN (works on Vercel since frontend is static) -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
       <script>
       // Immediate check to prevent login flash

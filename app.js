@@ -2,6 +2,11 @@
    CricScore – Ball-by-Ball Cricket Scoring Application
    ============================================================ */
 
+// ===== BACKEND CONFIG =====
+// Points to Koyeb backend for API calls and Socket.io
+// Update this URL after deploying to Koyeb
+const BACKEND_URL = window.CRICSCORE_BACKEND_URL || 'https://YOUR-APP.koyeb.app';
+
 // ===== STATE =====
 let match = {
   team1: { name: '', players: [] },
@@ -1800,7 +1805,7 @@ let globalMatchHistory = [];
 
 async function fetchGlobalHistory() {
   try {
-    const res = await fetch('/api/matches');
+    const res = await fetch(`${BACKEND_URL}/api/matches`);
     if (res.ok) {
       const data = await res.json();
       globalMatchHistory = data.reverse(); // Newest first
@@ -1838,7 +1843,7 @@ async function saveMatchToHistory() {
   };
 
   try {
-    await fetch('/api/matches', {
+    await fetch(`${BACKEND_URL}/api/matches`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(entry)
@@ -2342,7 +2347,8 @@ function renderCareerStatsBody() {
 
 function initRealtime() {
   if (typeof io === 'undefined') return;
-  _socket = io();
+  // Connect to the Koyeb backend (not the Vercel frontend)
+  _socket = io(BACKEND_URL, { transports: ['websocket', 'polling'] });
 
   // Receive state update from server (viewer side)
   _socket.on('state-sync', (state) => {
@@ -3091,7 +3097,7 @@ async function requestOTP() {
   triggerMascotJump();
   
   try {
-    const response = await fetch('/api/send-otp', {
+    const response = await fetch(`${BACKEND_URL}/api/send-otp`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone, type: authMode })
@@ -3166,7 +3172,7 @@ async function handleAuth() {
       return;
     }
     
-    endpoint = '/api/register';
+    endpoint = `${BACKEND_URL}/api/register`;
     payload = { username, email, password };
   } else {
     // login mode
@@ -3177,7 +3183,7 @@ async function handleAuth() {
       return;
     }
     
-    endpoint = '/api/login';
+    endpoint = `${BACKEND_URL}/api/login`;
     payload = { phone: loginId, password }; // keep 'phone' as key to match backend expectation
   }
 
@@ -3200,7 +3206,7 @@ async function handleAuth() {
     if (!contentType || !contentType.includes("application/json")) {
       const text = await response.text();
       console.error("Server returned non-JSON response:", text);
-      throw new Error("Server connection error. Please ensure you are running the app on http://localhost:8080");
+      throw new Error("Server connection error. Please check your internet connection.");
     }
 
     const result = await response.json();
@@ -3512,7 +3518,7 @@ async function handleAvatarUpload(input) {
 
   try {
     toast("Uploading photo...");
-    const response = await fetch('/api/upload-avatar', {
+    const response = await fetch(`${BACKEND_URL}/api/upload-avatar`, {
       method: 'POST',
       body: formData
     });
@@ -3552,7 +3558,7 @@ async function saveProfile() {
   };
 
   try {
-    const response = await fetch('/api/update-profile', {
+    const response = await fetch(`${BACKEND_URL}/api/update-profile`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ phone, profile })
@@ -3862,7 +3868,7 @@ async function submitVismeOnboardingName() {
 
 async function proceedVismeLogin(uniqueId, name) {
     try {
-        const response = await fetch('/api/visme-login', {
+        const response = await fetch(`${BACKEND_URL}/api/visme-login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ phone: uniqueId, name: name })

@@ -1,5 +1,5 @@
 /* ============================================================
-   CricScore – Real-Time Server  (Express + Socket.io)
+   CricScore – Real-Time Server  (Express + Socket.io + MongoDB)
    ============================================================ */
 require('dotenv').config();
 const express    = require('express');
@@ -8,18 +8,46 @@ const { Server } = require('socket.io');
 const path       = require('path');
 const fs         = require('fs');
 const multer     = require('multer');
-const twilio     = require('twilio');
+const mongoose   = require('mongoose');
 
 const app        = express();
 
-// Twilio Setup (Optional: requires ENV vars to actually send SMS)
-const twilioClient = (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN)
-  ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
-  : null;
-const httpServer = createServer(app);
-const io         = new Server(httpServer, { cors: { origin: '*' } });
+// ── MongoDB Connection ──
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/cricscore';
 
-// Configure Multer for profile photos
+mongoose.connect(MONGO_URI)
+  .then(() => console.log('✅ MongoDB connected'))
+  .catch(err => console.error('❌ MongoDB connection error:', err));
+
+// ── Mongoose Schemas ──
+const userSchema = new mongoose.Schema({
+  phone:    { type: String, required: true, unique: true },
+  username: String,
+  email:    String,
+  password: String,
+  profile:  { type: mongoose.Schema.Types.Mixed, default: {} },
+  created:  { type: Date, default: Date.now },
+  logins:   { type: Array, default: [] }
+});
+
+const matchSchema = new mongoose.Schema({
+  data:    { type: mongoose.Schema.Types.Mixed },
+  savedAt: { type: Date, default: Date.now }
+});
+
+const User  = mongoose.model('User', userSchema);
+const Match = mongoose.model('Match', matchSchema);
+
+// ── HTTP + Socket.io setup ──
+const httpServer = createServer(app);
+const io = new Server(httpServer, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST']
+  }
+});
+
+// ── Multer for profile photos ──
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const dir = './uploads';
@@ -31,329 +59,247 @@ const storage = multer.diskStorage({
     cb(null, `avatar-${Date.now()}${ext}`);
   }
 });
-const upload = multer({ 
+const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
 });
 
-// Middleware
+// ── Middleware ──
 app.use(express.json());
-// Serve static files from the same directory
 app.use(express.static(path.join(__dirname)));
-// Serve uploads folder
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ── User management logic ──
-const USERS_FILE = path.join(__dirname, 'users.json');
+// ── Health check ──
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
-function getUsers() {
+// ─────────────────────────────────────────────────────────────
+//  MATCH HISTORY API
+// ─────────────────────────────────────────────────────────────
+
+app.get('/api/matches', async (req, res) => {
   try {
-    if (!fs.existsSync(USERS_FILE)) return [];
-    const data = fs.readFileSync(USERS_FILE, 'utf8');
-    return JSON.parse(data || '[]');
+    const matches = await Match.find().sort({ savedAt: -1 });
+    res.json(matches.map(m => m.data));
   } catch (err) {
-    console.error("Error reading users file:", err);
-    return [];
+    console.error('[DB] Error fetching matches:', err);
+    res.status(500).json({ error: 'Failed to fetch matches' });
   }
-}
-
-function saveUsers(users) {
-  try {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
-  } catch (err) {
-    console.error("Error saving users:", err);
-  }
-}
-
-// ── Match history management logic ──
-const MATCHES_FILE = path.join(__dirname, 'matches.json');
-
-function getMatches() {
-  try {
-    if (!fs.existsSync(MATCHES_FILE)) return [];
-    const data = fs.readFileSync(MATCHES_FILE, 'utf8');
-    return JSON.parse(data || '[]');
-  } catch (err) {
-    console.error("Error reading matches file:", err);
-    return [];
-  }
-}
-
-function saveMatches(matches) {
-  try {
-    fs.writeFileSync(MATCHES_FILE, JSON.stringify(matches, null, 2));
-  } catch (err) {
-    console.error("Error saving matches:", err);
-  }
-}
-
-// API to get match history
-app.get('/api/matches', (req, res) => {
-  res.json(getMatches());
 });
 
-// API to save a match
-app.post('/api/matches', (req, res) => {
-  const match = req.body;
-  if (!match) return res.status(400).json({ error: 'Match data required' });
-  
-  const matches = getMatches();
-  matches.push(match);
-  saveMatches(matches);
-  
-  console.log(`[DATA] Match saved globally`);
-  res.json({ success: true });
+app.post('/api/matches', async (req, res) => {
+  const matchData = req.body;
+  if (!matchData) return res.status(400).json({ error: 'Match data required' });
+  try {
+    await Match.create({ data: matchData });
+    console.log('[DATA] Match saved to MongoDB');
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[DB] Error saving match:', err);
+    res.status(500).json({ error: 'Failed to save match' });
+  }
 });
 
-// In-memory OTP storage (for demonstration, resets on server restart)
+// ─────────────────────────────────────────────────────────────
+//  AUTH API
+// ─────────────────────────────────────────────────────────────
+
+// In-memory OTP store (resets on server restart — fine for MVP)
 const otps = {};
 
-// API to send OTP
+// Send OTP
 app.post('/api/send-otp', async (req, res) => {
   let { phone, type } = req.body;
   if (!phone) return res.status(400).json({ error: 'Mobile number required' });
-
-  // Normalize: remove spaces, dashes, etc.
   phone = phone.replace(/[\s\-\(\)]/g, '');
 
-  const users = getUsers();
-  const userExists = users.find(u => u.phone === phone);
+  try {
+    const userExists = await User.findOne({ phone });
+    if (type === 'reset') {
+      if (!userExists) return res.status(404).json({ error: 'This mobile number is not registered.' });
+    } else {
+      if (userExists) return res.status(400).json({ error: 'This mobile number is already registered. Please login instead.' });
+    }
 
-  if (type === 'reset') {
-    if (!userExists) {
-      return res.status(404).json({ error: 'This mobile number is not registered.' });
-    }
-  } else {
-    // Default is registration
-    if (userExists) {
-      return res.status(400).json({ error: 'This mobile number is already registered. Please login instead.' });
-    }
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    otps[phone] = otpCode;
+    console.log(`[AUTH] MOCK OTP for ${phone}: ${otpCode}`);
+    res.json({ success: true, message: 'OTP sent', otp: otpCode, realSMS: false });
+  } catch (err) {
+    console.error('[DB] send-otp error:', err);
+    res.status(500).json({ error: 'Server error' });
   }
-
-  // Generate 6-digit OTP
-  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-  otps[phone] = otpCode;
-
-  // Attempt to send real SMS if Twilio is configured
-  if (twilioClient && process.env.TWILIO_PHONE_NUMBER) {
-    try {
-      // Ensure phone number has country code for Twilio. Defaulting to +91 (India) if missing.
-      const formattedPhone = phone.startsWith('+') ? phone : `+91${phone}`;
-      
-      await twilioClient.messages.create({
-        body: `Your CricScore verification code is ${otpCode}. Do not share this code with anyone.`,
-        from: process.env.TWILIO_PHONE_NUMBER,
-        to: formattedPhone
-      });
-      
-      console.log(`[AUTH] REAL SMS sent to ${formattedPhone}`);
-      return res.json({ success: true, message: 'OTP sent via SMS', realSMS: true });
-    } catch (err) {
-      console.error(`[AUTH] Failed to send real SMS: ${err.message}. Falling back to MOCK SMS.`);
-      // Fallback to mock SMS below
-    }
-  }
-
-  console.log(`[AUTH] MOCK SMS sent to ${phone}. OTP: ${otpCode}`);
-  res.json({ success: true, message: 'OTP sent', otp: otpCode, realSMS: false });
 });
 
-// API to register
-app.post('/api/register', (req, res) => {
+// Register
+app.post('/api/register', async (req, res) => {
   let { password, username, email } = req.body;
-  
-  if (!password || !username || !email) {
+  if (!password || !username || !email)
     return res.status(400).json({ error: 'All fields (Username, Email, Password) are required' });
-  }
 
   username = username.trim();
   email = email.trim().toLowerCase();
-  
-  const users = getUsers();
-  if (users.find(u => u.username && u.username.toLowerCase() === username.toLowerCase())) {
-    return res.status(400).json({ error: 'User with this username already exists' });
+
+  try {
+    const existsUsername = await User.findOne({ username: new RegExp(`^${username}$`, 'i') });
+    if (existsUsername) return res.status(400).json({ error: 'User with this username already exists' });
+
+    const existsEmail = await User.findOne({ email });
+    if (existsEmail) return res.status(400).json({ error: 'User with this email address already exists' });
+
+    const phone = username;
+    const newUser = await User.create({
+      phone, username, email, password,
+      profile: { matchName: username, battingHand: 'Right Hand', bowlingType: 'Right-arm Fast' }
+    });
+
+    console.log(`[AUTH] New user registered: ${username} (${email})`);
+    res.json({ success: true, user: { phone: newUser.phone, profile: newUser.profile } });
+  } catch (err) {
+    console.error('[DB] register error:', err);
+    res.status(500).json({ error: 'Server error' });
   }
-  if (users.find(u => u.email && u.email.toLowerCase() === email)) {
-    return res.status(400).json({ error: 'User with this email address already exists' });
-  }
-
-  // Set 'phone' to username to maintain backwards compatibility in properties expecting u.phone
-  const phone = username;
-
-  const newUser = {
-    phone,
-    username,
-    email,
-    password, // In a real app, hash this!
-    profile: {
-      matchName: username, // Save username as default match name
-      battingHand: 'Right Hand',
-      bowlingType: 'Right-arm Fast'
-    },
-    created: new Date().toISOString(),
-    logins: []
-  };
-
-  users.push(newUser);
-  saveUsers(users);
-  
-  console.log(`[AUTH] New user registered: ${username} (${email})`);
-  res.json({ success: true, user: { phone: newUser.phone, profile: newUser.profile } });
 });
 
-// API to reset password
-app.post('/api/reset-password', (req, res) => {
+// Reset Password
+app.post('/api/reset-password', async (req, res) => {
   let { phone, password, otp } = req.body;
-  
-  if (!phone || !password || !otp) {
+  if (!phone || !password || !otp)
     return res.status(400).json({ error: 'All fields (Mobile, OTP, New Password) are required' });
-  }
 
   phone = phone.replace(/[\s\-\(\)]/g, '');
-  
-  // Validate OTP
-  if (otps[phone] !== otp) {
-    return res.status(400).json({ error: 'Invalid or expired OTP' });
-  }
+  if (otps[phone] !== otp) return res.status(400).json({ error: 'Invalid or expired OTP' });
 
-  const users = getUsers();
-  const userIndex = users.findIndex(u => u.phone === phone);
-  if (userIndex === -1) {
-    return res.status(404).json({ error: 'This mobile number is not registered.' });
-  }
+  try {
+    const user = await User.findOne({ phone });
+    if (!user) return res.status(404).json({ error: 'This mobile number is not registered.' });
 
-  // Update password
-  users[userIndex].password = password;
-  saveUsers(users);
-  
-  // Clear OTP
-  delete otps[phone];
-  
-  console.log(`[AUTH] Password reset for user: ${phone}`);
-  res.json({ success: true, message: 'Password reset successfully!' });
+    user.password = password;
+    await user.save();
+    delete otps[phone];
+    console.log(`[AUTH] Password reset for: ${phone}`);
+    res.json({ success: true, message: 'Password reset successfully!' });
+  } catch (err) {
+    console.error('[DB] reset-password error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
-// API to login
-app.post('/api/login', (req, res) => {
+// Login
+app.post('/api/login', async (req, res) => {
   let { phone, password } = req.body;
   if (!phone || !password) return res.status(400).json({ error: 'Login ID and password required' });
-  
+
   const loginId = phone.trim();
   const normalizedPhone = loginId.replace(/[\s\-\(\)]/g, '');
-  
-  const users = getUsers();
-  // Find by phone, username, or email
-  const user = users.find(u => 
-    u.phone === normalizedPhone || 
-    (u.username && u.username.toLowerCase() === loginId.toLowerCase()) ||
-    (u.email && u.email.toLowerCase() === loginId.toLowerCase()) ||
-    (!u.username && u.profile && u.profile.matchName && u.profile.matchName.toLowerCase() === loginId.toLowerCase())
-  );
-  
-  if (!user || user.password !== password) {
-    return res.status(401).json({ error: 'Invalid credentials or password' });
-  }
 
-  // Update login history
-  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-  user.logins.push({ timestamp: new Date().toISOString(), ip });
-  if (user.logins.length > 10) user.logins.shift(); // Keep last 10
-  
-  saveUsers(users);
-  
-  console.log(`[AUTH] User logged in: ${user.username || user.phone}`);
-  res.json({ success: true, user: { phone: user.phone, profile: user.profile } });
+  try {
+    const user = await User.findOne({
+      $or: [
+        { phone: normalizedPhone },
+        { username: new RegExp(`^${loginId}$`, 'i') },
+        { email: loginId.toLowerCase() }
+      ]
+    });
+
+    if (!user || user.password !== password)
+      return res.status(401).json({ error: 'Invalid credentials or password' });
+
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    user.logins.push({ timestamp: new Date().toISOString(), ip });
+    if (user.logins.length > 10) user.logins.shift();
+    await user.save();
+
+    console.log(`[AUTH] User logged in: ${user.username || user.phone}`);
+    res.json({ success: true, user: { phone: user.phone, profile: user.profile } });
+  } catch (err) {
+    console.error('[DB] login error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
-// API to login via Visme Forms success event
-app.post('/api/visme-login', (req, res) => {
+// Visme Login
+app.post('/api/visme-login', async (req, res) => {
   const { phone, name } = req.body;
-  const userPhone = phone || "VismeUser";
-  const userName = name || "Visme User";
-  
-  const users = getUsers();
-  let user = users.find(u => u.phone === userPhone);
-  
-  if (!user) {
-    user = {
-      phone: userPhone,
-      password: "password123",
-      profile: {
-        matchName: userName,
-        battingHand: 'Right Hand',
-        bowlingType: 'Right-arm Fast'
-      },
-      created: new Date().toISOString(),
-      logins: []
-    };
-    users.push(user);
-    saveUsers(users);
-    console.log(`[AUTH] Created new custom VismeUser account: ${userPhone}`);
-  } else {
-    // Update name if a custom name is provided
-    if (name && name !== "Visme User" && user.profile) {
-      user.profile.matchName = name;
-      console.log(`[AUTH] Updated matchName for existing user ${userPhone} to ${name}`);
-    }
-  }
+  const userPhone = phone || 'VismeUser';
+  const userName  = name  || 'Visme User';
 
-  // Update login history
-  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-  user.logins.push({ timestamp: new Date().toISOString(), ip });
-  if (user.logins.length > 10) user.logins.shift();
-  
-  saveUsers(users);
-  
-  console.log(`[AUTH] User logged in via Visme Forms: ${userPhone}`);
-  res.json({ success: true, user: { phone: user.phone, profile: user.profile } });
+  try {
+    let user = await User.findOne({ phone: userPhone });
+    if (!user) {
+      user = await User.create({
+        phone: userPhone,
+        password: 'password123',
+        profile: { matchName: userName, battingHand: 'Right Hand', bowlingType: 'Right-arm Fast' }
+      });
+      console.log(`[AUTH] Created VismeUser: ${userPhone}`);
+    } else if (name && name !== 'Visme User' && user.profile) {
+      user.profile.matchName = name;
+      await user.save();
+    }
+
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    user.logins.push({ timestamp: new Date().toISOString(), ip });
+    if (user.logins.length > 10) user.logins.shift();
+    await user.save();
+
+    res.json({ success: true, user: { phone: user.phone, profile: user.profile } });
+  } catch (err) {
+    console.error('[DB] visme-login error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
-
-// API to update profile
-app.post('/api/update-profile', (req, res) => {
+// Update Profile
+app.post('/api/update-profile', async (req, res) => {
   const { phone, profile } = req.body;
   if (!phone || !profile) return res.status(400).json({ error: 'Mobile number and profile required' });
 
-  const users = getUsers();
-  const userIndex = users.findIndex(u => u.phone === phone);
-  
-  if (userIndex === -1) return res.status(404).json({ error: 'User not found' });
-
-  users[userIndex].profile = { ...users[userIndex].profile, ...profile };
-  saveUsers(users);
-  
-  console.log(`[AUTH] Profile updated: ${phone}`);
-  res.json({ success: true });
+  try {
+    const user = await User.findOne({ phone });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    user.profile = { ...user.profile, ...profile };
+    await user.save();
+    console.log(`[AUTH] Profile updated: ${phone}`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[DB] update-profile error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
-// API to upload avatar
-app.post('/api/upload-avatar', upload.single('avatar'), (req, res) => {
+// Upload Avatar
+app.post('/api/upload-avatar', upload.single('avatar'), async (req, res) => {
   const { phone } = req.body;
   if (!phone || !req.file) return res.status(400).json({ error: 'Mobile number and file required' });
 
-  const users = getUsers();
-  const userIndex = users.findIndex(u => u.phone === phone);
-  if (userIndex === -1) return res.status(404).json({ error: 'User not found' });
-
-  const avatarUrl = `/uploads/${req.file.filename}`;
-  users[userIndex].profile.avatar = avatarUrl;
-  saveUsers(users);
-
-  console.log(`[AUTH] Avatar uploaded for: ${phone}`);
-  res.json({ success: true, avatarUrl });
+  try {
+    const user = await User.findOne({ phone });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const avatarUrl = `/uploads/${req.file.filename}`;
+    user.profile.avatar = avatarUrl;
+    await user.save();
+    console.log(`[AUTH] Avatar uploaded for: ${phone}`);
+    res.json({ success: true, avatarUrl });
+  } catch (err) {
+    console.error('[DB] upload-avatar error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
-// API to view all users (for admin/debug)
-app.get('/api/users', (req, res) => {
-  // Filter out passwords for safety even in debug
-  const users = getUsers().map(u => {
-    const { password, ...safeUser } = u;
-    return safeUser;
-  });
-  res.json(users);
+// List Users (debug)
+app.get('/api/users', async (req, res) => {
+  try {
+    const users = await User.find({}, { password: 0 });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
-// ── Room store: code → { hostId, state, viewers } ──
+// ─────────────────────────────────────────────────────────────
+//  SOCKET.IO – Real-Time Match Rooms
+// ─────────────────────────────────────────────────────────────
+
 const rooms = new Map();
 
 function genCode() {
@@ -399,27 +345,24 @@ io.on('connection', (socket) => {
     socket.to(code).emit('state-sync', state);
   });
 
-  // WebRTC Signaling: Viewer requests audio
+  // WebRTC signaling
   socket.on('viewer-request-audio', ({ code }) => {
     const room = rooms.get(code);
     if (!room) return;
-    // Send request to the host
     socket.to(room.hostId).emit('viewer-request-audio', { viewerId: socket.id });
   });
 
-  // WebRTC Signaling: Relay ICE and SDP
   socket.on('webrtc-signal', ({ targetId, signal }) => {
     socket.to(targetId).emit('webrtc-signal', { from: socket.id, signal });
   });
 
-  // Host toggles commentary state
   socket.on('commentary-state', ({ code, isLive }) => {
     const room = rooms.get(code);
     if (!room || room.hostId !== socket.id) return;
     socket.to(code).emit('commentary-state', isLive);
   });
 
-  // Cleanup
+  // Cleanup on disconnect
   socket.on('disconnect', () => {
     const code = socket.data.code;
     if (!code) return;
@@ -436,6 +379,7 @@ io.on('connection', (socket) => {
   });
 });
 
+// ── Start Server ──
 const PORT = process.env.PORT || 8080;
 httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`\n🏏  CricScore LIVE  →  http://localhost:${PORT}\n`);
