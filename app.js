@@ -219,6 +219,32 @@ async function updateDashboardStats() {
   $('dash-total-wkts').innerText = totalWkts;
 }
 
+async function refreshUserProfile(phone) {
+  if (!phone) return;
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/profile?phone=${encodeURIComponent(phone)}`);
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && data.profile) {
+        const storedStr = localStorage.getItem('cricscore_user');
+        if (storedStr) {
+          const storedUser = JSON.parse(storedStr);
+          let avatarUrl = data.profile.avatar;
+          if (avatarUrl && avatarUrl.startsWith('/')) {
+            avatarUrl = BACKEND_URL + avatarUrl;
+          }
+          storedUser.profile = { ...storedUser.profile, ...data.profile, avatar: avatarUrl || storedUser.profile?.avatar };
+          localStorage.setItem('cricscore_user', JSON.stringify(storedUser));
+          if (typeof updateSidebarUI === 'function') updateSidebarUI(storedUser);
+          if (typeof updateAvatarUI === 'function') updateAvatarUI(storedUser.profile?.avatar);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("Profile sync error:", e);
+  }
+}
+
 function initAuth() {
   console.log("Checking for persistent login...");
   try {
@@ -258,6 +284,8 @@ function initAuth() {
         renderLeaderboard();
         // Update sidebar profile UI
         updateSidebarUI(user);
+        // Sync fresh profile from backend
+        refreshUserProfile(user.phone);
         return true; // Login found
       }
     }
@@ -2411,15 +2439,33 @@ function initRealtime() {
 
 // Host: create a room on the server when match starts
 function hostMatch() {
-  if (!_socket) return;
-  _socket.emit('host-match', ({ code }) => {
+  if (!_roomCode) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
     _roomCode = code;
-    // Update the small pill in header
-    const pill = $('room-code-pill');
-    if (pill) { $('room-code-text').textContent = code; pill.style.display = 'flex'; }
-    // Show the big share modal automatically
-    showShareModal(code);
-  });
+  }
+
+  const pill = $('room-code-pill');
+  if (pill) { 
+    const txt = $('room-code-text');
+    if (txt) txt.textContent = _roomCode; 
+    pill.style.display = 'flex'; 
+  }
+
+  // Show the share modal unconditionally on Web and Android APK
+  showShareModal(_roomCode);
+
+  if (_socket) {
+    _socket.emit('host-match', ({ code }) => {
+      if (code) {
+        _roomCode = code;
+        if (pill && $('room-code-text')) $('room-code-text').textContent = code;
+        const displayEl = $('share-code-display');
+        if (displayEl) displayEl.textContent = code;
+      }
+    });
+  }
 }
 
 // Show the prominent Share Code modal
@@ -2430,7 +2476,7 @@ function showShareModal(code) {
   const modal = $('modal-share');
   if (modal) {
     modal.style.display = 'flex';
-    modal.style.zIndex = '10000';
+    modal.style.zIndex = '20000';
   }
 }
 function hideShareModal() {
@@ -2479,10 +2525,12 @@ function shareViaWhatsApp() {
       title: 'CricScore Live Match',
       text: msg
     }).catch(() => {
-      window.location.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+      const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+      window.open(waUrl, '_blank') || (window.location.href = waUrl);
     });
   } else {
-    window.location.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+    const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank') || (window.location.href = waUrl);
   }
 }
 
@@ -3494,6 +3542,7 @@ async function handleAuth() {
       }));
       
       updateSidebarUI({ phone: result.user.phone, profile: result.user.profile });
+      refreshUserProfile(result.user.phone);
 
       // Route through the spectacular 3D cricket wicket strike onboarding screen!
       showScreen("screen-get-started");
@@ -3791,9 +3840,9 @@ async function handleAvatarUpload(input) {
     // Update UI
     updateAvatarUI(newAvatarUrl);
     updateSidebarUI(userData);
-    toast("Photo updated successfully!");
+    toast("Profile picture updated successfully");
   } catch (err) {
-    toast(err.message);
+    toast("Failed to update profile picture. Please try again.");
     console.error("Avatar upload error:", err);
   } finally {
     input.value = '';
@@ -3859,6 +3908,17 @@ function toggleAutoVoice() {
   }
 }
 
+// Touch listener to unlock Web Speech API / TTS audio context on Android WebView
+if (typeof window !== 'undefined') {
+  const unlockSpeech = () => {
+    if ('speechSynthesis' in window) {
+      try { window.speechSynthesis.resume(); } catch(e) {}
+    }
+  };
+  window.addEventListener('pointerdown', unlockSpeech, { once: true });
+  window.addEventListener('touchstart', unlockSpeech, { once: true });
+}
+
 async function playVoiceCommentary(type) {
   if (!isAutoVoiceEnabled) return;
   
@@ -3888,9 +3948,10 @@ async function playVoiceCommentary(type) {
       console.warn("Capacitor Native TTS fallback:", err);
     }
 
-    // 2. Web Speech API fallback for Web browsers
+    // 2. Web Speech API fallback (with Android WebView resume fix)
     if ('speechSynthesis' in window) {
       try {
+        window.speechSynthesis.resume(); // Vital for Android WebView!
         if (window.speechSynthesis.speaking) {
           window.speechSynthesis.cancel();
         }
@@ -3898,6 +3959,7 @@ async function playVoiceCommentary(type) {
         utterance.lang = 'en-US';
         utterance.rate = 1.0;
         utterance.pitch = 1.1;
+        utterance.volume = 1.0;
         
         const voices = window.speechSynthesis.getVoices();
         if (voices && voices.length > 0) {
@@ -3906,6 +3968,7 @@ async function playVoiceCommentary(type) {
         }
         
         setTimeout(() => {
+          try { window.speechSynthesis.resume(); } catch(e) {}
           window.speechSynthesis.speak(utterance);
         }, 50);
       } catch (e) {

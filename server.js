@@ -285,8 +285,15 @@ app.post('/api/send-otp', async (req, res) => {
     const isEmail = rawId.includes('@') && rawId.includes('.');
     const isMobile = /^\+?[0-9]{10,15}$/.test(normalizedKey);
 
-    // 1. Send via Real Email if it's an email address and Nodemailer is configured
-    if (isEmail && mailTransporter) {
+    // 1. Send via Real Email if it's an email address
+    if (isEmail) {
+      if (!mailTransporter) {
+        console.warn(`[AUTH] Email OTP requested for ${rawId} but mailTransporter is not configured`);
+        return res.status(400).json({
+          error: 'Unable to send OTP. Please try again.'
+        });
+      }
+
       try {
         await mailTransporter.sendMail({
           from: `"CricScore App" <${EMAIL_USER}>`,
@@ -319,7 +326,7 @@ app.post('/api/send-otp', async (req, res) => {
       } catch (mailErr) {
         console.error('❌ Nodemailer email error:', mailErr.message);
         return res.status(400).json({
-          error: `Unable to send email to ${rawId}: ${mailErr.message}`
+          error: 'Unable to send OTP. Please try again.'
         });
       }
     }
@@ -464,14 +471,16 @@ app.post('/api/otp-login', async (req, res) => {
       await user.save();
     }
 
-    const matchName = (user && user.profile && user.profile.matchName) ? user.profile.matchName : (rawId.includes('@') ? rawId.split('@')[0] : rawId);
+    const userProfile = (user && user.profile && Object.keys(user.profile).length > 0) 
+      ? user.profile 
+      : { matchName: (rawId.includes('@') ? rawId.split('@')[0] : rawId), battingHand: 'Right Hand', bowlingType: 'Right-arm Fast' };
     const returnPhone = (user && user.phone) ? user.phone : rawId;
 
     res.json({
       success: true,
       user: {
         phone: returnPhone,
-        profile: { matchName, battingHand: 'Right Hand', bowlingType: 'Right-arm Fast' }
+        profile: userProfile
       }
     });
   } catch (err) {
@@ -484,6 +493,25 @@ app.post('/api/otp-login', async (req, res) => {
         profile: { matchName: cleanName, battingHand: 'Right Hand', bowlingType: 'Right-arm Fast' }
       }
     });
+  }
+});
+
+// GET user profile endpoint for profile sync
+app.get('/api/profile', async (req, res) => {
+  const phone = req.query.phone;
+  if (!phone) return res.status(400).json({ error: 'Phone or Login ID required' });
+  try {
+    const user = await User.findOne({
+      $or: [
+        { phone },
+        { username: new RegExp(`^${phone}$`, 'i') },
+        { email: phone.toLowerCase() }
+      ]
+    });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ success: true, profile: user.profile });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
