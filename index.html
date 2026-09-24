@@ -19,16 +19,12 @@
     .screen.active { display: flex; }
     #screen-login { background: linear-gradient(135deg, #ff8c37 0%, #ff7315 50%, #f95700 100%) !important; position: fixed !important; inset: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; z-index: 1000 !important; }
   </style>
-  <link rel="preload" as="style" href="style.min.css" />
-  <link rel="stylesheet" href="style.min.css" media="print" onload="this.media='all'" />
-  <noscript>
-    <link rel="stylesheet" href="style.min.css" />
-  </noscript>
+  <link rel="stylesheet" href="style.css" />
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#00a896" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <link rel="icon" href="dummy.jpg">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='120' y2='120'%3E%3Cstop offset='0%25' stop-color='%2300E676'/%3E%3Cstop offset='50%25' stop-color='%2300A896'/%3E%3Cstop offset='100%25' stop-color='%230284C7'/%3E%3C/linearGradient%3E%3ClinearGradient id='gold' x1='0' y1='0' x2='120' y2='0'%3E%3Cstop offset='0%25' stop-color='%23FFD700'/%3E%3Cstop offset='100%25' stop-color='%23FF9000'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='120' height='120' rx='32' fill='url(%23g)'/%3E%3Crect x='2' y='2' width='116' height='116' rx='30' stroke='%23FFF' stroke-opacity='0.35' stroke-width='3'/%3E%3Cg stroke='%23FFF' stroke-opacity='0.22' stroke-width='3.5' stroke-linecap='round'%3E%3Cline x1='44' y1='24' x2='44' y2='96'/%3E%3Cline x1='60' y1='24' x2='60' y2='96'/%3E%3Cline x1='76' y1='24' x2='76' y2='96'/%3E%3Cline x1='38' y1='24' x2='82' y2='24'/%3E%3C/g%3E%3Cpath d='M 18 98 C 45 42 85 30 104 38' stroke='url(%23gold)' stroke-width='5.5' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='104' cy='38' r='6' fill='%23FFD700' stroke='%23FFF' stroke-width='1.5'/%3E%3Ctext x='60' y='77' font-family='Outfit, sans-serif' font-weight='900' font-size='54' fill='%23FFF' text-anchor='middle' letter-spacing='-3'%3ECS%3C/text%3E%3C/svg%3E">
 </head>
 
 <body>
@@ -45,8 +41,28 @@
       
       <!-- Brand Logo Header -->
       <div class="login-brand" style="text-align: center; margin-bottom: 1.25rem;">
-        <div style="width: 72px; height: 72px; margin: 0 auto 0.65rem; background: linear-gradient(135deg, #00a896 0%, #0284c7 100%); border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 2.4rem; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);">
-          🏏
+        <div style="width: 72px; height: 72px; margin: 0 auto 0.65rem; filter: drop-shadow(0 10px 25px rgba(0, 212, 106, 0.3));">
+          <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: 100%;">
+            <defs>
+              <linearGradient id="csGrad_login" x1="0" y1="0" x2="120" y2="120">
+                <stop offset="0%" stop-color="#00E676"/>
+                <stop offset="50%" stop-color="#00A896"/>
+                <stop offset="100%" stop-color="#0284C7"/>
+              </linearGradient>
+              <linearGradient id="csGold_login" x1="0" y1="0" x2="120" y2="0">
+                <stop offset="0%" stop-color="#FFD700"/>
+                <stop offset="100%" stop-color="#FF9000"/>
+              </linearGradient>
+            </defs>
+            <rect width="120" height="120" rx="32" fill="url(#csGrad_login)"/>
+            <rect x="2" y="2" width="116" height="116" rx="30" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="3"/>
+            <g stroke="#FFFFFF" stroke-opacity="0.22" stroke-width="3.5" stroke-linecap="round">
+              <line x1="44" y1="24" x2="44" y2="96"/><line x1="60" y1="24" x2="60" y2="96"/><line x1="76" y1="24" x2="76" y2="96"/><line x1="38" y1="24" x2="82" y2="24"/>
+            </g>
+            <path d="M 18 98 C 45 42 85 30 104 38" stroke="url(#csGold_login)" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+            <circle cx="104" cy="38" r="6" fill="#FFD700" stroke="#FFFFFF" stroke-width="1.5"/>
+            <text x="60" y="77" font-family="'Outfit', system-ui, sans-serif" font-weight="900" font-size="54" fill="#FFFFFF" text-anchor="middle" letter-spacing="-3">CS</text>
+          </svg>
         </div>
         <h1 style="font-size: 2.2rem; font-weight: 900; color: #0f172a; letter-spacing: -0.5px; margin-bottom: 0.15rem;">
           Cric<span style="color: #15803d;">Score</span>
@@ -238,7 +254,27 @@
       <div class="header-center">
         <div class="logo-mini">
           <div class="logo-icon">
-            <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="22" fill="url(#lg_h)"/><path d="M14 34L24 10L34 34" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 27h14" stroke="white" stroke-width="2.5" stroke-linecap="round"/><defs><linearGradient id="lg_h" x1="0" y1="0" x2="48" y2="48"><stop stop-color="#00D46A"/><stop offset="1" stop-color="#0052CC"/></linearGradient></defs></svg>
+            <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;">
+              <defs>
+                <linearGradient id="csGrad_nav" x1="0" y1="0" x2="120" y2="120">
+                  <stop offset="0%" stop-color="#00E676"/>
+                  <stop offset="50%" stop-color="#00A896"/>
+                  <stop offset="100%" stop-color="#0284C7"/>
+                </linearGradient>
+                <linearGradient id="csGold_nav" x1="0" y1="0" x2="120" y2="0">
+                  <stop offset="0%" stop-color="#FFD700"/>
+                  <stop offset="100%" stop-color="#FF9000"/>
+                </linearGradient>
+              </defs>
+              <rect width="120" height="120" rx="32" fill="url(#csGrad_nav)"/>
+              <rect x="2" y="2" width="116" height="116" rx="30" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="3"/>
+              <g stroke="#FFFFFF" stroke-opacity="0.22" stroke-width="3.5" stroke-linecap="round">
+                <line x1="44" y1="24" x2="44" y2="96"/><line x1="60" y1="24" x2="60" y2="96"/><line x1="76" y1="24" x2="76" y2="96"/><line x1="38" y1="24" x2="82" y2="24"/>
+              </g>
+              <path d="M 18 98 C 45 42 85 30 104 38" stroke="url(#csGold_nav)" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+              <circle cx="104" cy="38" r="6" fill="#FFD700" stroke="#FFFFFF" stroke-width="1.5"/>
+              <text x="60" y="77" font-family="'Outfit', system-ui, sans-serif" font-weight="900" font-size="54" fill="#FFFFFF" text-anchor="middle" letter-spacing="-3">CS</text>
+            </svg>
           </div>
           <div class="logo-text">Cric<span>Score</span></div>
         </div>
@@ -772,7 +808,29 @@
     <div class="setup-container" style="padding-top: 1rem;">
       <div class="setup-card" style="margin-bottom: 1.5rem;">
         <div class="profile-avatar-section" style="text-align: center; margin-bottom: 1.5rem;">
-          <div class="profile-avatar" id="profile-avatar-preview" style="width: 100px; height: 100px; border-radius: 50%; background: var(--primary-gradient); display: flex; align-items: center; justify-content: center; font-size: 3rem; margin: 0 auto 0.8rem; border: 4px solid var(--clr-glass-border); overflow: hidden; color: white;">?</div>
+          <div class="profile-avatar" id="profile-avatar-preview" style="width: 100px; height: 100px; border-radius: 28px; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.8rem; border: 3px solid rgba(0, 212, 106, 0.3); overflow: hidden;">
+            <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: 100%;">
+              <defs>
+                <linearGradient id="csGrad_p" x1="0" y1="0" x2="120" y2="120">
+                  <stop offset="0%" stop-color="#00E676"/>
+                  <stop offset="50%" stop-color="#00A896"/>
+                  <stop offset="100%" stop-color="#0284C7"/>
+                </linearGradient>
+                <linearGradient id="csGold_p" x1="0" y1="0" x2="120" y2="0">
+                  <stop offset="0%" stop-color="#FFD700"/>
+                  <stop offset="100%" stop-color="#FF9000"/>
+                </linearGradient>
+              </defs>
+              <rect width="120" height="120" rx="32" fill="url(#csGrad_p)"/>
+              <rect x="2" y="2" width="116" height="116" rx="30" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="3"/>
+              <g stroke="#FFFFFF" stroke-opacity="0.22" stroke-width="3.5" stroke-linecap="round">
+                <line x1="44" y1="24" x2="44" y2="96"/><line x1="60" y1="24" x2="60" y2="96"/><line x1="76" y1="24" x2="76" y2="96"/><line x1="38" y1="24" x2="82" y2="24"/>
+              </g>
+              <path d="M 18 98 C 45 42 85 30 104 38" stroke="url(#csGold_p)" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+              <circle cx="104" cy="38" r="6" fill="#FFD700" stroke="#FFFFFF" stroke-width="1.5"/>
+              <text x="60" y="77" font-family="'Outfit', system-ui, sans-serif" font-weight="900" font-size="54" fill="#FFFFFF" text-anchor="middle" letter-spacing="-3">CS</text>
+            </svg>
+          </div>
           <input type="file" id="profile-avatar-input" accept="image/*" style="display: none;" onchange="handleAvatarUpload(this)">
           <button class="btn-secondary" style="font-size: 0.8rem; padding: 0.4rem 1rem;" onclick="$('profile-avatar-input').click()">📸 Change Photo</button>
         </div>
@@ -1081,7 +1139,29 @@
   <div id="sidebar" class="sidebar">
     <!-- Profile header -->
     <div class="sidebar-profile">
-      <div class="sidebar-avatar" id="sidebar-avatar-preview">🏏</div>
+      <div class="sidebar-avatar" id="sidebar-avatar-preview">
+        <svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: 100%;">
+          <defs>
+            <linearGradient id="csGrad_sb" x1="0" y1="0" x2="120" y2="120">
+              <stop offset="0%" stop-color="#00E676"/>
+              <stop offset="50%" stop-color="#00A896"/>
+              <stop offset="100%" stop-color="#0284C7"/>
+            </linearGradient>
+            <linearGradient id="csGold_sb" x1="0" y1="0" x2="120" y2="0">
+              <stop offset="0%" stop-color="#FFD700"/>
+              <stop offset="100%" stop-color="#FF9000"/>
+            </linearGradient>
+          </defs>
+          <rect width="120" height="120" rx="32" fill="url(#csGrad_sb)"/>
+          <rect x="2" y="2" width="116" height="116" rx="30" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="3"/>
+          <g stroke="#FFFFFF" stroke-opacity="0.22" stroke-width="3.5" stroke-linecap="round">
+            <line x1="44" y1="24" x2="44" y2="96"/><line x1="60" y1="24" x2="60" y2="96"/><line x1="76" y1="24" x2="76" y2="96"/><line x1="38" y1="24" x2="82" y2="24"/>
+          </g>
+          <path d="M 18 98 C 45 42 85 30 104 38" stroke="url(#csGold_sb)" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+          <circle cx="104" cy="38" r="6" fill="#FFD700" stroke="#FFFFFF" stroke-width="1.5"/>
+          <text x="60" y="77" font-family="'Outfit', system-ui, sans-serif" font-weight="900" font-size="54" fill="#FFFFFF" text-anchor="middle" letter-spacing="-3">CS</text>
+        </svg>
+      </div>
       <div class="sidebar-profile-info">
         <div class="sidebar-profile-name">CricScore</div>
         <div class="sidebar-profile-sub">Ball-by-Ball Scorer</div>

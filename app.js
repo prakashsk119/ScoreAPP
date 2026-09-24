@@ -3739,8 +3739,9 @@ function updateAvatarUI(avatarUrl) {
     if (profilePreview) profilePreview.innerHTML = imgHtml;
     if (sidebarPreview) sidebarPreview.innerHTML = imgHtml;
   } else {
-    if (profilePreview) profilePreview.innerHTML = '?';
-    if (sidebarPreview) sidebarPreview.innerHTML = '🏏';
+    const csLogoSvg = `<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;border-radius:inherit;"><defs><linearGradient id="csGrad_av" x1="0" y1="0" x2="120" y2="120"><stop offset="0%" stop-color="#00E676"/><stop offset="50%" stop-color="#00A896"/><stop offset="100%" stop-color="#0284C7"/></linearGradient><linearGradient id="csGold_av" x1="0" y1="0" x2="120" y2="0"><stop offset="0%" stop-color="#FFD700"/><stop offset="100%" stop-color="#FF9000"/></linearGradient></defs><rect width="120" height="120" rx="32" fill="url(#csGrad_av)"/><rect x="2" y="2" width="116" height="116" rx="30" stroke="#FFFFFF" stroke-opacity="0.35" stroke-width="3"/><g stroke="#FFFFFF" stroke-opacity="0.22" stroke-width="3.5" stroke-linecap="round"><line x1="44" y1="24" x2="44" y2="96"/><line x1="60" y1="24" x2="60" y2="96"/><line x1="76" y1="24" x2="76" y2="96"/><line x1="38" y1="24" x2="82" y2="24"/></g><path d="M 18 98 C 45 42 85 30 104 38" stroke="url(#csGold_av)" stroke-width="5.5" stroke-linecap="round" fill="none"/><circle cx="104" cy="38" r="6" fill="#FFD700" stroke="#FFFFFF" stroke-width="1.5"/><text x="60" y="77" font-family="'Outfit', system-ui, sans-serif" font-weight="900" font-size="54" fill="#FFFFFF" text-anchor="middle" letter-spacing="-3">CS</text></svg>`;
+    if (profilePreview) profilePreview.innerHTML = csLogoSvg;
+    if (sidebarPreview) sidebarPreview.innerHTML = csLogoSvg;
   }
 }
 
