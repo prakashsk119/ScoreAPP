@@ -3,3 +3,8 @@ node_modules/
 users.json
 matches.json
 uploads/
+www/
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
