@@ -2416,24 +2416,66 @@ function hostMatch() {
 
 // Show the prominent Share Code modal
 function showShareModal(code) {
-  $('share-code-display').textContent = code;
-  $('modal-share').style.display = 'flex';
+  const roomCode = code || _roomCode || ($('room-code-text') ? $('room-code-text').textContent : '');
+  const displayEl = $('share-code-display');
+  if (displayEl && roomCode) displayEl.textContent = roomCode;
+  const modal = $('modal-share');
+  if (modal) {
+    modal.style.display = 'flex';
+    modal.style.zIndex = '10000';
+  }
 }
-function hideShareModal() { $('modal-share').style.display = 'none'; }
+function hideShareModal() {
+  const modal = $('modal-share');
+  if (modal) modal.style.display = 'none';
+}
 
 function copyShareCode() {
-  const code = _roomCode;
+  const code = _roomCode || ($('share-code-display') ? $('share-code-display').textContent : '');
   if (!code) return;
-  navigator.clipboard.writeText(code).then(() => {
-    $('copy-share-btn').textContent = '✅ Copied!';
-    setTimeout(() => { $('copy-share-btn').textContent = '📋 Copy Code'; }, 2000);
-  });
+  
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(() => {
+      if ($('copy-share-btn')) $('copy-share-btn').textContent = '✅ Copied!';
+      setTimeout(() => { if ($('copy-share-btn')) $('copy-share-btn').textContent = '📋 Copy Code'; }, 2000);
+    }).catch(() => fallbackCopyCode(code));
+  } else {
+    fallbackCopyCode(code);
+  }
+}
+
+function fallbackCopyCode(text) {
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    if ($('copy-share-btn')) $('copy-share-btn').textContent = '✅ Copied!';
+    setTimeout(() => { if ($('copy-share-btn')) $('copy-share-btn').textContent = '📋 Copy Code'; }, 2000);
+  } catch(e) {
+    toast(`Match Code: ${text}`);
+  }
 }
 
 function shareViaWhatsApp() {
-  const url = window.location.origin;
-  const msg = `Join my live cricket match! 🏏\nMatch Code: *${_roomCode}*\nOpen the app: ${url}\nClick "Join Live Match" and enter the code.`;
-  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  const webUrl = (window.CRICSCORE_BACKEND_URL || 'https://scoreapp-irrc.onrender.com');
+  const code = _roomCode || ($('share-code-display') ? $('share-code-display').textContent : '');
+  const msg = `Join my live cricket match! 🏏\nMatch Code: *${code}*\nOpen the app: ${webUrl}\nClick "Join Live Match" and enter the code.`;
+
+  if (navigator.share) {
+    navigator.share({
+      title: 'CricScore Live Match',
+      text: msg
+    }).catch(() => {
+      window.location.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+    });
+  } else {
+    window.location.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+  }
 }
 
 
@@ -3679,7 +3721,13 @@ function updateAvatarUI(avatarUrl) {
   const sidebarPreview = $('sidebar-avatar-preview');
   
   if (avatarUrl) {
-    const imgHtml = `<img src="${avatarUrl}" style="width:100%; height:100%; object-fit:cover;">`;
+    let fullUrl = avatarUrl;
+    if (fullUrl.startsWith('/')) {
+      fullUrl = BACKEND_URL + fullUrl;
+    }
+    // Append timestamp for cache-busting in Android WebView
+    const cacheBustUrl = fullUrl.includes('?') ? fullUrl : `${fullUrl}?t=${Date.now()}`;
+    const imgHtml = `<img src="${cacheBustUrl}" style="width:100%; height:100%; object-fit:cover;">`;
     if (profilePreview) profilePreview.innerHTML = imgHtml;
     if (sidebarPreview) sidebarPreview.innerHTML = imgHtml;
   } else {
@@ -3720,13 +3768,20 @@ async function handleAvatarUpload(input) {
 
     const result = await response.json();
     
+    // Normalize avatar URL
+    let newAvatarUrl = result.avatarUrl;
+    if (newAvatarUrl && newAvatarUrl.startsWith('/')) {
+      newAvatarUrl = BACKEND_URL + newAvatarUrl;
+    }
+    
     // Update local data
     if (!userData.profile) userData.profile = {};
-    userData.profile.avatar = result.avatarUrl;
+    userData.profile.avatar = newAvatarUrl;
     localStorage.setItem('cricscore_user', JSON.stringify(userData));
     
     // Update UI
-    updateAvatarUI(result.avatarUrl);
+    updateAvatarUI(newAvatarUrl);
+    updateSidebarUI(userData);
     toast("Photo updated successfully!");
   } catch (err) {
     toast(err.message);
@@ -3799,16 +3854,33 @@ function playVoiceCommentary(type) {
   if (!isAutoVoiceEnabled || !('speechSynthesis' in window)) return;
   
   let text = '';
-  if (type === '4') text = "That's a Four!";
-  else if (type === '6') text = "It's a huge Six!";
-  else if (type === 'W') text = "Out! He is gone!";
+  const strType = String(type);
+  if (strType === '4') text = "That's a Four!";
+  else if (strType === '6') text = "It's a huge Six!";
+  else if (strType === 'W') text = "Out! He is gone!";
   
   if (text) {
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 1.0;
-    utterance.pitch = 1.1;
-    window.speechSynthesis.speak(utterance);
+    try {
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+      }
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 1.0;
+      utterance.pitch = 1.1;
+      
+      const voices = window.speechSynthesis.getVoices();
+      if (voices && voices.length > 0) {
+        const enVoice = voices.find(v => v.lang && (v.lang.startsWith('en') || v.lang.startsWith('en-US')));
+        if (enVoice) utterance.voice = enVoice;
+      }
+      
+      setTimeout(() => {
+        window.speechSynthesis.speak(utterance);
+      }, 50);
+    } catch (e) {
+      console.warn("Speech synthesis error:", e);
+    }
   }
 }
 
