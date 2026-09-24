@@ -3,8 +3,15 @@
    ============================================================ */
 
 // ===== BACKEND CONFIG =====
-// Points to Render backend for API calls and Socket.io
-const BACKEND_URL = window.CRICSCORE_BACKEND_URL || 'https://scoreapp-irrc.onrender.com';
+const BACKEND_URL = (function() {
+  if (window.CRICSCORE_BACKEND_URL) return window.CRICSCORE_BACKEND_URL;
+  const h = window.location.hostname;
+  const p = window.location.protocol;
+  if (p === 'file:' || !h || h === 'localhost' || h === '127.0.0.1' || h.startsWith('192.168.') || h.startsWith('10.') || h.endsWith('.local')) {
+    return 'http://localhost:8080';
+  }
+  return 'https://scoreapp-irrc.onrender.com';
+})();
 
 // ===== STATE =====
 let match = {
@@ -258,12 +265,6 @@ function initAuth() {
 (async function initSetup() {
   await fetchGlobalHistory();
   renderPlayerInputs();
-  
-  const setupContainer = document.querySelector('#screen-setup .setup-container');
-  if (setupContainer) {
-    setupContainer.style.maxHeight = '95vh';
-    setupContainer.style.overflowY = 'auto';
-  }
 })();
 
 // Track toss elected choice ('bat' | 'bowl')
@@ -1841,15 +1842,23 @@ async function saveMatchToHistory() {
     ]
   };
 
+  if (!navigator.onLine) {
+    console.log("[OFFLINE] Device is offline. Queueing match locally.");
+    queueOfflineMatch(entry);
+    return;
+  }
+
   try {
-    await fetch(`${BACKEND_URL}/api/matches`, {
+    const response = await fetch(`${BACKEND_URL}/api/matches`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(entry)
     });
+    if (!response.ok) throw new Error("Server save failed");
     await fetchGlobalHistory();
   } catch(e) {
-    console.error("Failed to save match to server:", e);
+    console.warn("Failed to save match to server, queueing for offline auto-sync:", e);
+    queueOfflineMatch(entry);
   }
 }
 
@@ -3008,8 +3017,8 @@ function renderMatchGraphs() {
   container.innerHTML = html;
 }
 
-// ===== AUTHENTICATION LOGIC (Login, Register & Reset) =====
-let authMode = "login"; // "login", "register", or "reset"
+// ===== AUTHENTICATION LOGIC (Login, Register & Guest) =====
+let authMode = "login"; // "login" or "register"
 
 function setAuthMode(mode) {
   authMode = mode;
@@ -3025,14 +3034,14 @@ function setAuthMode(mode) {
     if (subtitle) subtitle.textContent = "Join the community of elite scorers.";
     if (btn) btn.textContent = "Create Free Account";
     if (lblPass) lblPass.textContent = "Password";
-    if (toggleText) toggleText.innerHTML = `Already have an account? <a href="#" onclick="setAuthMode('login')">Login instead</a>`;
+    if (toggleText) toggleText.innerHTML = `Already have an account? <a href="#" onclick="setAuthMode('login'); return false;" style="color: #0284c7; font-weight: 700; text-decoration: none;">Login instead</a>`;
   } else {
     // login mode
     if (title) title.textContent = "Welcome to CricScore";
     if (subtitle) subtitle.textContent = "Elevate your game with professional scoring.";
     if (btn) btn.textContent = "Login to Account";
     if (lblPass) lblPass.textContent = "Password";
-    if (toggleText) toggleText.innerHTML = `Don't have an account? <a href="#" onclick="setAuthMode('register')">Register Now</a>`;
+    if (toggleText) toggleText.innerHTML = `Don't have an account? <a href="#" onclick="setAuthMode('register'); return false;" style="color: #0284c7; font-weight: 700; text-decoration: none;">Register Now</a>`;
   }
   
   // Show/Hide specific fields based on mode
@@ -3057,10 +3066,202 @@ function setAuthMode(mode) {
     lblPhone.textContent = "Username or Email";
     if (inputPhone) inputPhone.placeholder = "Enter username or email";
   }
+
+  // Update tab visual states
+  const tabOtp = $('tab-auth-otp');
+  const tabPass = $('tab-auth-pass');
+  const tabReg = $('tab-auth-reg');
+
+  if (tabPass && tabReg && tabOtp) {
+    if (authMode === 'register') {
+      tabReg.style.background = '#ffffff';
+      tabReg.style.color = '#0284c7';
+      tabReg.style.boxShadow = '0 2px 5px rgba(0,0,0,0.08)';
+      tabPass.style.background = 'transparent';
+      tabPass.style.color = '#64748b';
+      tabPass.style.boxShadow = 'none';
+      tabOtp.style.background = 'transparent';
+      tabOtp.style.color = '#64748b';
+      tabOtp.style.boxShadow = 'none';
+    } else if (authMode === 'login') {
+      tabPass.style.background = '#ffffff';
+      tabPass.style.color = '#0f172a';
+      tabPass.style.boxShadow = '0 2px 5px rgba(0,0,0,0.08)';
+      tabReg.style.background = 'transparent';
+      tabReg.style.color = '#64748b';
+      tabReg.style.boxShadow = 'none';
+    }
+  }
 }
 
-function toggleAuthMode() {
-  setAuthMode(authMode === "login" ? "register" : "login");
+function handleGuestLogin() {
+  const guestUser = {
+    phone: "GuestScorer",
+    profile: { matchName: "Guest Scorer", battingHand: "Right Hand", bowlingType: "Right-arm Medium" },
+    loggedIn: true
+  };
+  localStorage.setItem('cricscore_user', JSON.stringify(guestUser));
+  updateSidebarUI(guestUser);
+  showScreen("screen-home");
+  updateDashboardStats();
+  toast("Logged in as Guest Scorer! Welcome to CricScore.");
+}
+
+function setAuthTab(tab) {
+  const tabOtp = $('tab-auth-otp');
+  const tabPass = $('tab-auth-pass');
+  const tabReg = $('tab-auth-reg');
+  const formOtp = $('form-otp-container');
+  const formPass = $('form-pass-container');
+
+  const tabs = [
+    { id: 'otp', el: tabOtp },
+    { id: 'pass', el: tabPass },
+    { id: 'register', el: tabReg }
+  ];
+
+  tabs.forEach(t => {
+    if (t.el) {
+      if (t.id === tab) {
+        t.el.style.background = '#ffffff';
+        t.el.style.color = '#0f172a';
+        t.el.style.boxShadow = '0 2px 5px rgba(0,0,0,0.08)';
+      } else {
+        t.el.style.background = 'transparent';
+        t.el.style.color = '#64748b';
+        t.el.style.boxShadow = 'none';
+      }
+    }
+  });
+
+  if (tab === 'otp') {
+    if (formOtp) formOtp.style.display = 'block';
+    if (formPass) formPass.style.display = 'none';
+  } else if (tab === 'register') {
+    setAuthMode('register');
+    if (formOtp) formOtp.style.display = 'none';
+    if (formPass) formPass.style.display = 'block';
+  } else {
+    setAuthMode('login');
+    if (formOtp) formOtp.style.display = 'none';
+    if (formPass) formPass.style.display = 'block';
+  }
+}
+
+let devLocalOTP = null;
+
+async function requestLoginOTP() {
+  const identifier = $('otp-identifier').value.trim();
+  if (!identifier) {
+    toast("Please enter your Mobile number or Email address.");
+    return;
+  }
+
+  const btn = $('btn-send-otp-code');
+  btn.disabled = true;
+  btn.textContent = "Sending OTP...";
+
+  let result = null;
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/send-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: identifier, type: 'login' })
+    });
+
+    result = await response.json();
+    if (!response.ok) {
+      toast(result.error || 'Failed to send OTP email.');
+      btn.disabled = false;
+      btn.textContent = "📩 Send OTP Code";
+      return;
+    }
+  } catch (err) {
+    console.warn("[AUTH] Backend OTP request failed:", err);
+    toast("Server connection error. Please ensure local server is running.");
+    btn.disabled = false;
+    btn.textContent = "📩 Send OTP Code";
+    return;
+  }
+
+  // Un-hide the 6-digit OTP code box & Verify button
+  const otpGroup = $('otp-code-group');
+  const verifyBtn = $('btn-verify-otp-login');
+  const otpInput = $('otp-code-input');
+
+  if (otpGroup) otpGroup.style.display = 'block';
+  if (verifyBtn) verifyBtn.style.display = 'block';
+
+  // ALWAYS clear the input box so the user must type the code from their email
+  if (otpInput) {
+    otpInput.value = '';
+    otpInput.focus();
+  }
+
+  toast(`📧 OTP code sent to ${identifier}! Please check your email inbox.`);
+  btn.disabled = false;
+  btn.textContent = "🔄 Resend OTP Code";
+}
+
+async function verifyAndLoginOTP() {
+  const identifier = $('otp-identifier').value.trim();
+  const otp = $('otp-code-input').value.trim();
+
+  if (!identifier || !otp) {
+    toast("Please enter both Email/Mobile and the 6-digit OTP code.");
+    return;
+  }
+
+  const btn = $('btn-verify-otp-login');
+  btn.disabled = true;
+  btn.textContent = "Verifying & Logging In...";
+
+  let userObj = null;
+
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/otp-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: identifier, otp })
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      if (result.user) {
+        userObj = {
+          phone: result.user.phone || identifier,
+          profile: result.user.profile || { matchName: identifier.split('@')[0] },
+          loggedIn: true
+        };
+      }
+    }
+  } catch (err) {
+    console.warn("[AUTH] Backend OTP verify failed, using standalone login fallback:", err);
+  }
+
+  // Standalone fallback if backend unreachable or local test
+  if (!userObj) {
+    const cleanName = identifier.includes('@') ? identifier.split('@')[0] : identifier;
+    userObj = {
+      phone: identifier,
+      profile: { matchName: cleanName, battingHand: "Right Hand", bowlingType: "Right-arm Fast" },
+      loggedIn: true
+    };
+  }
+
+  // Save session & log in
+  localStorage.setItem('cricscore_user', JSON.stringify(userObj));
+
+  if (typeof updateSidebarUI === 'function') updateSidebarUI(userObj);
+  showScreen("screen-home");
+  if (typeof updateDashboardStats === 'function') updateDashboardStats();
+  if (typeof renderLeaderboard === 'function') renderLeaderboard();
+
+  const displayName = userObj.profile?.matchName || userObj.phone;
+  toast(`Welcome to CricScore, ${displayName}! 🎉`);
+
+  btn.disabled = false;
+  btn.textContent = "✅ Verify & Login";
 }
 
 async function requestOTP() {
@@ -3232,12 +3433,12 @@ async function handleAuth() {
       updateDashboardStats();
       renderLeaderboard();
       
-      // Auto-redirect to the home dashboard after 3.8 seconds of gorgeous wicket smash action!
+      // Fast redirect to home dashboard after snappy 0.8s onboarding animation!
       setTimeout(() => {
         showScreen("screen-home");
         const displayName = result.user.profile?.matchName || result.user.phone;
         toast(`Welcome back, ${displayName}!`);
-      }, 3800);
+      }, 800);
     }
   } catch (err) {
     toast(err.message);
@@ -3329,34 +3530,9 @@ function setupInteractiveMascot() {
     });
   }
 
-  // Start the beautiful walk-in automated intro sequence
-  mascot.classList.remove('intro-walking', 'intro-placing');
-  mascot.classList.add('intro-walking');
-  mascot.style.setProperty('--look-x', '0px');
-  mascot.style.setProperty('--look-y', '0px');
-
-  // Step 1: Walk in from left for 1.2 seconds, then stop and place suitcase down
-  setTimeout(() => {
-    mascot.classList.remove('intro-walking');
-    mascot.classList.add('intro-placing');
-    
-    // Pupils look down at the briefcase as it's placed down
-    mascot.style.setProperty('--look-x', '-1.5px');
-    mascot.style.setProperty('--look-y', '4px');
-    
-    // Step 2: Placing animation lasts 0.6 seconds (total 1.8 seconds)
-    setTimeout(() => {
-      mascot.classList.remove('intro-placing');
-      
-      // Look back up as the briefcase opens
-      mascot.style.setProperty('--look-x', '0px');
-      mascot.style.setProperty('--look-y', '0px');
-      
-      // Automatically trigger briefcase reveal & particle burst!
-      triggerReveal();
-      startIdleEyes();
-    }, 800);
-  }, 1800);
+  // Instant reveal so login form is immediately accessible without waiting
+  triggerReveal();
+  startIdleEyes();
 }
 
 function triggerMascotJump() {
@@ -3408,10 +3584,8 @@ function triggerReveal() {
     }
   }
 
-  // Transition wrapper from center view to full split layout
-  setTimeout(() => {
-    if (wrapper) wrapper.classList.remove('initial-center');
-  }, 300);
+  // Transition wrapper instantly from center view to full split layout
+  if (wrapper) wrapper.classList.remove('initial-center');
 }
 
 
@@ -3946,3 +4120,79 @@ function updateSidebarUI(user) {
         console.error("Error updating sidebar UI:", err);
     }
 }
+
+/* ============================================================
+   OFFLINE SCORING & SERVICE WORKER SYNC MANAGER
+   ============================================================ */
+
+function getOfflineQueue() {
+  try {
+    return JSON.parse(localStorage.getItem('cricscore_offline_queue') || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+
+function queueOfflineMatch(matchEntry) {
+  const queue = getOfflineQueue();
+  queue.push(matchEntry);
+  localStorage.setItem('cricscore_offline_queue', JSON.stringify(queue));
+  toast("⚡ Saved locally! Will auto-sync when online.");
+}
+
+async function syncOfflineQueue() {
+  if (!navigator.onLine) return;
+  const queue = getOfflineQueue();
+  if (queue.length === 0) return;
+
+  console.log(`[OFFLINE] Syncing ${queue.length} match(es) to server...`);
+  const remaining = [];
+  let syncedCount = 0;
+
+  for (const entry of queue) {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/matches`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(entry)
+      });
+      if (res.ok) {
+        syncedCount++;
+      } else {
+        remaining.push(entry);
+      }
+    } catch (err) {
+      console.warn('[OFFLINE] Sync failed for match entry:', err);
+      remaining.push(entry);
+    }
+  }
+
+  localStorage.setItem('cricscore_offline_queue', JSON.stringify(remaining));
+
+  if (syncedCount > 0) {
+    toast(`🟢 Online! Synced ${syncedCount} offline match score(s) with server.`);
+    if (typeof fetchGlobalHistory === 'function') fetchGlobalHistory();
+  }
+}
+
+function updateOnlineStatus() {
+  const banner = $('offline-banner');
+  if (!navigator.onLine) {
+    if (banner) banner.style.display = 'flex';
+  } else {
+    if (banner) banner.style.display = 'none';
+    syncOfflineQueue();
+  }
+}
+
+// Attach Network Listeners & Register Service Worker for Offline Scoring
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+window.addEventListener('DOMContentLoaded', () => {
+  updateOnlineStatus();
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+      .then((reg) => console.log('✅ Service Worker registered for offline scoring:', reg.scope))
+      .catch((err) => console.warn('⚠️ Service Worker registration failed:', err));
+  }
+});

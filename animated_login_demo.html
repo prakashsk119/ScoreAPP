@@ -500,34 +500,9 @@
       triggerMascotJump();
     }
 
-    // Start the beautiful walk-in automated intro sequence
-    mascot.classList.remove("intro-walking", "intro-placing");
-    mascot.classList.add("intro-walking");
-    mascot.style.setProperty("--look-x", "0px");
-    mascot.style.setProperty("--look-y", "0px");
-
-    // Step 1: Walk in from left for 1.2 seconds, then stop and place suitcase down
-    setTimeout(() => {
-      mascot.classList.remove("intro-walking");
-      mascot.classList.add("intro-placing");
-      
-      // Pupils look down at the briefcase as it is placed down
-      mascot.style.setProperty("--look-x", "-1.5px");
-      mascot.style.setProperty("--look-y", "4px");
-      
-      // Step 2: Placing animation lasts 0.6 seconds (total 1.8 seconds)
-      setTimeout(() => {
-        mascot.classList.remove("intro-placing");
-        
-        // Look back up as the briefcase opens
-        mascot.style.setProperty("--look-x", "0px");
-        mascot.style.setProperty("--look-y", "0px");
-        
-        // Automatically trigger briefcase reveal & particle burst!
-        triggerReveal();
-        startIdleEyes();
-      }, 600);
-    }, 1200);
+    // Instant reveal so login form is immediately accessible without waiting
+    triggerReveal();
+    startIdleEyes();
   </script>
 </body>
 </html>

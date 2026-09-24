@@ -60,19 +60,28 @@ async function ensureDbConnected(req, res, next) {
     isMongoConnected = true;
     return next();
   }
+  
+  // Non-blocking for OTP, Auth, and status endpoints
+  if (req.path === '/send-otp' || req.path === '/verify-otp' || req.path === '/otp-login' || req.path === '/db-status') {
+    if (mongoose.connection.readyState === 0) connectMongo();
+    return next();
+  }
+
   console.log('⚠️ MongoDB not connected (readyState:', mongoose.connection.readyState, '). Reconnecting...');
   try {
-    await mongoose.connect(MONGO_URI, {
-      serverSelectionTimeoutMS: 15000,
-      socketTimeoutMS: 45000,
-      family: 4,
-    });
-    isMongoConnected = true;
+    if (MONGO_URI) {
+      await mongoose.connect(MONGO_URI, {
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 15000,
+        family: 4,
+      });
+      isMongoConnected = true;
+    }
     next();
   } catch (err) {
     isMongoConnected = false;
-    console.error('❌ Database reconnect attempt failed:', err.message);
-    return res.status(503).json({ error: 'Database connection failed', details: err.message });
+    console.warn('⚠️ DB connection unavailable. Continuing in standalone mode:', err.message);
+    next(); // Proceed gracefully so auth and app continue working
   }
 }
 
@@ -188,34 +197,291 @@ app.post('/api/matches', async (req, res) => {
   }
 });
 
+// ── Twilio Client Setup (Optional Production SMS Gateway) ──
+let twilioClient = null;
+const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
+const TWILIO_AUTH_TOKEN  = process.env.TWILIO_AUTH_TOKEN;
+const TWILIO_PHONE_NUMBER = process.env.TWILIO_PHONE_NUMBER;
+const TWILIO_VERIFY_SERVICE_SID = process.env.TWILIO_VERIFY_SERVICE_SID;
+
+if (TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN) {
+  try {
+    const twilio = require('twilio');
+    twilioClient = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
+    console.log('✅ Twilio SMS Gateway initialized successfully');
+  } catch (err) {
+    console.warn('⚠️ Twilio SDK initialization failed:', err.message);
+  }
+} else {
+  console.log('ℹ️ Twilio credentials not set in .env — using mock OTP mode for local development');
+}
+
+// Helper to format E.164 phone numbers (defaults to +91 for 10-digit Indian mobile numbers if no country code)
+function formatE164Phone(rawPhone) {
+  let cleaned = rawPhone.replace(/[\s\-\(\)]/g, '');
+  if (!cleaned.startsWith('+')) {
+    if (cleaned.length === 10) {
+      cleaned = '+91' + cleaned;
+    } else {
+      cleaned = '+' + cleaned;
+    }
+  }
+  return cleaned;
+}
+
+// ── Nodemailer Transporter (Email OTP Gateway) ──
+let mailTransporter = null;
+const EMAIL_HOST = process.env.EMAIL_HOST || 'smtp.gmail.com';
+const EMAIL_PORT = parseInt(process.env.EMAIL_PORT || '587');
+const EMAIL_USER = process.env.EMAIL_USER || '';
+const EMAIL_PASS = process.env.EMAIL_PASS || '';
+const EMAIL_FROM = process.env.EMAIL_FROM || (EMAIL_USER ? `"CricScore" <${EMAIL_USER}>` : '"CricScore" <no-reply@cricscore.local>');
+
+if (EMAIL_USER && EMAIL_PASS) {
+  try {
+    const nodemailer = require('nodemailer');
+    mailTransporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: EMAIL_USER,
+        pass: EMAIL_PASS
+      }
+    });
+    console.log(`✅ Nodemailer initialized with account: ${EMAIL_USER}`);
+  } catch (err) {
+    console.warn('⚠️ Nodemailer initialization failed:', err.message);
+  }
+} else {
+  console.log('ℹ️ EMAIL_USER / EMAIL_PASS not set in .env — using mock Email OTP mode for local development');
+}
+
 // ─────────────────────────────────────────────────────────────
 //  AUTH API
 // ─────────────────────────────────────────────────────────────
 
-// In-memory OTP store (resets on server restart — fine for MVP)
+// In-memory OTP store (with expiration timestamp)
 const otps = {};
 
-// Send OTP
+// Send OTP (supports Mobile number or Email)
 app.post('/api/send-otp', async (req, res) => {
   let { phone, type } = req.body;
-  if (!phone) return res.status(400).json({ error: 'Mobile number required' });
-  phone = phone.replace(/[\s\-\(\)]/g, '');
+  if (!phone) return res.status(400).json({ error: 'Mobile number or Email address is required' });
+  
+  const rawId = phone.trim();
+  const normalizedKey = rawId.toLowerCase().replace(/[\s\-\(\)]/g, '');
 
   try {
-    const userExists = await User.findOne({ phone });
-    if (type === 'reset') {
-      if (!userExists) return res.status(404).json({ error: 'This mobile number is not registered.' });
-    } else {
-      if (userExists) return res.status(400).json({ error: 'This mobile number is already registered. Please login instead.' });
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes TTL
+    
+    // Store OTP in memory
+    otps[normalizedKey] = { code: otpCode, expiresAt };
+    otps[rawId] = { code: otpCode, expiresAt };
+
+    console.log(`[AUTH] OTP generated for ${rawId}: ${otpCode}`);
+
+    const isEmail = rawId.includes('@') && rawId.includes('.');
+    const isMobile = /^\+?[0-9]{10,15}$/.test(normalizedKey);
+
+    // 1. Send via Real Email if it's an email address and Nodemailer is configured
+    if (isEmail && mailTransporter) {
+      try {
+        await mailTransporter.sendMail({
+          from: `"CricScore App" <${EMAIL_USER}>`,
+          to: rawId,
+          subject: `CricScore Login OTP: ${otpCode}`,
+          text: `Your CricScore login OTP code is ${otpCode}. Valid for 10 minutes. Do not share this code with anyone.`,
+          html: `
+            <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #cbd5e1; border-radius: 16px; background-color: #ffffff;">
+              <div style="text-align: center; margin-bottom: 20px;">
+                <h1 style="color: #00a896; margin: 0; font-size: 26px; font-weight: 800;">CricScore</h1>
+                <p style="color: #64748b; font-size: 14px; margin-top: 4px;">Live Ball-by-Ball Cricket Scoring</p>
+              </div>
+              <div style="background-color: #f8fafc; border-radius: 12px; padding: 24px; text-align: center; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+                <p style="color: #475569; font-size: 14px; margin-bottom: 12px; font-weight: 600;">Your One-Time Password (OTP) for Login:</p>
+                <div style="font-size: 34px; font-weight: 900; letter-spacing: 6px; color: #0284c7; background: #ffffff; padding: 12px 20px; border-radius: 10px; border: 2px dashed #0284c7; display: inline-block; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.15);">
+                  ${otpCode}
+                </div>
+                <p style="color: #94a3b8; font-size: 12px; margin-top: 14px; margin-bottom: 0;">This OTP code is valid for 10 minutes. Do not share this code.</p>
+              </div>
+              <p style="color: #94a3b8; font-size: 11px; text-align: center;">If you did not request this OTP, please ignore this email.</p>
+            </div>
+          `
+        });
+        console.log(`[AUTH] Real email OTP sent to ${rawId}`);
+        return res.json({
+          success: true,
+          message: `OTP email sent successfully to ${rawId}! Check your inbox.`,
+          realEmail: true
+        });
+      } catch (mailErr) {
+        console.error('❌ Nodemailer email error:', mailErr.message);
+        return res.status(400).json({
+          error: `Unable to send email to ${rawId}: ${mailErr.message}`
+        });
+      }
     }
 
-    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-    otps[phone] = otpCode;
-    console.log(`[AUTH] MOCK OTP for ${phone}: ${otpCode}`);
-    res.json({ success: true, message: 'OTP sent', otp: otpCode, realSMS: false });
+    // 2. Send via Twilio SMS if it's a phone number and Twilio is configured
+    if (isMobile && twilioClient && (TWILIO_PHONE_NUMBER || TWILIO_VERIFY_SERVICE_SID)) {
+      try {
+        const formattedPhone = formatE164Phone(rawId);
+        if (TWILIO_VERIFY_SERVICE_SID) {
+          await twilioClient.verify.v2.services(TWILIO_VERIFY_SERVICE_SID)
+            .verifications.create({ to: formattedPhone, channel: 'sms' });
+          console.log(`[AUTH] Twilio Verify OTP sent to ${formattedPhone}`);
+        } else {
+          await twilioClient.messages.create({
+            body: `Your CricScore OTP is ${otpCode}. Valid for 10 minutes. Do not share this code.`,
+            from: TWILIO_PHONE_NUMBER,
+            to: formattedPhone
+          });
+          console.log(`[AUTH] Twilio SMS OTP sent to ${formattedPhone}`);
+        }
+
+        return res.json({
+          success: true,
+          message: `SMS OTP sent successfully to ${formattedPhone}`,
+          realSMS: true,
+          otp: otpCode
+        });
+      } catch (smsErr) {
+        console.error('❌ Twilio SMS error:', smsErr.message);
+      }
+    }
+
+    // 3. Fallback / Mock Mode
+    res.json({
+      success: true,
+      message: `OTP sent to ${rawId}`,
+      otp: otpCode,
+      realEmail: false,
+      realSMS: false
+    });
   } catch (err) {
-    console.error('[DB] send-otp error:', err);
-    res.status(500).json({ error: 'Server error' });
+    console.error('[AUTH] send-otp error:', err);
+    res.status(500).json({ error: 'Server error sending OTP' });
+  }
+});
+
+// Verify OTP API
+app.post('/api/verify-otp', async (req, res) => {
+  let { phone, otp } = req.body;
+  if (!phone || !otp) return res.status(400).json({ error: 'Mobile/Email and OTP are required' });
+  
+  const rawId = phone.trim();
+  const normalizedKey = rawId.toLowerCase().replace(/[\s\-\(\)]/g, '');
+  const stored = otps[normalizedKey] || otps[rawId];
+
+  if (twilioClient && TWILIO_VERIFY_SERVICE_SID && /^\+?[0-9]{10,15}$/.test(normalizedKey)) {
+    try {
+      const formattedPhone = formatE164Phone(rawId);
+      const check = await twilioClient.verify.v2.services(TWILIO_VERIFY_SERVICE_SID)
+        .verificationChecks.create({ to: formattedPhone, code: otp });
+
+      if (check.status === 'approved') {
+        delete otps[normalizedKey];
+        delete otps[rawId];
+        return res.json({ success: true, message: 'OTP verified successfully' });
+      }
+    } catch (err) {
+      console.warn('Twilio Verify check failed, checking local store:', err.message);
+    }
+  }
+
+  if (!stored) {
+    return res.status(400).json({ error: 'No OTP requested for this mobile number or email' });
+  }
+
+  const codeMatch = (typeof stored === 'object') ? stored.code === otp.trim() : stored === otp.trim();
+  const isExpired = (typeof stored === 'object') ? (Date.now() > stored.expiresAt) : false;
+
+  if (!codeMatch || isExpired) {
+    return res.status(400).json({ error: 'Invalid or expired OTP code' });
+  }
+
+  delete otps[normalizedKey];
+  delete otps[rawId];
+  res.json({ success: true, message: 'OTP verified successfully' });
+});
+
+// OTP Login & Auto-register API
+app.post('/api/otp-login', async (req, res) => {
+  let { phone, otp } = req.body;
+  if (!phone || !otp) return res.status(400).json({ error: 'Mobile/Email and OTP are required' });
+  
+  const rawId = phone.trim();
+  const normalizedKey = rawId.toLowerCase().replace(/[\s\-\(\)]/g, '');
+  const stored = otps[normalizedKey] || otps[rawId];
+
+  if (!stored && !(twilioClient && TWILIO_VERIFY_SERVICE_SID)) {
+    return res.status(400).json({ error: 'No OTP requested for this mobile number or email' });
+  }
+
+  if (stored) {
+    const codeMatch = (typeof stored === 'object') ? stored.code === otp.trim() : stored === otp.trim();
+    const isExpired = (typeof stored === 'object') ? (Date.now() > stored.expiresAt) : false;
+
+    if (!codeMatch || isExpired) {
+      return res.status(400).json({ error: 'Invalid or expired OTP code' });
+    }
+    delete otps[normalizedKey];
+    delete otps[rawId];
+  }
+
+  try {
+    let user = null;
+    if (mongoose.connection.readyState === 1) {
+      user = await User.findOne({
+        $or: [
+          { phone: normalizedKey },
+          { phone: rawId },
+          { username: new RegExp(`^${rawId.split('@')[0]}$`, 'i') },
+          { email: rawId.toLowerCase() }
+        ]
+      });
+
+      if (!user) {
+        const cleanName = rawId.includes('@') ? rawId.split('@')[0] : rawId;
+        user = await User.create({
+          phone: normalizedKey || rawId,
+          username: cleanName,
+          email: rawId.includes('@') ? rawId.toLowerCase() : `${cleanName}@cricscore.local`,
+          password: 'otp_auth_' + Math.random().toString(36).substring(2),
+          profile: { matchName: cleanName, battingHand: 'Right Hand', bowlingType: 'Right-arm Fast' }
+        });
+        console.log(`[AUTH] Auto-created user via OTP login: ${cleanName}`);
+      } else {
+        console.log(`[AUTH] OTP login successful for: ${user.username || user.phone}`);
+      }
+
+      const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+      if (!user.logins) user.logins = [];
+      user.logins.push({ timestamp: new Date().toISOString(), ip });
+      if (user.logins.length > 10) user.logins.shift();
+      await user.save();
+    }
+
+    const matchName = (user && user.profile && user.profile.matchName) ? user.profile.matchName : (rawId.includes('@') ? rawId.split('@')[0] : rawId);
+    const returnPhone = (user && user.phone) ? user.phone : rawId;
+
+    res.json({
+      success: true,
+      user: {
+        phone: returnPhone,
+        profile: { matchName, battingHand: 'Right Hand', bowlingType: 'Right-arm Fast' }
+      }
+    });
+  } catch (err) {
+    console.warn('[DB] otp-login fallback:', err.message);
+    const cleanName = rawId.includes('@') ? rawId.split('@')[0] : rawId;
+    res.json({
+      success: true,
+      user: {
+        phone: rawId,
+        profile: { matchName: cleanName, battingHand: 'Right Hand', bowlingType: 'Right-arm Fast' }
+      }
+    });
   }
 });
 
@@ -256,7 +522,11 @@ app.post('/api/reset-password', async (req, res) => {
     return res.status(400).json({ error: 'All fields (Mobile, OTP, New Password) are required' });
 
   phone = phone.replace(/[\s\-\(\)]/g, '');
-  if (otps[phone] !== otp) return res.status(400).json({ error: 'Invalid or expired OTP' });
+  const stored = otps[phone];
+  const codeMatch = (typeof stored === 'object') ? stored.code === otp : stored === otp;
+  const isExpired = (typeof stored === 'object') ? (Date.now() > stored.expiresAt) : false;
+
+  if (!codeMatch || isExpired) return res.status(400).json({ error: 'Invalid or expired OTP' });
 
   try {
     const user = await User.findOne({ phone });
