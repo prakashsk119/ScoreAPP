@@ -263,7 +263,15 @@ function initAuth() {
 }
 
 (async function initSetup() {
-  await fetchGlobalHistory();
+  const userData = localStorage.getItem('cricscore_user');
+  if (userData) {
+    try {
+      const u = JSON.parse(userData);
+      if (u && u.loggedIn) {
+        fetchGlobalHistory();
+      }
+    } catch(e) {}
+  }
   renderPlayerInputs();
 })();
 
@@ -2555,10 +2563,6 @@ function initAppListeners() {
   try {
     initRealtime();
   } catch(e) { console.error("Realtime init failed", e); }
-  
-  try {
-    renderLeaderboard(); 
-  } catch(e) { console.error("Leaderboard render failed", e); }
   
   try {
     initAuth(); 
