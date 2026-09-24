@@ -3735,6 +3735,8 @@ function handleSignOut() {
     console.error("Error clearing Visme storage keys:", e);
   }
 
+  updateSidebarUI(null);
+  updateAvatarUI(null);
   toast("Signed out successfully");
   // Reload the page to clear all in-memory states
   setTimeout(() => {
