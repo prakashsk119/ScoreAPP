@@ -2838,6 +2838,19 @@ function downloadPDFScorecard() {
     return;
   }
 
+  if (typeof html2pdf === 'undefined') {
+    toast("⏳ Loading PDF generator...");
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+    script.onload = () => { doDownloadPDFScorecard(); };
+    script.onerror = () => { toast("❌ Failed to load PDF generator."); };
+    document.body.appendChild(script);
+  } else {
+    doDownloadPDFScorecard();
+  }
+}
+
+function doDownloadPDFScorecard() {
   toast("Generating PDF scorecard...");
 
   let html = `
@@ -3034,14 +3047,14 @@ function setAuthMode(mode) {
     if (subtitle) subtitle.textContent = "Join the community of elite scorers.";
     if (btn) btn.textContent = "Create Free Account";
     if (lblPass) lblPass.textContent = "Password";
-    if (toggleText) toggleText.innerHTML = `Already have an account? <a href="#" onclick="setAuthMode('login'); return false;" style="color: #0284c7; font-weight: 700; text-decoration: none;">Login instead</a>`;
+    if (toggleText) toggleText.innerHTML = `Already have an account? <a href="#" onclick="setAuthMode('login'); return false;" style="color: #0369a1; font-weight: 700; text-decoration: none;">Login instead</a>`;
   } else {
     // login mode
     if (title) title.textContent = "Welcome to CricScore";
     if (subtitle) subtitle.textContent = "Elevate your game with professional scoring.";
     if (btn) btn.textContent = "Login to Account";
     if (lblPass) lblPass.textContent = "Password";
-    if (toggleText) toggleText.innerHTML = `Don't have an account? <a href="#" onclick="setAuthMode('register'); return false;" style="color: #0284c7; font-weight: 700; text-decoration: none;">Register Now</a>`;
+    if (toggleText) toggleText.innerHTML = `Don't have an account? <a href="#" onclick="setAuthMode('register'); return false;" style="color: #0369a1; font-weight: 700; text-decoration: none;">Register Now</a>`;
   }
   
   // Show/Hide specific fields based on mode
@@ -3075,20 +3088,20 @@ function setAuthMode(mode) {
   if (tabPass && tabReg && tabOtp) {
     if (authMode === 'register') {
       tabReg.style.background = '#ffffff';
-      tabReg.style.color = '#0284c7';
+      tabReg.style.color = '#0369a1';
       tabReg.style.boxShadow = '0 2px 5px rgba(0,0,0,0.08)';
       tabPass.style.background = 'transparent';
-      tabPass.style.color = '#64748b';
+      tabPass.style.color = '#475569';
       tabPass.style.boxShadow = 'none';
       tabOtp.style.background = 'transparent';
-      tabOtp.style.color = '#64748b';
+      tabOtp.style.color = '#475569';
       tabOtp.style.boxShadow = 'none';
     } else if (authMode === 'login') {
       tabPass.style.background = '#ffffff';
       tabPass.style.color = '#0f172a';
       tabPass.style.boxShadow = '0 2px 5px rgba(0,0,0,0.08)';
       tabReg.style.background = 'transparent';
-      tabReg.style.color = '#64748b';
+      tabReg.style.color = '#475569';
       tabReg.style.boxShadow = 'none';
     }
   }
@@ -3128,7 +3141,7 @@ function setAuthTab(tab) {
         t.el.style.boxShadow = '0 2px 5px rgba(0,0,0,0.08)';
       } else {
         t.el.style.background = 'transparent';
-        t.el.style.color = '#64748b';
+        t.el.style.color = '#475569';
         t.el.style.boxShadow = 'none';
       }
     }

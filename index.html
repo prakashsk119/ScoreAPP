@@ -9,10 +9,12 @@
     content="A premium live cricket scoring application to track matches ball by ball with full scorecards, partnerships, and player stats." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap"
-    rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+  <noscript>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  </noscript>
+  <link rel="stylesheet" href="style.min.css" />
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#00a896" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -38,7 +40,7 @@
           🏏
         </div>
         <h1 style="font-size: 2.2rem; font-weight: 900; color: #0f172a; letter-spacing: -0.5px; margin-bottom: 0.15rem;">
-          Cric<span style="color: #16a34a;">Score</span>
+          Cric<span style="color: #15803d;">Score</span>
         </h1>
         <p style="font-size: 0.9rem; color: #1e293b; font-weight: 700;">Live Ball-by-Ball Cricket Scoring</p>
       </div>
@@ -51,10 +53,10 @@
           <button type="button" id="tab-auth-otp" class="auth-tab active" onclick="setAuthTab('otp')" style="flex: 1; padding: 0.55rem 0.2rem; border: none; border-radius: 9px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; background: #ffffff; color: #0f172a; box-shadow: 0 2px 5px rgba(0,0,0,0.08);">
             📱 OTP Login
           </button>
-          <button type="button" id="tab-auth-pass" class="auth-tab" onclick="setAuthTab('pass')" style="flex: 1; padding: 0.55rem 0.2rem; border: none; border-radius: 9px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; background: transparent; color: #64748b;">
+          <button type="button" id="tab-auth-pass" class="auth-tab" onclick="setAuthTab('pass')" style="flex: 1; padding: 0.55rem 0.2rem; border: none; border-radius: 9px; font-size: 0.8rem; font-weight: 700; cursor: pointer; transition: all 0.2s; background: transparent; color: #475569;">
             🔑 Password
           </button>
-          <button type="button" id="tab-auth-reg" class="auth-tab" onclick="setAuthTab('register')" style="flex: 1; padding: 0.55rem 0.2rem; border: none; border-radius: 9px; font-size: 0.8rem; font-weight: 800; cursor: pointer; transition: all 0.2s; background: transparent; color: #0284c7;">
+          <button type="button" id="tab-auth-reg" class="auth-tab" onclick="setAuthTab('register')" style="flex: 1; padding: 0.55rem 0.2rem; border: none; border-radius: 9px; font-size: 0.8rem; font-weight: 800; cursor: pointer; transition: all 0.2s; background: transparent; color: #0369a1;">
             ✨ Register
           </button>
         </div>
@@ -62,7 +64,7 @@
         <!-- ================= OTP LOGIN FORM ================= -->
         <div id="form-otp-container" style="display: block;">
           <h2 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-bottom: 0.2rem; text-align: center;">Fast OTP Login</h2>
-          <p style="font-size: 0.82rem; color: #64748b; text-align: center; margin-bottom: 1.2rem;">Enter Mobile Number or Email to receive an OTP.</p>
+          <p style="font-size: 0.82rem; color: #475569; text-align: center; margin-bottom: 1.2rem;">Enter Mobile Number or Email to receive an OTP.</p>
 
           <form onsubmit="event.preventDefault(); if(document.getElementById('otp-code-group').style.display === 'block') { verifyAndLoginOTP(); } else { requestLoginOTP(); }">
             <!-- Mobile / Email Input -->
@@ -89,7 +91,7 @@
           </form>
 
           <div style="text-align: center; margin-top: 1rem;">
-            <a href="#" onclick="setAuthTab('register'); return false;" style="color: #0284c7; font-size: 0.85rem; font-weight: 800; text-decoration: none;">
+            <a href="#" onclick="setAuthTab('register'); return false;" style="color: #0369a1; font-size: 0.85rem; font-weight: 800; text-decoration: none;">
               ✨ New to CricScore? Create Account →
             </a>
           </div>
@@ -98,7 +100,7 @@
         <!-- ================= PASSWORD / REGISTER FORM ================= -->
         <div id="form-pass-container" style="display: none;">
           <h2 id="auth-title" style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-bottom: 0.2rem; text-align: center;">Welcome to CricScore</h2>
-          <p id="auth-subtitle" style="font-size: 0.82rem; color: #64748b; text-align: center; margin-bottom: 1.2rem;">Elevate your game with professional scoring.</p>
+          <p id="auth-subtitle" style="font-size: 0.82rem; color: #475569; text-align: center; margin-bottom: 1.2rem;">Elevate your game with professional scoring.</p>
 
           <form id="auth-form" onsubmit="event.preventDefault(); handleAuth();">
             <div class="form-group" id="register-username-group" style="display: none; margin-bottom: 0.8rem;">
@@ -126,14 +128,14 @@
             </button>
           </form>
 
-          <p id="toggle-text" style="font-size: 0.85rem; color: #64748b; text-align: center; margin-top: 1rem;">
-            Don't have an account? <a href="#" onclick="setAuthTab('register'); return false;" style="color: #0284c7; font-weight: 700; text-decoration: none;">Register Now</a>
+          <p id="toggle-text" style="font-size: 0.85rem; color: #475569; text-align: center; margin-top: 1rem;">
+            Don't have an account? <a href="#" onclick="setAuthTab('register'); return false;" style="color: #0369a1; font-weight: 700; text-decoration: none;">Register Now</a>
           </p>
         </div>
 
         <div style="margin: 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
           <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
-          <span style="font-size: 0.72rem; color: #94a3b8; font-weight: 700; text-transform: uppercase;">OR</span>
+          <span style="font-size: 0.72rem; color: #475569; font-weight: 700; text-transform: uppercase;">OR</span>
           <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
         </div>
 
@@ -1393,10 +1395,9 @@
   <script>
     window.CRICSCORE_BACKEND_URL = 'https://scoreapp-irrc.onrender.com';
   </script>
-  <!-- Socket.io CDN (works on Vercel since frontend is static) -->
-  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-      <script>
+  <!-- Socket.io CDN -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" defer></script>
+  <script>
       // Immediate check to prevent login flash
       (function() {
         let isLoggedInLocal = false;
@@ -1416,7 +1417,7 @@
         }
       })();
     </script>
-  <script src="app.js?v=5.0"></script>
+  <script src="app.min.js?v=5.0" defer></script>
 </body>
 
 </html>

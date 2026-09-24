@@ -3,6 +3,7 @@
    ============================================================ */
 require('dotenv').config();
 const express    = require('express');
+const compression = require('compression');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const path       = require('path');
@@ -143,6 +144,7 @@ const upload = multer({
 });
 
 // ── Middleware ──
+app.use(compression());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
