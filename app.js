@@ -5,11 +5,19 @@
 // ===== BACKEND CONFIG =====
 const BACKEND_URL = (function() {
   if (window.CRICSCORE_BACKEND_URL) return window.CRICSCORE_BACKEND_URL;
-  const h = window.location.hostname;
-  const p = window.location.protocol;
-  if (p === 'file:' || !h || h === 'localhost' || h === '127.0.0.1' || h.startsWith('192.168.') || h.startsWith('10.') || h.endsWith('.local')) {
+  
+  const isCapacitor = !!(window.Capacitor || (window.location && (window.location.protocol === 'capacitor:' || window.location.href.includes('capacitor://'))));
+  if (isCapacitor) {
+    return 'https://scoreapp-irrc.onrender.com';
+  }
+
+  const h = window.location ? window.location.hostname : '';
+  const p = window.location ? window.location.protocol : '';
+
+  if (p === 'file:' || !h || h === '127.0.0.1') {
     return 'http://localhost:8080';
   }
+  
   return 'https://scoreapp-irrc.onrender.com';
 })();
 
@@ -3850,8 +3858,8 @@ function toggleAutoVoice() {
   }
 }
 
-function playVoiceCommentary(type) {
-  if (!isAutoVoiceEnabled || !('speechSynthesis' in window)) return;
+async function playVoiceCommentary(type) {
+  if (!isAutoVoiceEnabled) return;
   
   let text = '';
   const strType = String(type);
@@ -3860,26 +3868,48 @@ function playVoiceCommentary(type) {
   else if (strType === 'W') text = "Out! He is gone!";
   
   if (text) {
+    // 1. Try Capacitor Native Text-to-Speech first (for Android APK)
     try {
-      if (window.speechSynthesis.speaking) {
-        window.speechSynthesis.cancel();
+      const cap = window.Capacitor;
+      if (cap && cap.Plugins && cap.Plugins.TextToSpeech) {
+        await cap.Plugins.TextToSpeech.stop().catch(() => {});
+        await cap.Plugins.TextToSpeech.speak({
+          text: text,
+          lang: 'en-US',
+          rate: 1.0,
+          pitch: 1.1,
+          volume: 1.0,
+          category: 'ambient'
+        });
+        return;
       }
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US';
-      utterance.rate = 1.0;
-      utterance.pitch = 1.1;
-      
-      const voices = window.speechSynthesis.getVoices();
-      if (voices && voices.length > 0) {
-        const enVoice = voices.find(v => v.lang && (v.lang.startsWith('en') || v.lang.startsWith('en-US')));
-        if (enVoice) utterance.voice = enVoice;
+    } catch (err) {
+      console.warn("Capacitor Native TTS fallback:", err);
+    }
+
+    // 2. Web Speech API fallback for Web browsers
+    if ('speechSynthesis' in window) {
+      try {
+        if (window.speechSynthesis.speaking) {
+          window.speechSynthesis.cancel();
+        }
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = 1.0;
+        utterance.pitch = 1.1;
+        
+        const voices = window.speechSynthesis.getVoices();
+        if (voices && voices.length > 0) {
+          const enVoice = voices.find(v => v.lang && (v.lang.startsWith('en') || v.lang.startsWith('en-US')));
+          if (enVoice) utterance.voice = enVoice;
+        }
+        
+        setTimeout(() => {
+          window.speechSynthesis.speak(utterance);
+        }, 50);
+      } catch (e) {
+        console.warn("Speech synthesis error:", e);
       }
-      
-      setTimeout(() => {
-        window.speechSynthesis.speak(utterance);
-      }, 50);
-    } catch (e) {
-      console.warn("Speech synthesis error:", e);
     }
   }
 }
