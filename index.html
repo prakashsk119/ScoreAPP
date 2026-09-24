@@ -9,11 +9,16 @@
     content="A premium live cricket scoring application to track matches ball by ball with full scorecards, partnerships, and player stats." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
   <noscript>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
   </noscript>
+  <style>
+    body { font-family: 'Outfit', system-ui, -apple-system, sans-serif; background: #f4f6f9; color: #0f172a; margin: 0; padding: 0; }
+    .screen { position: absolute; inset: 0; display: none; flex-direction: column; z-index: 1; background: #f4f6f9; }
+    .screen.active { display: flex; }
+    #screen-login { background: linear-gradient(135deg, #ff8c37 0%, #ff7315 50%, #f95700 100%) !important; position: fixed !important; inset: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; z-index: 1000 !important; }
+  </style>
   <link rel="preload" as="style" href="style.min.css" />
   <link rel="stylesheet" href="style.min.css" media="print" onload="this.media='all'" />
   <noscript>
