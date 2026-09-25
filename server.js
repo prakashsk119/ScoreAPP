@@ -114,6 +114,7 @@ const teamSchema = new mongoose.Schema({
   logo:        { type: String, default: '' },
   captain:     { type: String, default: '' },
   viceCaptain: { type: String, default: '' },
+  wicketKeeper: { type: String, default: '' },
   location:    { type: String, default: '' },
   createdBy:   { type: String, default: '' },
   players:     { type: Array, default: [] },
@@ -136,10 +137,22 @@ const tournamentSchema = new mongoose.Schema({
   createdAt:       { type: Date, default: Date.now }
 });
 
+const teamInvitationSchema = new mongoose.Schema({
+  teamId:       { type: mongoose.Schema.Types.ObjectId, ref: 'Team', required: true },
+  invitedEmail: { type: String, default: '' },
+  invitedPhone: { type: String, default: '' },
+  invitedBy:    { type: String, required: true },
+  status:       { type: String, default: 'pending' },
+  acceptedBy:   { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  createdAt:    { type: Date, default: Date.now },
+  acceptedAt:   { type: Date, default: null }
+});
+
 const User       = mongoose.model('User', userSchema);
 const Match      = mongoose.model('Match', matchSchema);
 const Team       = mongoose.model('Team', teamSchema);
 const Tournament = mongoose.model('Tournament', tournamentSchema);
+const TeamInvitation = mongoose.model('TeamInvitation', teamInvitationSchema);
 
 // ── HTTP + Socket.io setup ──
 const httpServer = createServer(app);
@@ -280,11 +293,221 @@ app.put('/api/teams/:id', async (req, res) => {
 
 app.delete('/api/teams/:id', async (req, res) => {
   try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!(await isTeamOwner(team, req.query.actor))) return res.status(403).json({ error: 'Only the team owner can delete this team' });
     await Team.findByIdAndDelete(req.params.id);
     res.json({ success: true });
   } catch (err) {
     console.error('[DB] Error deleting team:', err);
     res.status(500).json({ error: 'Failed to delete team' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+//  TEAM PLAYER MEMBERSHIP API
+// ─────────────────────────────────────────────────────────────
+function normalizePlayerContact(value) {
+  return String(value || '').trim().toLowerCase().replace(/[\s\-\(\)]/g, '');
+}
+
+function safePlayerProfile(user) {
+  const profile = user.profile || {};
+  const contact = user.email || user.phone || '';
+  const maskedContact = contact.includes('@')
+    ? `${contact.slice(0, 1)}${'*'.repeat(Math.max(1, contact.split('@')[0].length - 1))}@${contact.split('@')[1]}`
+    : `${'*'.repeat(Math.max(0, String(contact).replace(/\D/g, '').length - 4))}${String(contact).replace(/\D/g, '').slice(-4)}`;
+  return {
+    id: user._id,
+    name: profile.matchName || user.username || user.email || user.phone,
+    username: user.username || '',
+    contact: maskedContact,
+    avatar: profile.avatar || '',
+    role: profile.role || 'Player',
+    stats: profile.stats || null
+  };
+}
+
+async function findUserByPlayerContact(contact) {
+  const raw = String(contact || '').trim();
+  const normalized = normalizePlayerContact(raw);
+  if (!normalized) return null;
+  const emailMatch = raw.includes('@') ? raw.toLowerCase() : null;
+  return User.findOne({
+    $or: [
+      { email: emailMatch || '__no_email__' },
+      { phone: normalized },
+      { phone: raw },
+      { username: new RegExp(`^${raw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+    ]
+  });
+}
+
+async function findTeamOwner(team) {
+  const owner = normalizePlayerContact(team.createdBy);
+  return owner ? findUserByPlayerContact(owner) : null;
+}
+
+async function isTeamOwner(team, actor) {
+  const owner = normalizePlayerContact(team.createdBy);
+  const requester = normalizePlayerContact(actor);
+  return Boolean(owner && requester && owner === requester);
+}
+
+app.get('/api/teams/:id/player-search', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!(await isTeamOwner(team, req.query.actor))) return res.status(403).json({ error: 'Only the team owner can search players' });
+
+    const user = await findUserByPlayerContact(req.query.contact);
+    if (!user) return res.status(404).json({ found: false, error: 'No CricScore player found with this phone number/email.' });
+    res.json({ found: true, player: safePlayerProfile(user) });
+  } catch (err) {
+    console.error('[DB] Player search error:', err);
+    res.status(500).json({ error: 'Player search failed' });
+  }
+});
+
+app.post('/api/teams/:id/members', async (req, res) => {
+  try {
+    const { playerId, role, addedBy } = req.body;
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!(await isTeamOwner(team, addedBy))) return res.status(403).json({ error: 'Only the team owner can add players' });
+    if (!mongoose.Types.ObjectId.isValid(playerId)) return res.status(400).json({ error: 'Invalid player ID' });
+
+    const user = await User.findById(playerId);
+    if (!user) return res.status(404).json({ error: 'Player not found' });
+    const alreadyMember = (team.players || []).some(player => {
+      if (String(player.userId || player.playerId || '') === String(user._id)) return true;
+      const legacyContact = normalizePlayerContact(player.contact);
+      return legacyContact && [user.email, user.phone].filter(Boolean).map(normalizePlayerContact).includes(legacyContact);
+    });
+    if (alreadyMember) return res.status(409).json({ error: 'This player is already a member of your team.' });
+
+    team.players.push({ userId: user._id, role: role || (user.profile && user.profile.role) || 'Player', status: 'active', joinedAt: new Date(), addedBy });
+    await team.save();
+    res.json({ success: true, player: safePlayerProfile(user) });
+  } catch (err) {
+    console.error('[DB] Add team member error:', err);
+    res.status(500).json({ error: 'Could not add player to team' });
+  }
+});
+
+app.get('/api/teams/:id/members', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!(await isTeamOwner(team, req.query.actor))) return res.status(403).json({ error: 'Only the team owner can view team members' });
+    const members = await Promise.all((team.players || []).map(async member => {
+      const playerId = member.userId || member.playerId;
+      if (!playerId) return { ...member, legacy: true };
+      const user = await User.findById(playerId);
+      return user ? { ...safePlayerProfile(user), role: member.role || 'Player', joinedAt: member.joinedAt } : null;
+    }));
+    res.json({ members: members.filter(Boolean) });
+  } catch (err) {
+    res.status(500).json({ error: 'Could not load team members' });
+  }
+});
+
+app.delete('/api/teams/:id/members/:playerId', async (req, res) => {
+  try {
+    const team = await Team.findById(req.params.id);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!(await isTeamOwner(team, req.query.actor))) return res.status(403).json({ error: 'Only the team owner can remove players' });
+    team.players = (team.players || []).filter(player => String(player.userId || player.playerId || '') !== req.params.playerId);
+    await team.save();
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[DB] Remove team member error:', err);
+    res.status(500).json({ error: 'Could not remove player from team' });
+  }
+});
+
+app.post('/api/team-invitations', async (req, res) => {
+  try {
+    const { teamId, contact, invitedBy } = req.body;
+    const team = await Team.findById(teamId);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!(await isTeamOwner(team, invitedBy))) return res.status(403).json({ error: 'Only the team owner can send invitations' });
+    const raw = String(contact || '').trim();
+    const normalized = normalizePlayerContact(raw);
+    if (!raw) return res.status(400).json({ error: 'Phone number or email is required' });
+
+    const existing = await TeamInvitation.findOne({ teamId, status: 'pending', $or: [{ invitedEmail: raw.toLowerCase() }, { invitedPhone: normalized }] });
+    if (existing) return res.status(409).json({ error: 'An invitation is already pending for this contact.' });
+    const invitation = await TeamInvitation.create({ teamId, invitedEmail: raw.includes('@') ? raw.toLowerCase() : '', invitedPhone: raw.includes('@') ? '' : normalized, invitedBy });
+
+    let emailSent = false;
+    let deliveryMessage = raw.includes('@') ? 'Invitation saved, but email delivery is not configured.' : 'Invitation saved for this phone number.';
+    if (invitation.invitedEmail && mailTransporter) {
+      try {
+        const appUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+        await mailTransporter.sendMail({
+          from: EMAIL_FROM,
+          to: invitation.invitedEmail,
+          subject: `${team.name} invited you to join CricScore`,
+          text: `You have been invited to join ${team.name} on CricScore. Sign in to CricScore to view and accept this team invitation.`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; border: 1px solid #d5dee7; border-radius: 16px; background: #ffffff;">
+              <h1 style="color: #00a896; margin: 0 0 8px;">CricScore</h1>
+              <p style="color: #475569;">You have been invited to join <strong>${team.name}</strong>.</p>
+              <p style="color: #475569;">Sign in with this email address to view and accept the pending team invitation.</p>
+              <p><a href="${appUrl}" style="display: inline-block; padding: 12px 18px; border-radius: 10px; background: #00a896; color: #ffffff; text-decoration: none; font-weight: 700;">Open CricScore</a></p>
+              <p style="font-size: 12px; color: #64748b;">This invitation remains pending until it is accepted.</p>
+            </div>`
+        });
+        emailSent = true;
+        deliveryMessage = `Invitation email sent to ${invitation.invitedEmail}.`;
+        console.log(`[TEAM] Invitation email sent to ${invitation.invitedEmail} for ${team.name}`);
+      } catch (mailError) {
+        console.error('[TEAM] Invitation email error:', mailError.message);
+        deliveryMessage = 'Invitation saved, but the email could not be delivered. Please check the mail configuration.';
+      }
+    }
+
+    res.json({ success: true, emailSent, message: deliveryMessage, invitation: { id: invitation._id, status: invitation.status } });
+  } catch (err) {
+    console.error('[DB] Team invitation error:', err);
+    res.status(500).json({ error: 'Could not send invitation' });
+  }
+});
+
+app.get('/api/team-invitations', async (req, res) => {
+  try {
+    const user = await findUserByPlayerContact(req.query.contact);
+    if (!user) return res.json({ invitations: [] });
+    const email = (user.email || '').toLowerCase();
+    const phone = normalizePlayerContact(user.phone);
+    const invitations = await TeamInvitation.find({ status: 'pending', $or: [{ invitedEmail: email }, { invitedPhone: phone }] }).populate('teamId', 'name location');
+    res.json({ invitations });
+  } catch (err) {
+    res.status(500).json({ error: 'Could not load invitations' });
+  }
+});
+
+app.post('/api/team-invitations/:id/accept', async (req, res) => {
+  try {
+    const user = await findUserByPlayerContact(req.body.contact);
+    const invitation = await TeamInvitation.findById(req.params.id);
+    if (!user || !invitation || invitation.status !== 'pending') return res.status(404).json({ error: 'Invitation not found' });
+    const matchesInvite = (invitation.invitedEmail && invitation.invitedEmail === (user.email || '').toLowerCase()) || (invitation.invitedPhone && invitation.invitedPhone === normalizePlayerContact(user.phone));
+    if (!matchesInvite) return res.status(403).json({ error: 'Invitation does not belong to this user' });
+    const team = await Team.findById(invitation.teamId);
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    if (!(team.players || []).some(player => String(player.userId || player.playerId || '') === String(user._id))) {
+      team.players.push({ userId: user._id, role: (user.profile && user.profile.role) || 'Player', status: 'active', joinedAt: new Date(), addedBy: invitation.invitedBy });
+      await team.save();
+    }
+    invitation.status = 'accepted';
+    invitation.acceptedBy = user._id;
+    invitation.acceptedAt = new Date();
+    await invitation.save();
+    res.json({ success: true, message: 'Player added successfully.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Could not accept invitation' });
   }
 });
 

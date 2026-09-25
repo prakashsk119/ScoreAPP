@@ -19,7 +19,7 @@
     .screen.active { display: flex; }
     #screen-login { background: linear-gradient(135deg, #ff8c37 0%, #ff7315 50%, #f95700 100%) !important; position: fixed !important; inset: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important; z-index: 1000 !important; }
   </style>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=6.0" />
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#00a896" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -386,7 +386,7 @@
             <input type="text" id="team1-name" class="form-input" placeholder="e.g. Mumbai Indians" maxlength="25"
               oninput="syncTeamNames(); updateMatchPredictionUI();" />
           </div>
-          <div class="form-group">
+        </div>
             <label for="team2-name">Team 2 Name</label>
             <input type="text" id="team2-name" class="form-input" placeholder="e.g. Chennai Super Kings" maxlength="25"
               oninput="syncTeamNames(); updateMatchPredictionUI();" />
@@ -1175,6 +1175,9 @@
       </div>
   </div>
 
+    </div>
+  </div>
+
   <!-- ===================== SCREEN: TOURNAMENTS LIST ===================== -->
   <div id="screen-tournaments" class="screen">
     <header class="scoring-header">
@@ -1285,8 +1288,8 @@
         </button>
       </div>
       <div class="header-center" id="team-detail-title">Team Dashboard</div>
-      <div class="header-right">
-        <button class="btn-primary-sm" onclick="openAddPlayerModal()">+ Player</button>
+      <div class="header-right" id="team-detail-actions">
+        <button class="btn-primary-sm" onclick="openAddPlayerModal()">+ Add Player</button>
       </div>
     </header>
 
@@ -1415,51 +1418,62 @@
     </div>
   </div>
 
+  <!-- ===================== MODAL: ADD TEAMS TO TOURNAMENT ===================== -->
+  <div id="modal-add-tournament-teams" class="modal-overlay" style="display:none;">
+    <div class="modal-card tournament-team-picker">
+      <div class="modal-header">
+        <div>
+          <h3>Add Teams</h3>
+          <p class="modal-subtitle">Select the teams competing in this tournament.</p>
+        </div>
+        <button class="modal-close-btn" onclick="closeAddTournamentTeamsModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="tournament-team-options" class="tournament-team-options"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeAddTournamentTeamsModal()">Cancel</button>
+        <button class="btn-primary" onclick="addSelectedTournamentTeams()">Add Selected Teams</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===================== MODAL: ADD PLAYER ===================== -->
   <div id="modal-add-player" class="modal-overlay" style="display:none;">
-    <div class="modal-card">
+    <div class="modal-card add-player-modal">
       <div class="modal-header">
-        <h3>Add Player to Roster</h3>
+        <div>
+          <h3>Add Player to Team</h3>
+
+      <!-- ===================== MODAL: TEAM INVITATIONS ===================== -->
+      <div id="modal-team-invitations" class="modal-overlay" style="display:none;">
+        <div class="modal-card">
+          <div class="modal-header">
+            <div>
+              <h3>Team Invitations</h3>
+              <p class="modal-subtitle">Accept an invitation to join a team.</p>
+            </div>
+            <button class="modal-close-btn" onclick="closeTeamInvitationsModal()">✕</button>
+          </div>
+          <div class="modal-body" id="team-invitations-list"></div>
+        </div>
+      </div>
+          <p class="modal-subtitle">Search an existing CricScore user by phone or email.</p>
+        </div>
         <button class="modal-close-btn" onclick="closeAddPlayerModal()">✕</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label>Player Name *</label>
-          <input type="text" id="player-input-name" class="form-input" placeholder="Player Full Name" maxlength="25">
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Primary Role</label>
-            <select id="player-input-role" class="form-input">
-              <option value="Batsman">Batsman</option>
-              <option value="Bowler">Bowler</option>
-              <option value="All-rounder">All-rounder</option>
-              <option value="Wicketkeeper">Wicketkeeper</option>
-            </select>
+          <label for="player-search-contact">Search by phone number or email</label>
+          <div class="player-search-row">
+            <input type="text" id="player-search-contact" class="form-input" placeholder="9876543210 or player@email.com" maxlength="80" inputmode="email" autocomplete="email" onkeydown="if(event.key === 'Enter') searchPlayerForTeam()">
+            <button type="button" class="btn-primary" onclick="searchPlayerForTeam()">Search</button>
           </div>
-          <div class="form-group">
-            <label>Batting Hand</label>
-            <select id="player-input-batting" class="form-input">
-              <option value="Right Hand">Right Hand</option>
-              <option value="Left Hand">Left Hand</option>
-            </select>
-          </div>
+          <small class="form-help">Only an exact matching player will be shown.</small>
         </div>
-        <div class="form-group">
-          <label>Bowling Type</label>
-          <select id="player-input-bowling" class="form-input">
-            <option value="Right-arm Fast">Right-arm Fast</option>
-            <option value="Right-arm Medium">Right-arm Medium</option>
-            <option value="Right-arm Spin">Right-arm Spin</option>
-            <option value="Left-arm Fast">Left-arm Fast</option>
-            <option value="Left-arm Spin">Left-arm Spin</option>
-          </select>
-        </div>
+        <div id="player-search-result" class="player-search-result" aria-live="polite"></div>
       </div>
-      <div class="modal-footer">
-        <button class="btn-secondary" onclick="closeAddPlayerModal()">Cancel</button>
-        <button class="btn-primary" onclick="savePlayerToTeam()">Add Player</button>
-      </div>
+      <div class="modal-footer"><button class="btn-secondary" onclick="closeAddPlayerModal()">Close</button></div>
     </div>
   </div>
 
@@ -1777,10 +1791,6 @@
       <span class="nav-icon">🏏</span>
       <span class="nav-label">Matches</span>
     </button>
-    <button class="nav-item" onclick="showTournaments();">
-      <span class="nav-icon">🏆</span>
-      <span class="nav-label">Tournament</span>
-    </button>
     <button class="nav-item" onclick="showTeams();">
       <span class="nav-icon">🛡️</span>
       <span class="nav-label">My Team</span>
@@ -1790,10 +1800,11 @@
       <span class="nav-label">Profile</span>
     </button>
   </nav>
-
   <!-- Backend URL config: Render backend -->
   <script>
-    window.CRICSCORE_BACKEND_URL = 'https://scoreapp-irrc.onrender.com';
+    window.CRICSCORE_BACKEND_URL = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+      ? ''
+      : 'https://scoreapp-irrc.onrender.com';
   </script>
   <!-- Socket.io CDN -->
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" defer></script>
@@ -1820,7 +1831,7 @@
         }
       })();
     </script>
-  <script src="app.min.js?v=5.0" defer></script>
+  <script src="app.min.js?v=11.0" defer></script>
 </body>
 
 </html>
