@@ -1492,21 +1492,19 @@ body::before {
 
 /* ===================== BOTTOM NAV ===================== */
 .bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 70px;
-  background: rgba(10, 15, 28, 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  display: none; /* Hidden by default, shown via JS */
-  align-items: center;
-  justify-content: space-around;
-  z-index: 9999;
-  padding-bottom: env(safe-area-inset-bottom);
-  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.3);
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 66px !important;
+  background: #272d3b !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  display: flex;
+  align-items: center !important;
+  justify-content: space-around !important;
+  z-index: 999999 !important;
+  padding-bottom: env(safe-area-inset-bottom) !important;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35) !important;
 }
 
 .nav-item {

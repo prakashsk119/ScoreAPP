@@ -101,16 +101,12 @@ function showScreen(id) {
   // Manage Bottom Nav visibility
   const bottomNav = document.querySelector('.bottom-nav');
   if (bottomNav) {
-    const dashboardScreens = [
-      'screen-home', 'screen-leaderboard', 'screen-history', 'screen-profile',
-      'screen-tournaments', 'screen-tournament-detail', 'screen-teams', 'screen-team-detail',
-      'screen-player-compare', 'screen-career-stats', 'screen-player-stats'
-    ];
-    if (dashboardScreens.includes(id)) {
+    const hideOnScreens = ['screen-login', 'screen-get-started', 'screen-scoring', 'screen-innings-setup'];
+    if (hideOnScreens.includes(id)) {
+      bottomNav.style.display = 'none';
+    } else {
       bottomNav.style.display = 'flex';
       updateBottomNavHighlight(id);
-    } else {
-      bottomNav.style.display = 'none';
     }
   }
 }
