@@ -101,12 +101,33 @@ function showScreen(id) {
   // Manage Bottom Nav visibility
   const bottomNav = document.querySelector('.bottom-nav');
   if (bottomNav) {
-    const dashboardScreens = ['screen-home', 'screen-leaderboard', 'screen-history', 'screen-profile'];
+    const dashboardScreens = [
+      'screen-home', 'screen-leaderboard', 'screen-history', 'screen-profile',
+      'screen-tournaments', 'screen-tournament-detail', 'screen-teams', 'screen-team-detail',
+      'screen-player-compare', 'screen-career-stats', 'screen-player-stats'
+    ];
     if (dashboardScreens.includes(id)) {
       bottomNav.style.display = 'flex';
+      updateBottomNavHighlight(id);
     } else {
       bottomNav.style.display = 'none';
     }
+  }
+}
+
+function updateBottomNavHighlight(id) {
+  const items = document.querySelectorAll('.bottom-nav .nav-item');
+  if (!items || items.length < 4) return;
+  items.forEach(item => item.classList.remove('active'));
+
+  if (id === 'screen-home') {
+    items[0]?.classList.add('active');
+  } else if (id === 'screen-leaderboard' || id === 'screen-tournaments' || id === 'screen-teams' || id === 'screen-player-compare' || id === 'screen-career-stats' || id === 'screen-player-stats') {
+    items[1]?.classList.add('active');
+  } else if (id === 'screen-history') {
+    items[2]?.classList.add('active');
+  } else if (id === 'screen-profile') {
+    items[3]?.classList.add('active');
   }
 }
 
