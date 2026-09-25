@@ -2697,9 +2697,6 @@ function initAppListeners() {
   } catch(e) { console.error("Auth init failed", e); }
 
   try {
-    const hamburger = $('btn-hamburger');
-    if (hamburger) hamburger.addEventListener('click', openSidebar);
-    
     const backdrop = $('sidebar-backdrop');
     if (backdrop) backdrop.addEventListener('click', closeSidebar);
     
@@ -2749,7 +2746,7 @@ document.addEventListener('click', (e) => {
   if (btn) {
     e.preventDefault();
     e.stopPropagation();
-    toggleSidebar();
+    openSidebar();
   }
 });
 

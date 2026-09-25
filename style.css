@@ -1502,7 +1502,7 @@ body::before {
   display: flex !important;
   align-items: center !important;
   justify-content: space-around !important;
-  z-index: 999999 !important;
+  z-index: 9900 !important;
   padding-bottom: env(safe-area-inset-bottom) !important;
   box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35) !important;
 }
@@ -3115,7 +3115,7 @@ body::before {
   inset: 0;
   background: rgba(4, 6, 14, .65);
   backdrop-filter: blur(3px);
-  z-index: 1000;
+  z-index: 99990 !important;
   opacity: 0;
   pointer-events: none;
   transition: opacity .28s;
@@ -3135,7 +3135,7 @@ body::before {
   width: 290px;
   max-width: 85vw;
   background: var(--clr-card);
-  z-index: 1001;
+  z-index: 100000 !important;
   display: flex;
   flex-direction: column;
   transform: translateX(-100%);
