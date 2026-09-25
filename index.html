@@ -1492,15 +1492,14 @@
 
     <!-- Menu items -->
     <nav class="sidebar-nav">
-      <button class="sidebar-item sidebar-item-primary" onclick="closeSidebar(); showHome();">
-        <span class="sidebar-item-icon">🏏</span>
-        <span class="sidebar-item-label">Home Dashboard</span>
-        <span class="sidebar-item-badge">Free</span>
+      <button class="sidebar-item" onclick="closeSidebar(); showHome();">
+        <span class="sidebar-item-icon">🏠</span>
+        <span class="sidebar-item-label">Home</span>
       </button>
 
-      <button class="sidebar-item sidebar-item-live" onclick="closeSidebar(); showJoinModal();">
-        <span class="sidebar-item-icon">📡</span>
-        <span class="sidebar-item-label">Join Live Match</span>
+      <button class="sidebar-item" onclick="closeSidebar(); showHistory();">
+        <span class="sidebar-item-icon">📋</span>
+        <span class="sidebar-item-label">My Matches</span>
       </button>
 
       <button class="sidebar-item" onclick="closeSidebar(); showTournaments();">
@@ -1510,61 +1509,44 @@
 
       <button class="sidebar-item" onclick="closeSidebar(); showTeams();">
         <span class="sidebar-item-icon">🛡️</span>
-        <span class="sidebar-item-label">My Teams</span>
+        <span class="sidebar-item-label">My Team</span>
+      </button>
+
+      <button class="sidebar-item" onclick="closeSidebar(); showCareerStats(false);">
+        <span class="sidebar-item-icon">👤</span>
+        <span class="sidebar-item-label">Players</span>
+      </button>
+
+      <button class="sidebar-item" onclick="closeSidebar(); showLeaderboard();">
+        <span class="sidebar-item-icon">📊</span>
+        <span class="sidebar-item-label">Statistics</span>
       </button>
 
       <button class="sidebar-item" onclick="closeSidebar(); showPlayerCompare();">
-        <span class="sidebar-item-icon">⚔️</span>
-        <span class="sidebar-item-label">Compare Players</span>
-      </button>
-
-      <button class="sidebar-item" onclick="closeSidebar(); showHistory();">
-        <span class="sidebar-item-icon">📋</span>
-        <span class="sidebar-item-label">Match History</span>
+        <span class="sidebar-item-icon">💡</span>
+        <span class="sidebar-item-label">Insights</span>
       </button>
 
       <button class="sidebar-item" onclick="closeSidebar(); showProfile();">
         <span class="sidebar-item-icon">👤</span>
-        <span class="sidebar-item-label">My Profile</span>
-      </button>
-
-      <button class="sidebar-item" onclick="closeSidebar(); showCareerStats(true);">
-        <span class="sidebar-item-icon">👤</span>
-        <span class="sidebar-item-label">My Career Stats</span>
+        <span class="sidebar-item-label">Profile</span>
       </button>
 
       <button class="sidebar-item" onclick="closeSidebar(); showDLS();">
-        <span class="sidebar-item-icon">🧮</span>
-        <span class="sidebar-item-label">DLS Calculator</span>
+        <span class="sidebar-item-icon">⚙️</span>
+        <span class="sidebar-item-label">Settings</span>
       </button>
-
-      <button class="sidebar-item" onclick="closeSidebar(); showCareerStats(false);">
-        <span class="sidebar-item-icon">📊</span>
-        <span class="sidebar-item-label">All Players Stats</span>
-      </button>
-
-      <button class="sidebar-item" onclick="closeSidebar(); showLeaderboard();">
-        <span class="sidebar-item-icon">🏆</span>
-        <span class="sidebar-item-label">Top Performers</span>
-      </button>
-
-      <div class="sidebar-divider"></div>
 
       <button class="sidebar-item" onclick="closeSidebar(); shareApp();">
-        <span class="sidebar-item-icon">📱</span>
-        <span class="sidebar-item-label">Share the App</span>
-      </button>
-
-      <button class="sidebar-item" onclick="closeSidebar(); showJoinModal();">
-        <span class="sidebar-item-icon">🔑</span>
-        <span class="sidebar-item-label">App Code (Join)</span>
+        <span class="sidebar-item-icon">ℹ️</span>
+        <span class="sidebar-item-label">Help / About</span>
       </button>
 
       <div class="sidebar-divider"></div>
 
-      <button class="sidebar-item sidebar-item-logout" onclick="handleSignOut()">
+      <button class="sidebar-item sidebar-item-logout" onclick="closeSidebar(); handleSignOut();">
         <span class="sidebar-item-icon">🚪</span>
-        <span class="sidebar-item-label">Sign Out</span>
+        <span class="sidebar-item-label">Logout</span>
       </button>
     </nav>
 
@@ -1772,19 +1754,23 @@
     </div>
   </div>
   <nav class="bottom-nav">
-    <button class="nav-item active" onclick="showHome(); updateNav(this);">
+    <button class="nav-item active" onclick="showHome();">
       <span class="nav-icon">🏠</span>
       <span class="nav-label">Home</span>
     </button>
-    <button class="nav-item" onclick="showLeaderboard(); updateNav(this);">
+    <button class="nav-item" onclick="showHistory();">
+      <span class="nav-icon">🏏</span>
+      <span class="nav-label">Matches</span>
+    </button>
+    <button class="nav-item" onclick="showTournaments();">
       <span class="nav-icon">🏆</span>
-      <span class="nav-label">Stats</span>
+      <span class="nav-label">Tournament</span>
     </button>
-    <button class="nav-item" onclick="showHistory(); updateNav(this);">
-      <span class="nav-icon">📋</span>
-      <span class="nav-label">History</span>
+    <button class="nav-item" onclick="showTeams();">
+      <span class="nav-icon">🛡️</span>
+      <span class="nav-label">My Team</span>
     </button>
-    <button class="nav-item" onclick="showProfile(); updateNav(this);">
+    <button class="nav-item" onclick="showProfile();">
       <span class="nav-icon">👤</span>
       <span class="nav-label">Profile</span>
     </button>

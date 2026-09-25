@@ -5350,4 +5350,14 @@ body::before {
   font-family: inherit;
 }
 
+/* Desktop Responsiveness */
+@media (min-width: 768px) {
+  .bottom-nav {
+    display: none !important;
+  }
+  .setup-container, .screen-content {
+    padding-bottom: 2rem !important;
+  }
+}
+
 

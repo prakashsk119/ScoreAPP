@@ -2717,14 +2717,53 @@ if (document.readyState === "complete" || document.readyState === "interactive")
 // =====================================================
 // SIDEBAR DRAWER
 // =====================================================
+function toggleSidebar() {
+  const sidebar = $('sidebar');
+  if (!sidebar) return;
+  if (sidebar.classList.contains('open')) {
+    closeSidebar();
+  } else {
+    openSidebar();
+  }
+}
+
 function openSidebar() {
-  $('sidebar').classList.add('open');
-  $('sidebar-backdrop').classList.add('open');
+  const sidebar = $('sidebar');
+  const backdrop = $('sidebar-backdrop');
+  if (sidebar) sidebar.classList.add('open');
+  if (backdrop) backdrop.classList.add('open');
 }
+
 function closeSidebar() {
-  $('sidebar').classList.remove('open');
-  $('sidebar-backdrop').classList.remove('open');
+  const sidebar = $('sidebar');
+  const backdrop = $('sidebar-backdrop');
+  if (sidebar) sidebar.classList.remove('open');
+  if (backdrop) backdrop.classList.remove('open');
 }
+
+// Event Delegation for Hamburger buttons
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('#btn-hamburger, .hamburger-btn');
+  if (btn) {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleSidebar();
+  }
+});
+
+// ESC Key & Hardware Back Button Listener
+window.addEventListener('popstate', () => {
+  const sidebar = $('sidebar');
+  if (sidebar && sidebar.classList.contains('open')) {
+    closeSidebar();
+  }
+});
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeSidebar();
+  }
+});
 
 // Bottom nav active state
 function updateNav(el) {
