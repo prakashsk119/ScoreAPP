@@ -12,7 +12,12 @@ const multer     = require('multer');
 const mongoose   = require('mongoose');
 const dns        = require('dns');
 
-// Prefer IPv4 for DNS resolution (prevents SRV lookup timeout on cloud hosts)
+// Configure reliable DNS servers for MongoDB SRV lookups (prevents ECONNREFUSED on Windows/cloud ISPs)
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
+} catch (e) {
+  console.warn('Unable to set custom DNS servers:', e.message);
+}
 try { dns.setDefaultResultOrder('ipv4first'); } catch (e) {}
 
 const app        = express();
