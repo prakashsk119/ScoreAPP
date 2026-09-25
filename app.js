@@ -101,11 +101,11 @@ function showScreen(id) {
   // Manage Bottom Nav visibility
   const bottomNav = document.querySelector('.bottom-nav');
   if (bottomNav) {
-    const hideOnScreens = ['screen-login', 'screen-get-started', 'screen-scoring', 'screen-innings-setup'];
+    const hideOnScreens = ['screen-login', 'screen-get-started', 'screen-scoring', 'screen-innings-setup', 'screen-new-bowler'];
     if (hideOnScreens.includes(id)) {
-      bottomNav.style.display = 'none';
+      bottomNav.style.setProperty('display', 'none', 'important');
     } else {
-      bottomNav.style.display = 'flex';
+      bottomNav.style.setProperty('display', 'flex', 'important');
       updateBottomNavHighlight(id);
     }
   }

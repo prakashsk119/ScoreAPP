@@ -1786,12 +1786,14 @@
       // Immediate check to prevent login flash
       (function() {
         let isLoggedInLocal = false;
+        const bottomNav = document.querySelector('.bottom-nav');
         if (localStorage.getItem('cricscore_user')) {
           try {
             const user = JSON.parse(localStorage.getItem('cricscore_user'));
             if (user && user.loggedIn) {
               document.getElementById('screen-login').classList.remove('active');
               document.getElementById('screen-home').classList.add('active');
+              if (bottomNav) bottomNav.style.setProperty('display', 'flex', 'important');
               isLoggedInLocal = true;
             }
           } catch(e) {}
@@ -1799,6 +1801,7 @@
         
         if (!isLoggedInLocal) {
           document.getElementById('screen-login').classList.add('active');
+          if (bottomNav) bottomNav.style.setProperty('display', 'none', 'important');
         }
       })();
     </script>
