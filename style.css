@@ -1103,7 +1103,7 @@ body::before {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000 !important;
+  z-index: 200000 !important;
   animation: fadeIn .2s ease;
 }
 

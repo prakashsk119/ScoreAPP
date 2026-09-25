@@ -1272,7 +1272,9 @@ function newMatch() {
 
 function confirmEndMatch() {
   const modal = $('modal-end-match');
-  if (modal) modal.style.display = 'flex';
+  if (modal) {
+    modal.style.setProperty('display', 'flex', 'important');
+  }
 }
 
 function openDLSFromMatch() {
@@ -1302,12 +1304,13 @@ function openDLSFromMatch() {
 
 function hideEndMatchModal() {
   const modal = $('modal-end-match');
-  if (modal) modal.style.display = 'none';
+  if (modal) modal.style.setProperty('display', 'none', 'important');
 }
 
 function executeEndMatch() {
   hideEndMatchModal();
   clearMatchState();
+  localStorage.removeItem('cricscore_active_match');
   // Reset match object to initial state
   match = {
     team1: { name: '', players: [] },
@@ -1317,7 +1320,8 @@ function executeEndMatch() {
     battingFirst: 1,
     currentInnings: 1,
     innings: [null, null],
-    result: null
+    result: null,
+    phase: 'setup'
   };
   toast("Match ended and data cleared");
   showHome();
