@@ -380,6 +380,17 @@ function startMatch() {
   match.team2 = { name: t2Name, players: dedupe(t2Players) };
   match.totalOvers = parseInt($('total-overs').value);
   match.playersPerTeam = parseInt($('players-per-team').value) || 11;
+
+  const selectedTnmtId = $('match-tournament-select')?.value || '';
+  if (selectedTnmtId) {
+    const allTnmts = loadTournaments();
+    const tnmt = allTnmts.find(t => (t._id === selectedTnmtId || t.id === selectedTnmtId));
+    match.tournamentId = selectedTnmtId;
+    match.tournamentName = tnmt ? tnmt.name : '';
+  } else {
+    match.tournamentId = null;
+    match.tournamentName = null;
+  }
   match.settings = {
     wideRuns: parseInt($('setting-wide-runs').value) || 1,
     noBallRuns: parseInt($('setting-nb-runs').value) || 1,
@@ -4380,4 +4391,1053 @@ window.addEventListener('DOMContentLoaded', () => {
       .then((reg) => console.log('✅ Service Worker registered for offline scoring:', reg.scope))
       .catch((err) => console.warn('⚠️ Service Worker registration failed:', err));
   }
+  // Initialize Tournaments & Teams
+  fetchTournaments();
+  fetchTeams();
+  populateTournamentSelect();
 });
+
+/* ============================================================
+   TOURNAMENTS & MY TEAM MODULE ENGINE
+   ============================================================ */
+
+let currentSelectedTnmtId = null;
+let currentSelectedTeamId = null;
+
+// ── TOURNAMENT LOCAL STORAGE & SYNC ──
+function loadTournaments() {
+  try {
+    return JSON.parse(localStorage.getItem('cricscore_tournaments') || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveTournamentsLocally(tnmts) {
+  localStorage.setItem('cricscore_tournaments', JSON.stringify(tnmts));
+}
+
+async function fetchTournaments() {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/tournaments`);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        saveTournamentsLocally(data);
+        populateTournamentSelect();
+      }
+    }
+  } catch (e) {
+    console.warn("Tournaments fetch error:", e);
+  }
+}
+
+function populateTournamentSelect() {
+  const sel = $('match-tournament-select');
+  if (!sel) return;
+  const tnmts = loadTournaments();
+  let html = `<option value="">-- Bilateral / Friendly Match --</option>`;
+  tnmts.forEach(t => {
+    const id = t._id || t.id;
+    html += `<option value="${id}">${t.name} (${t.format || 'T20'})</option>`;
+  });
+  sel.innerHTML = html;
+}
+
+function onTournamentSelectChange() {
+  const selVal = $('match-tournament-select')?.value;
+  updateMatchPredictionUI();
+}
+
+// ── SHOW TOURNAMENTS HUB ──
+function showTournaments() {
+  showScreen('screen-tournaments');
+  filterTournaments('all');
+}
+
+function filterTournaments(statusFilter, btn) {
+  if (btn) {
+    document.querySelectorAll('.tab-pill-bar .tab-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  const container = $('tournaments-list-container');
+  if (!container) return;
+
+  let tnmts = loadTournaments();
+  if (statusFilter && statusFilter !== 'all') {
+    tnmts = tnmts.filter(t => (t.status || 'Upcoming').toLowerCase() === statusFilter.toLowerCase());
+  }
+
+  if (tnmts.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state-card">
+        <div class="empty-icon">🏆</div>
+        <h3>No Tournaments Found</h3>
+        <p>Create a tournament to track matches, teams, standings, and leaders!</p>
+        <button class="btn-primary" onclick="openCreateTournamentModal()">+ Create Tournament</button>
+      </div>`;
+    return;
+  }
+
+  let html = '';
+  tnmts.forEach(t => {
+    const id = t._id || t.id;
+    const status = t.status || 'Upcoming';
+    const statusClass = status === 'Ongoing' ? 'status-ongoing' : (status === 'Completed' ? 'status-completed' : 'status-upcoming');
+    const matchesCount = (loadHistory() || []).filter(m => (m.tournamentId === id || m.tournamentName === t.name)).length;
+
+    html += `
+      <div class="tnmt-card" onclick="showTournamentDetail('${id}')">
+        <div class="tnmt-card-header">
+          <div class="tnmt-badge ${statusClass}">${status.toUpperCase()}</div>
+          <span class="tnmt-format-pill">${t.format || 'T20'}</span>
+        </div>
+        <h3 class="tnmt-card-title">${t.name}</h3>
+        <div class="tnmt-card-meta">
+          <span>📍 ${t.location || 'Local Ground'}</span>
+          <span>👥 ${t.numTeams || (t.teams ? t.teams.length : 0)} Teams</span>
+          <span>🏏 ${matchesCount} Matches Played</span>
+        </div>
+        <div class="tnmt-card-footer">
+          <span class="view-tnmt-link">View Standings & Stats →</span>
+        </div>
+      </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function openCreateTournamentModal() {
+  const modal = $('modal-create-tournament');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeCreateTournamentModal() {
+  const modal = $('modal-create-tournament');
+  if (modal) modal.style.display = 'none';
+}
+
+async function saveTournament() {
+  const name = $('tnmt-input-name').value.trim();
+  if (!name) {
+    toast("Please enter a tournament name");
+    return;
+  }
+
+  const location = $('tnmt-input-location').value.trim();
+  const format = $('tnmt-input-format').value;
+  const startDate = $('tnmt-input-start').value;
+  const endDate = $('tnmt-input-end').value;
+
+  const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
+  const createdBy = userData.phone || 'Guest';
+
+  const newTnmt = {
+    id: 'tnmt_' + Date.now(),
+    name,
+    location,
+    format,
+    startDate,
+    endDate,
+    createdBy,
+    status: 'Ongoing',
+    teams: [],
+    numTeams: 0
+  };
+
+  const tnmts = loadTournaments();
+  tnmts.unshift(newTnmt);
+  saveTournamentsLocally(tnmts);
+  populateTournamentSelect();
+  closeCreateTournamentModal();
+  toast("Tournament created successfully!");
+
+  // Sync with backend
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/tournaments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newTnmt)
+    });
+    if (res.ok) fetchTournaments();
+  } catch (e) {}
+
+  showTournamentDetail(newTnmt.id);
+}
+
+// ── TOURNAMENT DETAIL & POINTS TABLE ENGINE ──
+function showTournamentDetail(tnmtId) {
+  currentSelectedTnmtId = tnmtId;
+  const tnmts = loadTournaments();
+  const tnmt = tnmts.find(t => (t._id === tnmtId || t.id === tnmtId));
+  if (!tnmt) {
+    toast("Tournament not found");
+    showTournaments();
+    return;
+  }
+
+  $('tnmt-detail-title').textContent = tnmt.name;
+
+  // Hero Card
+  const matches = (loadHistory() || []).filter(m => (m.tournamentId === tnmtId || m.tournamentName === tnmt.name));
+  const heroCard = $('tnmt-hero-card');
+  if (heroCard) {
+    heroCard.innerHTML = `
+      <div class="hero-top">
+        <div>
+          <h2>${tnmt.name}</h2>
+          <p class="hero-sub">📍 ${tnmt.location || 'Local Ground'} • ${tnmt.format || 'T20'} Format</p>
+        </div>
+        <div class="tnmt-badge ${tnmt.status === 'Ongoing' ? 'status-ongoing' : 'status-completed'}">${(tnmt.status || 'Ongoing').toUpperCase()}</div>
+      </div>
+      <div class="hero-stats-row">
+        <div class="hero-stat-pill">
+          <span class="num">${matches.length}</span>
+          <span class="lbl">Matches</span>
+        </div>
+        <div class="hero-stat-pill">
+          <span class="num">${tnmt.numTeams || (tnmt.teams ? tnmt.teams.length : 0)}</span>
+          <span class="lbl">Teams</span>
+        </div>
+        <div class="hero-stat-pill">
+          <span class="num">${matches.reduce((sum, m) => sum + (m.innings ? m.innings.reduce((a, b) => a + (b ? b.runs : 0), 0) : 0), 0)}</span>
+          <span class="lbl">Total Runs</span>
+        </div>
+      </div>`;
+  }
+
+  showScreen('screen-tournament-detail');
+  switchTnmtTab('overview');
+}
+
+function switchTnmtTab(tabName, btn) {
+  if (btn) {
+    document.querySelectorAll('.tnmt-tabs .tnmt-tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  document.querySelectorAll('.tnmt-tab-content').forEach(c => c.style.display = 'none');
+  const target = $(`tnmt-tab-${tabName}`);
+  if (target) target.style.display = 'block';
+
+  const tnmt = loadTournaments().find(t => (t._id === currentSelectedTnmtId || t.id === currentSelectedTnmtId));
+  if (!tnmt) return;
+
+  if (tabName === 'overview') renderTnmtOverview(tnmt);
+  else if (tabName === 'points') renderTnmtPointsTable(tnmt);
+  else if (tabName === 'matches') renderTnmtMatches(tnmt);
+  else if (tabName === 'teams') renderTnmtTeams(tnmt);
+  else if (tabName === 'leaders') renderTnmtLeaders(tnmt);
+  else if (tabName === 'insights') renderTnmtInsights(tnmt);
+}
+
+// Points Table Calculator (Actual Scorecard Calculations)
+function calculatePointsTable(tnmt) {
+  const tnmtId = tnmt._id || tnmt.id;
+  const matches = (loadHistory() || []).filter(m => (m.tournamentId === tnmtId || m.tournamentName === tnmt.name));
+  
+  // Collect all teams
+  const teamStats = {};
+  const ensureTeam = (name) => {
+    if (!name) return;
+    if (!teamStats[name]) {
+      teamStats[name] = {
+        name,
+        p: 0, w: 0, l: 0, nr: 0, pts: 0,
+        runsScored: 0, oversFaced: 0,
+        runsConceded: 0, oversBowled: 0,
+        nrr: 0
+      };
+    }
+  };
+
+  (tnmt.teams || []).forEach(t => ensureTeam(typeof t === 'string' ? t : t.name));
+
+  matches.forEach(m => {
+    const t1 = m.team1 ? m.team1.name : 'Team 1';
+    const t2 = m.team2 ? m.team2.name : 'Team 2';
+    ensureTeam(t1);
+    ensureTeam(t2);
+
+    if (m.result) {
+      teamStats[t1].p++;
+      teamStats[t2].p++;
+
+      const inn1 = m.innings ? m.innings[0] : null;
+      const inn2 = m.innings ? m.innings[1] : null;
+
+      // Extract runs & overs
+      const t1Runs = inn1 ? inn1.runs : 0;
+      const t1Overs = inn1 ? inn1.overs : 0;
+      const t2Runs = inn2 ? inn2.runs : 0;
+      const t2Overs = inn2 ? inn2.overs : 0;
+
+      teamStats[t1].runsScored += t1Runs;
+      teamStats[t1].oversFaced += t1Overs;
+      teamStats[t1].runsConceded += t2Runs;
+      teamStats[t1].oversBowled += t2Overs;
+
+      teamStats[t2].runsScored += t2Runs;
+      teamStats[t2].oversFaced += t2Overs;
+      teamStats[t2].runsConceded += t1Runs;
+      teamStats[t2].oversBowled += t1Overs;
+
+      if (m.result.winner === t1) {
+        teamStats[t1].w++;
+        teamStats[t1].pts += 2;
+        teamStats[t2].l++;
+      } else if (m.result.winner === t2) {
+        teamStats[t2].w++;
+        teamStats[t2].pts += 2;
+        teamStats[t1].l++;
+      } else {
+        teamStats[t1].nr++;
+        teamStats[t1].pts += 1;
+        teamStats[t2].nr++;
+        teamStats[t2].pts += 1;
+      }
+    }
+  });
+
+  // Calculate NRR
+  const table = Object.values(teamStats).map(t => {
+    const runRateScored = t.oversFaced > 0 ? (t.runsScored / t.oversFaced) : 0;
+    const runRateConceded = t.oversBowled > 0 ? (t.runsConceded / t.oversBowled) : 0;
+    const nrr = runRateScored - runRateConceded;
+    return { ...t, nrr };
+  });
+
+  // Sort by Points desc, then NRR desc
+  table.sort((a, b) => b.pts - a.pts || b.nrr - a.nrr);
+  return table;
+}
+
+function renderTnmtOverview(tnmt) {
+  const container = $('tnmt-tab-overview');
+  const table = calculatePointsTable(tnmt);
+  const matches = (loadHistory() || []).filter(m => (m.tournamentId === (tnmt._id || tnmt.id) || m.tournamentName === tnmt.name));
+
+  let html = `
+    <div class="tnmt-overview-grid">
+      <div class="overview-section">
+        <h3>🏆 Standings Leader</h3>
+        ${table.length > 0 ? `
+          <div class="leader-standings-card">
+            <div class="rank-crown">👑 #1 ${table[0].name}</div>
+            <div class="standings-meta">${table[0].pts} Pts • NRR: ${table[0].nrr > 0 ? '+' : ''}${table[0].nrr.toFixed(3)}</div>
+          </div>` : '<p class="text-muted">No standings recorded yet.</p>'}
+      </div>
+
+      <div class="overview-section">
+        <h3>📅 Recent Matches</h3>
+        ${matches.length > 0 ? matches.slice(0, 3).map(m => `
+          <div class="history-card" onclick="showMatchScorecard('${m.id}')">
+            <div class="history-card-header">
+              <span class="history-teams">${m.team1.name} vs ${m.team2.name}</span>
+              <span class="history-date">${m.date || ''}</span>
+            </div>
+            <div class="history-result">${m.result ? m.result.text : 'Completed'}</div>
+          </div>`).join('') : '<p class="text-muted">No matches played yet in this tournament.</p>'}
+      </div>
+    </div>`;
+
+  container.innerHTML = html;
+}
+
+function renderTnmtPointsTable(tnmt) {
+  const container = $('tnmt-tab-points');
+  const table = calculatePointsTable(tnmt);
+
+  if (table.length === 0) {
+    container.innerHTML = `<div class="empty-state-card"><h3>No Teams or Matches in Points Table</h3><p>Complete tournament matches to update points table and NRR automatically!</p></div>`;
+    return;
+  }
+
+  let html = `
+    <div class="points-table-wrapper">
+      <table class="points-table">
+        <thead>
+          <tr>
+            <th>Pos</th>
+            <th>Team</th>
+            <th>P</th>
+            <th>W</th>
+            <th>L</th>
+            <th>NR</th>
+            <th>Pts</th>
+            <th>NRR</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+  table.forEach((t, idx) => {
+    html += `
+      <tr class="${idx < 2 ? 'qualify-row' : ''}">
+        <td class="pos-col">${idx + 1}</td>
+        <td class="team-col"><strong>${t.name}</strong></td>
+        <td>${t.p}</td>
+        <td>${t.w}</td>
+        <td>${t.l}</td>
+        <td>${t.nr}</td>
+        <td class="pts-col">${t.pts}</td>
+        <td class="nrr-col">${t.nrr > 0 ? '+' : ''}${t.nrr.toFixed(3)}</td>
+      </tr>`;
+  });
+
+  html += `</tbody></table></div>`;
+  container.innerHTML = html;
+}
+
+function renderTnmtMatches(tnmt) {
+  const container = $('tnmt-tab-matches');
+  const matches = (loadHistory() || []).filter(m => (m.tournamentId === (tnmt._id || tnmt.id) || m.tournamentName === tnmt.name));
+
+  if (matches.length === 0) {
+    container.innerHTML = `<div class="empty-state-card"><h3>No Matches Played Yet</h3><p>Start a new match from setup and select <strong>${tnmt.name}</strong> as tournament!</p><button class="btn-primary" onclick="showScreen('screen-setup')">+ Start Tournament Match</button></div>`;
+    return;
+  }
+
+  let html = '';
+  matches.forEach(m => {
+    html += `
+      <div class="history-card" onclick="showMatchScorecard('${m.id}')">
+        <div class="history-card-header">
+          <span class="history-teams">${m.team1.name} vs ${m.team2.name}</span>
+          <span class="history-date">${m.date || ''}</span>
+        </div>
+        <div class="history-scores">
+          <div>${m.team1.name}: ${m.innings[0] ? m.innings[0].runs + '/' + m.innings[0].wickets : '0'} (${m.innings[0] ? m.innings[0].overs : 0} ov)</div>
+          <div>${m.team2.name}: ${m.innings[1] ? m.innings[1].runs + '/' + m.innings[1].wickets : '0'} (${m.innings[1] ? m.innings[1].overs : 0} ov)</div>
+        </div>
+        <div class="history-result">${m.result ? m.result.text : 'Match Completed'}</div>
+      </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function renderTnmtTeams(tnmt) {
+  const container = $('tnmt-tab-teams');
+  const table = calculatePointsTable(tnmt);
+  if (table.length === 0) {
+    container.innerHTML = `<div class="empty-state-card"><h3>No Teams Added Yet</h3></div>`;
+    return;
+  }
+  let html = '<div class="teams-grid">';
+  table.forEach(t => {
+    html += `
+      <div class="team-card">
+        <div class="team-avatar">${t.name.charAt(0).toUpperCase()}</div>
+        <h3>${t.name}</h3>
+        <p class="team-meta">Matches: ${t.p} • Wins: ${t.w} • Points: ${t.pts}</p>
+      </div>`;
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function renderTnmtLeaders(tnmt) {
+  const container = $('tnmt-tab-leaders');
+  const matches = (loadHistory() || []).filter(m => (m.tournamentId === (tnmt._id || tnmt.id) || m.tournamentName === tnmt.name));
+  
+  const batStats = {};
+  const bowlStats = {};
+
+  matches.forEach(m => {
+    (m.innings || []).forEach(inn => {
+      if (!inn) return;
+      Object.entries(inn.batsmen || {}).forEach(([name, b]) => {
+        if (!batStats[name]) batStats[name] = { runs: 0, balls: 0, fours: 0, sixes: 0 };
+        batStats[name].runs += b.runs || 0;
+        batStats[name].balls += b.balls || 0;
+        batStats[name].fours += b.fours || 0;
+        batStats[name].sixes += b.sixes || 0;
+      });
+      Object.entries(inn.bowlers || {}).forEach(([name, bw]) => {
+        if (!bowlStats[name]) bowlStats[name] = { wickets: 0, runs: 0, overs: 0 };
+        bowlStats[name].wickets += bw.wickets || 0;
+        bowlStats[name].runs += bw.runs || 0;
+        bowlStats[name].overs += bw.overs || 0;
+      });
+    });
+  });
+
+  const topRunScorer = Object.entries(batStats).sort((a, b) => b[1].runs - a[1].runs)[0];
+  const topWicketTaker = Object.entries(bowlStats).sort((a, b) => b[1].wickets - a[1].wickets)[0];
+
+  container.innerHTML = `
+    <div class="leaders-grid">
+      <div class="leader-card orange-cap">
+        <div class="cap-header">🟧 ORANGE CAP (Top Run Scorer)</div>
+        ${topRunScorer ? `<h3>${topRunScorer[0]}</h3><div class="cap-val">${topRunScorer[1].runs} Runs</div><p class="cap-sub">${topRunScorer[1].fours} 4s • ${topRunScorer[1].sixes} 6s</p>` : '<p>No data</p>'}
+      </div>
+      <div class="leader-card purple-cap">
+        <div class="cap-header">🟪 PURPLE CAP (Top Wicket Taker)</div>
+        ${topWicketTaker ? `<h3>${topWicketTaker[0]}</h3><div class="cap-val">${topWicketTaker[1].wickets} Wickets</div><p class="cap-sub">${topWicketTaker[1].overs} Overs Bowled</p>` : '<p>No data</p>'}
+      </div>
+    </div>`;
+}
+
+function renderTnmtInsights(tnmt) {
+  const container = $('tnmt-tab-insights');
+  const matches = (loadHistory() || []).filter(m => (m.tournamentId === (tnmt._id || tnmt.id) || m.tournamentName === tnmt.name));
+  const table = calculatePointsTable(tnmt);
+
+  let insights = [];
+  if (table.length > 0) {
+    insights.push(`👑 <strong>${table[0].name}</strong> currently leads the tournament standings with ${table[0].pts} points.`);
+  }
+  if (matches.length > 0) {
+    insights.push(`🏏 Total <strong>${matches.length}</strong> matches completed in ${tnmt.name}.`);
+  } else {
+    insights.push(`ℹ️ No matches played in this tournament yet.`);
+  }
+
+  container.innerHTML = `
+    <div class="insights-card">
+      <h3>💡 Tournament AI Insights</h3>
+      <ul class="insights-list">
+        ${insights.map(i => `<li>${i}</li>`).join('')}
+      </ul>
+    </div>`;
+}
+
+// ── MY TEAMS MANAGEMENT ──
+function loadTeams() {
+  try {
+    return JSON.parse(localStorage.getItem('cricscore_teams') || '[]');
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveTeamsLocally(teams) {
+  localStorage.setItem('cricscore_teams', JSON.stringify(teams));
+}
+
+async function fetchTeams() {
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/teams`);
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) saveTeamsLocally(data);
+    }
+  } catch (e) {
+    console.warn("Teams fetch error:", e);
+  }
+}
+
+function showTeams() {
+  showScreen('screen-teams');
+  renderTeamsList();
+}
+
+function renderTeamsList() {
+  const container = $('teams-list-container');
+  if (!container) return;
+
+  const teams = loadTeams();
+  if (teams.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state-card">
+        <div class="empty-icon">🛡️</div>
+        <h3>No Teams Created Yet</h3>
+        <p>Create your team, add players, assign captain & roles!</p>
+        <button class="btn-primary" onclick="openCreateTeamModal()">+ Create Team</button>
+      </div>`;
+    return;
+  }
+
+  let html = '';
+  teams.forEach(t => {
+    const id = t._id || t.id;
+    const playerCount = t.players ? t.players.length : 0;
+    const captain = t.captain ? `Cap: ${t.captain}` : 'No Captain';
+
+    html += `
+      <div class="team-card" onclick="showTeamDetail('${id}')">
+        <div class="team-card-header">
+          <div class="team-avatar">${t.name.charAt(0).toUpperCase()}</div>
+          <div>
+            <h3>${t.name}</h3>
+            <p class="team-sub">${t.location || 'Local Team'} • ${playerCount} Players</p>
+          </div>
+        </div>
+        <div class="team-card-meta">
+          <span>👑 ${captain}</span>
+        </div>
+      </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function openCreateTeamModal() {
+  const modal = $('modal-create-team');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeCreateTeamModal() {
+  const modal = $('modal-create-team');
+  if (modal) modal.style.display = 'none';
+}
+
+async function saveTeam() {
+  const name = $('team-input-name').value.trim();
+  if (!name) {
+    toast("Team name is required");
+    return;
+  }
+
+  const location = $('team-input-location').value.trim();
+  const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
+
+  const newTeam = {
+    id: 'team_' + Date.now(),
+    name,
+    location,
+    createdBy: userData.phone || 'Guest',
+    players: [],
+    captain: '',
+    viceCaptain: ''
+  };
+
+  const teams = loadTeams();
+  teams.unshift(newTeam);
+  saveTeamsLocally(teams);
+  closeCreateTeamModal();
+  toast("Team created successfully!");
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/teams`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newTeam)
+    });
+    if (res.ok) fetchTeams();
+  } catch (e) {}
+
+  showTeamDetail(newTeam.id);
+}
+
+function showTeamDetail(teamId) {
+  currentSelectedTeamId = teamId;
+  const teams = loadTeams();
+  const team = teams.find(t => (t._id === teamId || t.id === teamId));
+  if (!team) {
+    toast("Team not found");
+    showTeams();
+    return;
+  }
+
+  $('team-detail-title').textContent = team.name;
+
+  // Compute team stats
+  const stats = calculateTeamStats(team.name);
+  const heroCard = $('team-hero-card');
+  if (heroCard) {
+    heroCard.innerHTML = `
+      <div class="hero-top">
+        <div style="display:flex; align-items:center; gap:0.8rem;">
+          <div class="team-avatar-lg">${team.name.charAt(0).toUpperCase()}</div>
+          <div>
+            <h2>${team.name}</h2>
+            <p class="hero-sub">📍 ${team.location || 'Local Ground'} • ${team.players ? team.players.length : 0} Players</p>
+          </div>
+        </div>
+      </div>
+      <div class="hero-stats-row">
+        <div class="hero-stat-pill">
+          <span class="num">${stats.matches}</span>
+          <span class="lbl">Matches</span>
+        </div>
+        <div class="hero-stat-pill">
+          <span class="num">${stats.winPct}%</span>
+          <span class="lbl">Win Rate</span>
+        </div>
+        <div class="hero-stat-pill">
+          <span class="num">${stats.wins}W / ${stats.losses}L</span>
+          <span class="lbl">Record</span>
+        </div>
+      </div>`;
+  }
+
+  showScreen('screen-team-detail');
+  switchTeamTab('dashboard');
+}
+
+function switchTeamTab(tabName, btn) {
+  if (btn) {
+    document.querySelectorAll('#screen-team-detail .tnmt-tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  document.querySelectorAll('.team-tab-content').forEach(c => c.style.display = 'none');
+  const target = $(`team-tab-${tabName}`);
+  if (target) target.style.display = 'block';
+
+  const team = loadTeams().find(t => (t._id === currentSelectedTeamId || t.id === currentSelectedTeamId));
+  if (!team) return;
+
+  if (tabName === 'dashboard') renderTeamDashboard(team);
+  else if (tabName === 'roster') renderTeamRoster(team);
+  else if (tabName === 'history') renderTeamHistory(team);
+  else if (tabName === 'stats') renderTeamStats(team);
+  else if (tabName === 'h2h') renderTeamH2H(team);
+  else if (tabName === 'insights') renderTeamInsights(team);
+}
+
+function calculateTeamStats(teamName) {
+  const matches = (loadHistory() || []).filter(m => 
+    (m.team1 && m.team1.name.toLowerCase() === teamName.toLowerCase()) || 
+    (m.team2 && m.team2.name.toLowerCase() === teamName.toLowerCase())
+  );
+
+  let wins = 0, losses = 0, ties = 0, totalRuns = 0, totalWkts = 0;
+  const recentForm = [];
+
+  matches.forEach(m => {
+    if (m.result) {
+      if (m.result.winner && m.result.winner.toLowerCase() === teamName.toLowerCase()) {
+        wins++;
+        recentForm.push('W');
+      } else if (m.result.winner) {
+        losses++;
+        recentForm.push('L');
+      } else {
+        ties++;
+        recentForm.push('T');
+      }
+    }
+  });
+
+  const totalCompleted = wins + losses;
+  const winPct = totalCompleted > 0 ? Math.round((wins / totalCompleted) * 100) : 0;
+
+  return {
+    matches: matches.length,
+    wins,
+    losses,
+    ties,
+    winPct,
+    recentForm: recentForm.slice(-5).reverse()
+  };
+}
+
+function renderTeamDashboard(team) {
+  const container = $('team-tab-dashboard');
+  const stats = calculateTeamStats(team.name);
+
+  let formPills = stats.recentForm.map(f => 
+    `<span class="form-pill ${f === 'W' ? 'win' : (f === 'L' ? 'loss' : 'tie')}">${f}</span>`
+  ).join('');
+
+  container.innerHTML = `
+    <div class="team-dash-grid">
+      <div class="dash-card">
+        <h3>🔥 Recent Form</h3>
+        <div class="form-pills-row">${formPills || '<span class="text-muted">No matches played</span>'}</div>
+      </div>
+
+      <div class="dash-card">
+        <h3>📊 Team Overview</h3>
+        <div class="dash-overview-stats">
+          <div><span>Matches:</span> <strong>${stats.matches}</strong></div>
+          <div><span>Wins:</span> <strong>${stats.wins}</strong></div>
+          <div><span>Losses:</span> <strong>${stats.losses}</strong></div>
+          <div><span>Win %:</span> <strong>${stats.winPct}%</strong></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderTeamRoster(team) {
+  const container = $('team-tab-roster');
+  const players = team.players || [];
+
+  if (players.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state-card">
+        <h3>No Players Added Yet</h3>
+        <button class="btn-primary" onclick="openAddPlayerModal()">+ Add Player</button>
+      </div>`;
+    return;
+  }
+
+  let html = '<div class="roster-list">';
+  players.forEach((p, idx) => {
+    const isCap = team.captain === p.name;
+    const isVc = team.viceCaptain === p.name;
+
+    html += `
+      <div class="player-roster-card">
+        <div class="player-roster-info">
+          <strong>${p.name}</strong> ${isCap ? '<span class="cap-tag">C</span>' : ''} ${isVc ? '<span class="vc-tag">VC</span>' : ''}
+          <div class="player-role-sub">${p.role || 'Player'} • ${p.battingHand || 'Right Hand'}</div>
+        </div>
+        <div class="player-roster-actions">
+          <button class="btn-icon" title="Make Captain" onclick="setTeamCaptain('${team._id || team.id}', ${idx})">👑</button>
+          <button class="btn-icon" title="Remove" onclick="removePlayerFromTeam('${team._id || team.id}', ${idx})">🗑️</button>
+        </div>
+      </div>`;
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function openAddPlayerModal() {
+  const modal = $('modal-add-player');
+  if (modal) modal.style.display = 'flex';
+}
+
+function closeAddPlayerModal() {
+  const modal = $('modal-add-player');
+  if (modal) modal.style.display = 'none';
+}
+
+function savePlayerToTeam() {
+  const name = $('player-input-name').value.trim();
+  if (!name) {
+    toast("Player name required");
+    return;
+  }
+
+  const role = $('player-input-role').value;
+  const battingHand = $('player-input-batting').value;
+  const bowlingType = $('player-input-bowling').value;
+
+  const teams = loadTeams();
+  const team = teams.find(t => (t._id === currentSelectedTeamId || t.id === currentSelectedTeamId));
+  if (!team) return;
+
+  if (!team.players) team.players = [];
+  team.players.push({ name, role, battingHand, bowlingType });
+
+  saveTeamsLocally(teams);
+  closeAddPlayerModal();
+  toast(`Added ${name} to team roster!`);
+  renderTeamRoster(team);
+}
+
+function setTeamCaptain(teamId, idx) {
+  const teams = loadTeams();
+  const team = teams.find(t => (t._id === teamId || t.id === teamId));
+  if (team && team.players && team.players[idx]) {
+    team.captain = team.players[idx].name;
+    saveTeamsLocally(teams);
+    toast(`${team.captain} set as Captain!`);
+    showTeamDetail(teamId);
+  }
+}
+
+function removePlayerFromTeam(teamId, idx) {
+  const teams = loadTeams();
+  const team = teams.find(t => (t._id === teamId || t.id === teamId));
+  if (team && team.players) {
+    const removed = team.players.splice(idx, 1);
+    saveTeamsLocally(teams);
+    toast(`Removed player`);
+    renderTeamRoster(team);
+  }
+}
+
+function renderTeamHistory(team) {
+  const container = $('team-tab-history');
+  const matches = (loadHistory() || []).filter(m => 
+    (m.team1 && m.team1.name.toLowerCase() === team.name.toLowerCase()) || 
+    (m.team2 && m.team2.name.toLowerCase() === team.name.toLowerCase())
+  );
+
+  if (matches.length === 0) {
+    container.innerHTML = `<div class="empty-state-card"><h3>No Match History Found</h3></div>`;
+    return;
+  }
+
+  let html = '';
+  matches.forEach(m => {
+    html += `
+      <div class="history-card" onclick="showMatchScorecard('${m.id}')">
+        <div class="history-card-header">
+          <span class="history-teams">${m.team1.name} vs ${m.team2.name}</span>
+          <span class="history-date">${m.date || ''}</span>
+        </div>
+        <div class="history-result">${m.result ? m.result.text : 'Match Completed'}</div>
+      </div>`;
+  });
+  container.innerHTML = html;
+}
+
+function renderTeamStats(team) {
+  const container = $('team-tab-stats');
+  const stats = calculateTeamStats(team.name);
+  container.innerHTML = `
+    <div class="team-dash-grid">
+      <div class="dash-card">
+        <h3>📈 Performance Record</h3>
+        <p>Total Matches: <strong>${stats.matches}</strong></p>
+        <p>Wins: <strong>${stats.wins}</strong></p>
+        <p>Losses: <strong>${stats.losses}</strong></p>
+        <p>Win Rate: <strong>${stats.winPct}%</strong></p>
+      </div>
+    </div>`;
+}
+
+function renderTeamH2H(team) {
+  const container = $('team-tab-h2h');
+  const teams = loadTeams().filter(t => t.name.toLowerCase() !== team.name.toLowerCase());
+  
+  if (teams.length === 0) {
+    container.innerHTML = `<div class="empty-state-card"><h3>No Opponent Teams to Compare</h3></div>`;
+    return;
+  }
+
+  let html = '<div class="h2h-list">';
+  teams.forEach(opp => {
+    const h2h = calculateHeadToHead(team.name, opp.name);
+    html += `
+      <div class="h2h-card">
+        <div class="h2h-header">${team.name} vs ${opp.name}</div>
+        <div class="h2h-stats-row">
+          <div>Played: <strong>${h2h.matches}</strong></div>
+          <div>Wins: <strong>${h2h.t1Wins}</strong></div>
+          <div>Losses: <strong>${h2h.t2Wins}</strong></div>
+        </div>
+      </div>`;
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function calculateHeadToHead(t1Name, t2Name) {
+  const matches = (loadHistory() || []).filter(m => {
+    const name1 = m.team1 ? m.team1.name.toLowerCase() : '';
+    const name2 = m.team2 ? m.team2.name.toLowerCase() : '';
+    const target1 = t1Name.toLowerCase();
+    const target2 = t2Name.toLowerCase();
+    return (name1 === target1 && name2 === target2) || (name1 === target2 && name2 === target1);
+  });
+
+  let t1Wins = 0, t2Wins = 0, ties = 0;
+  matches.forEach(m => {
+    if (m.result && m.result.winner) {
+      if (m.result.winner.toLowerCase() === t1Name.toLowerCase()) t1Wins++;
+      else if (m.result.winner.toLowerCase() === t2Name.toLowerCase()) t2Wins++;
+      else ties++;
+    }
+  });
+
+  return { matches: matches.length, t1Wins, t2Wins, ties };
+}
+
+function renderTeamInsights(team) {
+  const container = $('team-tab-insights');
+  const stats = calculateTeamStats(team.name);
+  
+  let insights = [
+    `📊 <strong>${team.name}</strong> has a <strong>${stats.winPct}%</strong> historical win rate across ${stats.matches} match(es).`
+  ];
+
+  if (stats.recentForm.length > 0) {
+    insights.push(`⚡ Recent form: <strong>${stats.recentForm.join(' ')}</strong> in last ${stats.recentForm.length} match(es).`);
+  }
+
+  container.innerHTML = `
+    <div class="insights-card">
+      <h3>💡 Team AI Insights</h3>
+      <ul class="insights-list">
+        ${insights.map(i => `<li>${i}</li>`).join('')}
+      </ul>
+    </div>`;
+}
+
+// ── PLAYER COMPARISON TOOL ──
+function showPlayerCompare() {
+  showScreen('screen-player-compare');
+  
+  const allStats = aggregateCareerStats() || [];
+  const p1Sel = $('compare-player-1');
+  const p2Sel = $('compare-player-2');
+
+  if (p1Sel && p2Sel) {
+    let opts = '<option value="">-- Select Player --</option>';
+    allStats.forEach(p => {
+      opts += `<option value="${p.name}">${p.name} (${p.bat.runs} Runs, ${p.bowl.wickets} Wkts)</option>`;
+    });
+    p1Sel.innerHTML = opts;
+    p2Sel.innerHTML = opts;
+    if (allStats.length > 0) p1Sel.selectedIndex = 1;
+    if (allStats.length > 1) p2Sel.selectedIndex = 2;
+  }
+  renderPlayerComparison();
+}
+
+function renderPlayerComparison() {
+  const p1Name = $('compare-player-1')?.value;
+  const p2Name = $('compare-player-2')?.value;
+  const container = $('player-compare-results');
+  if (!container) return;
+
+  if (!p1Name || !p2Name) {
+    container.innerHTML = `<div class="empty-state-card"><p>Select two players to view side-by-side comparison!</p></div>`;
+    return;
+  }
+
+  const allStats = aggregateCareerStats() || [];
+  const p1 = allStats.find(p => p.name === p1Name) || { name: p1Name, matches: 0, bat: { runs: 0, avg: 0, sr: 0 }, bowl: { wickets: 0, econ: 0 } };
+  const p2 = allStats.find(p => p.name === p2Name) || { name: p2Name, matches: 0, bat: { runs: 0, avg: 0, sr: 0 }, bowl: { wickets: 0, econ: 0 } };
+
+  container.innerHTML = `
+    <div class="compare-card-grid">
+      <div class="compare-card">
+        <h3>${p1.name}</h3>
+        <div class="compare-stat-row"><span>Matches:</span> <strong>${p1.matches}</strong></div>
+        <div class="compare-stat-row"><span>Runs:</span> <strong>${p1.bat.runs}</strong></div>
+        <div class="compare-stat-row"><span>Avg:</span> <strong>${p1.bat.avg || '0.0'}</strong></div>
+        <div class="compare-stat-row"><span>Wickets:</span> <strong>${p1.bowl.wickets}</strong></div>
+        <div class="compare-stat-row"><span>Economy:</span> <strong>${p1.bowl.econ || '0.0'}</strong></div>
+      </div>
+
+      <div class="compare-card">
+        <h3>${p2.name}</h3>
+        <div class="compare-stat-row"><span>Matches:</span> <strong>${p2.matches}</strong></div>
+        <div class="compare-stat-row"><span>Runs:</span> <strong>${p2.bat.runs}</strong></div>
+        <div class="compare-stat-row"><span>Avg:</span> <strong>${p2.bat.avg || '0.0'}</strong></div>
+        <div class="compare-stat-row"><span>Wickets:</span> <strong>${p2.bowl.wickets}</strong></div>
+        <div class="compare-stat-row"><span>Economy:</span> <strong>${p2.bowl.econ || '0.0'}</strong></div>
+      </div>
+    </div>`;
+}
+
+// ── PRE-MATCH WIN PROBABILITY PREDICTION CALCULATOR ──
+function updateMatchPredictionUI() {
+  const card = $('match-prediction-card');
+  const t1Name = $('team1-name')?.value.trim();
+  const t2Name = $('team2-name')?.value.trim();
+
+  if (!card || !t1Name || !t2Name) {
+    if (card) card.style.display = 'none';
+    return;
+  }
+
+  const s1 = calculateTeamStats(t1Name);
+  const s2 = calculateTeamStats(t2Name);
+  const h2h = calculateHeadToHead(t1Name, t2Name);
+
+  // Score formula
+  let score1 = 50 + (s1.winPct * 0.3) + (h2h.t1Wins * 5);
+  let score2 = 50 + (s2.winPct * 0.3) + (h2h.t2Wins * 5);
+
+  let total = score1 + score2;
+  let pct1 = Math.round((score1 / total) * 100);
+  let pct2 = 100 - pct1;
+
+  card.style.display = 'block';
+  const bar1 = $('pred-bar-team1');
+  const bar2 = $('pred-bar-team2');
+  if (bar1) {
+    bar1.style.width = `${pct1}%`;
+    bar1.textContent = `${t1Name} ${pct1}%`;
+  }
+  if (bar2) {
+    bar2.style.width = `${pct2}%`;
+    bar2.textContent = `${t2Name} ${pct2}%`;
+  }
+}

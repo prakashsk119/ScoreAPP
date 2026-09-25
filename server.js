@@ -109,8 +109,37 @@ const matchSchema = new mongoose.Schema({
   savedAt: { type: Date, default: Date.now }
 });
 
-const User  = mongoose.model('User', userSchema);
-const Match = mongoose.model('Match', matchSchema);
+const teamSchema = new mongoose.Schema({
+  name:        { type: String, required: true },
+  logo:        { type: String, default: '' },
+  captain:     { type: String, default: '' },
+  viceCaptain: { type: String, default: '' },
+  location:    { type: String, default: '' },
+  createdBy:   { type: String, default: '' },
+  players:     { type: Array, default: [] },
+  createdAt:   { type: Date, default: Date.now }
+});
+
+const tournamentSchema = new mongoose.Schema({
+  name:            { type: String, required: true },
+  logo:            { type: String, default: '' },
+  location:        { type: String, default: '' },
+  startDate:       { type: String, default: '' },
+  endDate:         { type: String, default: '' },
+  format:          { type: String, default: 'T20' },
+  oversPerInnings: { type: Number, default: 20 },
+  numTeams:        { type: Number, default: 0 },
+  numMatches:      { type: Number, default: 0 },
+  createdBy:       { type: String, default: '' },
+  teams:           { type: Array, default: [] },
+  status:          { type: String, default: 'Upcoming' },
+  createdAt:       { type: Date, default: Date.now }
+});
+
+const User       = mongoose.model('User', userSchema);
+const Match      = mongoose.model('Match', matchSchema);
+const Team       = mongoose.model('Team', teamSchema);
+const Tournament = mongoose.model('Tournament', tournamentSchema);
 
 // ── HTTP + Socket.io setup ──
 const httpServer = createServer(app);
@@ -201,6 +230,120 @@ app.post('/api/matches', async (req, res) => {
   } catch (err) {
     console.error('[DB] Error saving match:', err);
     res.status(500).json({ error: 'Failed to save match' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+//  TEAMS API
+// ─────────────────────────────────────────────────────────────
+app.get('/api/teams', async (req, res) => {
+  try {
+    const teams = await Team.find().sort({ createdAt: -1 });
+    res.json(teams);
+  } catch (err) {
+    console.error('[DB] Error fetching teams:', err);
+    res.status(500).json({ error: 'Failed to fetch teams' });
+  }
+});
+
+app.post('/api/teams', async (req, res) => {
+  const { name, logo, captain, viceCaptain, location, createdBy, players } = req.body;
+  if (!name) return res.status(400).json({ error: 'Team name is required' });
+  try {
+    const team = await Team.create({
+      name,
+      logo: logo || '',
+      captain: captain || '',
+      viceCaptain: viceCaptain || '',
+      location: location || '',
+      createdBy: createdBy || '',
+      players: players || []
+    });
+    console.log(`[DB] Team created: ${team.name}`);
+    res.json({ success: true, team });
+  } catch (err) {
+    console.error('[DB] Error creating team:', err);
+    res.status(500).json({ error: err.message || 'Failed to create team' });
+  }
+});
+
+app.put('/api/teams/:id', async (req, res) => {
+  try {
+    const team = await Team.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!team) return res.status(404).json({ error: 'Team not found' });
+    res.json({ success: true, team });
+  } catch (err) {
+    console.error('[DB] Error updating team:', err);
+    res.status(500).json({ error: 'Failed to update team' });
+  }
+});
+
+app.delete('/api/teams/:id', async (req, res) => {
+  try {
+    await Team.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[DB] Error deleting team:', err);
+    res.status(500).json({ error: 'Failed to delete team' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────
+//  TOURNAMENTS API
+// ─────────────────────────────────────────────────────────────
+app.get('/api/tournaments', async (req, res) => {
+  try {
+    const tournaments = await Tournament.find().sort({ createdAt: -1 });
+    res.json(tournaments);
+  } catch (err) {
+    console.error('[DB] Error fetching tournaments:', err);
+    res.status(500).json({ error: 'Failed to fetch tournaments' });
+  }
+});
+
+app.post('/api/tournaments', async (req, res) => {
+  const { name, logo, location, startDate, endDate, format, oversPerInnings, numTeams, createdBy, teams, status } = req.body;
+  if (!name) return res.status(400).json({ error: 'Tournament name is required' });
+  try {
+    const tournament = await Tournament.create({
+      name,
+      logo: logo || '',
+      location: location || '',
+      startDate: startDate || '',
+      endDate: endDate || '',
+      format: format || 'T20',
+      oversPerInnings: oversPerInnings || 20,
+      numTeams: numTeams || (teams ? teams.length : 0),
+      createdBy: createdBy || '',
+      teams: teams || [],
+      status: status || 'Upcoming'
+    });
+    console.log(`[DB] Tournament created: ${tournament.name}`);
+    res.json({ success: true, tournament });
+  } catch (err) {
+    console.error('[DB] Error creating tournament:', err);
+    res.status(500).json({ error: err.message || 'Failed to create tournament' });
+  }
+});
+
+app.put('/api/tournaments/:id', async (req, res) => {
+  try {
+    const tournament = await Tournament.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!tournament) return res.status(404).json({ error: 'Tournament not found' });
+    res.json({ success: true, tournament });
+  } catch (err) {
+    console.error('[DB] Error updating tournament:', err);
+    res.status(500).json({ error: 'Failed to update tournament' });
+  }
+});
+
+app.delete('/api/tournaments/:id', async (req, res) => {
+  try {
+    await Tournament.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[DB] Error deleting tournament:', err);
+    res.status(500).json({ error: 'Failed to delete tournament' });
   }
 });
 
