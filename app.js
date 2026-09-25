@@ -2744,6 +2744,11 @@ function closeSidebar() {
   if (backdrop) backdrop.classList.remove('open');
 }
 
+// Global window assignments for direct HTML onclick handlers
+window.toggleSidebar = toggleSidebar;
+window.openSidebar = openSidebar;
+window.closeSidebar = closeSidebar;
+
 // Event Delegation for Hamburger buttons
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('#btn-hamburger, .hamburger-btn');
