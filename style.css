@@ -5316,4 +5316,40 @@ body::before {
 .cap-tag { background: #ffd700; color: #000; font-weight: 900; font-size: 0.68rem; padding: 0.1rem 0.3rem; border-radius: 4px; }
 .vc-tag { background: #cbd5e1; color: #000; font-weight: 900; font-size: 0.68rem; padding: 0.1rem 0.3rem; border-radius: 4px; }
 
+/* Home Feature Card Buttons */
+.home-feature-card-btn {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.8rem;
+  padding: 1.1rem 1.2rem;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 16px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.home-feature-card-btn:hover {
+  transform: translateY(-2px);
+  border-color: #00a896 !important;
+  box-shadow: 0 6px 20px rgba(0, 168, 150, 0.15);
+}
+
+.home-feature-card-btn .feature-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.home-feature-card-btn .feature-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a !important;
+  font-family: inherit;
+}
+
 
