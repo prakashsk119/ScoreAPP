@@ -113,17 +113,19 @@ function showScreen(id) {
 
 function updateBottomNavHighlight(id) {
   const items = document.querySelectorAll('.bottom-nav .nav-item');
-  if (!items || items.length < 4) return;
+  if (!items || items.length < 5) return;
   items.forEach(item => item.classList.remove('active'));
 
   if (id === 'screen-home') {
     items[0]?.classList.add('active');
-  } else if (id === 'screen-leaderboard' || id === 'screen-tournaments' || id === 'screen-teams' || id === 'screen-player-compare' || id === 'screen-career-stats' || id === 'screen-player-stats') {
+  } else if (id === 'screen-history' || id === 'screen-match-detail' || id === 'screen-dls') {
     items[1]?.classList.add('active');
-  } else if (id === 'screen-history') {
+  } else if (id === 'screen-tournaments' || id === 'screen-tournament-detail' || id === 'screen-create-tournament') {
     items[2]?.classList.add('active');
-  } else if (id === 'screen-profile') {
+  } else if (id === 'screen-teams' || id === 'screen-team-detail' || id === 'screen-create-team') {
     items[3]?.classList.add('active');
+  } else if (id === 'screen-profile' || id === 'screen-career-stats' || id === 'screen-player-stats' || id === 'screen-settings') {
+    items[4]?.classList.add('active');
   }
 }
 
