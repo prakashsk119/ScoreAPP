@@ -4932,6 +4932,75 @@ function calculatePointsTable(tnmt) {
   return table;
 }
 
+function renderMatchCardHTML(m) {
+  if (!m) return '';
+  const dateStr = m.date ? formatHistoryDate(m.date) : 'Completed Match';
+  const inn1 = m.innings ? m.innings[0] : null;
+  const inn2 = m.innings ? m.innings[1] : null;
+
+  const t1Name = m.team1 ? (m.team1.name || 'Team 1') : 'Team 1';
+  const t2Name = m.team2 ? (m.team2.name || 'Team 2') : 'Team 2';
+
+  const t1ScoreStr = inn1 ? `${inn1.runs || 0}/${inn1.wickets || 0} <small>(${oversString(inn1.balls || 0)} ov)</small>` : 'DNB';
+  const t2ScoreStr = inn2 ? `${inn2.runs || 0}/${inn2.wickets || 0} <small>(${oversString(inn2.balls || 0)} ov)</small>` : 'DNB';
+
+  let resultText = 'Match Completed';
+  if (typeof m.result === 'string') {
+    resultText = m.result;
+  } else if (m.result && typeof m.result === 'object') {
+    resultText = m.result.text || (m.result.winner ? `${m.result.winner} won` : 'Match Completed');
+  }
+
+  const inn1won = m.result && (
+    (typeof m.result === 'string' && m.result.toLowerCase().startsWith(t1Name.toLowerCase())) ||
+    (typeof m.result === 'object' && m.result.winner && m.result.winner.toLowerCase() === t1Name.toLowerCase())
+  );
+  const inn2won = m.result && (
+    (typeof m.result === 'string' && m.result.toLowerCase().startsWith(t2Name.toLowerCase())) ||
+    (typeof m.result === 'object' && m.result.winner && m.result.winner.toLowerCase() === t2Name.toLowerCase())
+  );
+
+  return `
+    <div class="tnmt-match-card" onclick="showMatchScorecard('${m.id}')">
+      <div class="tnmt-match-meta">
+        <span class="tnmt-match-date">📅 ${dateStr}</span>
+        <span class="tnmt-match-badge">${m.overs ? m.overs + ' Ov Match' : 'Completed'}</span>
+      </div>
+      <div class="tnmt-match-teams">
+        <div class="tnmt-match-team-row ${inn1won ? 'winner' : ''}">
+          <span class="team-name">${t1Name}</span>
+          <span class="team-score">${t1ScoreStr}</span>
+        </div>
+        <div class="tnmt-match-vs">VS</div>
+        <div class="tnmt-match-team-row ${inn2won ? 'winner' : ''}">
+          <span class="team-name">${t2Name}</span>
+          <span class="team-score">${t2ScoreStr}</span>
+        </div>
+      </div>
+      <div class="tnmt-match-result">
+        🏆 ${resultText}
+      </div>
+    </div>`;
+}
+
+function showMatchScorecard(matchId) {
+  const history = loadHistory();
+  const matchEntry = history.find(m => String(m.id || m._id) === String(matchId));
+  if (!matchEntry) {
+    toast("Match details not found");
+    return;
+  }
+  showHistory();
+  setTimeout(() => {
+    const idx = history.findIndex(m => String(m.id || m._id) === String(matchId));
+    if (idx !== -1) {
+      const el = $(`hist-card-${idx}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      toggleHistDetail(idx);
+    }
+  }, 100);
+}
+
 function renderTnmtOverview(tnmt) {
   const container = $('tnmt-tab-overview');
   const table = calculatePointsTable(tnmt);
@@ -4950,14 +5019,7 @@ function renderTnmtOverview(tnmt) {
 
       <div class="overview-section">
         <h3>📅 Recent Matches</h3>
-        ${matches.length > 0 ? matches.slice(0, 3).map(m => `
-          <div class="history-card" onclick="showMatchScorecard('${m.id}')">
-            <div class="history-card-header">
-              <span class="history-teams">${m.team1.name} vs ${m.team2.name}</span>
-              <span class="history-date">${m.date || ''}</span>
-            </div>
-            <div class="history-result">${m.result ? m.result.text : 'Completed'}</div>
-          </div>`).join('') : '<p class="text-muted">No matches played yet in this tournament.</p>'}
+        ${matches.length > 0 ? matches.slice(0, 3).map(m => renderMatchCardHTML(m)).join('') : '<p class="text-muted">No matches played yet in this tournament.</p>'}
       </div>
     </div>`;
 
@@ -5054,18 +5116,7 @@ function renderTnmtMatches(tnmt) {
   if (matches.length > 0) {
     html += `<h4 style="margin:1.4rem 0 0.6rem 0; font-size:0.92rem; color:#0284c7; display:flex; align-items:center; gap:6px;">✅ Completed Matches (${matches.length})</h4>`;
     matches.forEach(m => {
-      html += `
-        <div class="history-card" onclick="showMatchScorecard('${m.id}')">
-          <div class="history-card-header">
-            <span class="history-teams">${m.team1.name} vs ${m.team2.name}</span>
-            <span class="history-date">${m.date || ''}</span>
-          </div>
-          <div class="history-scores">
-            <div>${m.team1.name}: ${m.innings[0] ? m.innings[0].runs + '/' + m.innings[0].wickets : '0'} (${m.innings[0] ? m.innings[0].overs : 0} ov)</div>
-            <div>${m.team2.name}: ${m.innings[1] ? m.innings[1].runs + '/' + m.innings[1].wickets : '0'} (${m.innings[1] ? m.innings[1].overs : 0} ov)</div>
-          </div>
-          <div class="history-result">${m.result ? m.result.text : 'Match Completed'}</div>
-        </div>`;
+      html += renderMatchCardHTML(m);
     });
   }
 
@@ -6115,14 +6166,7 @@ function renderTeamHistory(team) {
 
   let html = '';
   matches.forEach(m => {
-    html += `
-      <div class="history-card" onclick="showMatchScorecard('${m.id}')">
-        <div class="history-card-header">
-          <span class="history-teams">${m.team1.name} vs ${m.team2.name}</span>
-          <span class="history-date">${m.date || ''}</span>
-        </div>
-        <div class="history-result">${m.result ? m.result.text : 'Match Completed'}</div>
-      </div>`;
+    html += renderMatchCardHTML(m);
   });
   container.innerHTML = html;
 }
