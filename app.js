@@ -2052,6 +2052,13 @@ async function saveMatchToHistory() {
           fix.result = match.result ? match.result.text : 'Completed';
           updated = true;
         }
+
+        const allFixturesDone = tnmt.fixtures.every(f => f.status === 'Completed' || f.isCompleted);
+        if (allFixturesDone) {
+          tnmt.status = 'Completed';
+          tnmt.isCompleted = true;
+          updated = true;
+        }
       }
 
       tnmt.numTeams = tnmt.teams.length;
@@ -4761,6 +4768,58 @@ function onTournamentSelectChange() {
 }
 
 // ── SHOW TOURNAMENTS HUB ──
+function getEffectiveTournamentStatus(tnmt) {
+  if (!tnmt) return 'Upcoming';
+
+  // Explicitly completed or marked completed
+  if (tnmt.isCompleted || (tnmt.status && String(tnmt.status).toLowerCase() === 'completed')) {
+    return 'Completed';
+  }
+
+  // Check if all fixtures are completed
+  const fixtures = tnmt.fixtures || [];
+  if (fixtures.length > 0) {
+    const allDone = fixtures.every(f => f && (f.status === 'Completed' || f.isCompleted));
+    if (allDone) return 'Completed';
+  }
+
+  // Explicitly set status
+  if (tnmt.status) {
+    const s = String(tnmt.status).toLowerCase();
+    if (s === 'ongoing') return 'Ongoing';
+    if (s === 'upcoming') return 'Upcoming';
+    if (s === 'completed') return 'Completed';
+  }
+
+  // Fallback based on matches or teams
+  const matchesCount = getTournamentMatches(tnmt).length;
+  if (matchesCount > 0) return 'Ongoing';
+  if (tnmt.teams && tnmt.teams.length > 0) return 'Ongoing';
+
+  return 'Upcoming';
+}
+
+function setTournamentStatus(tnmtId, newStatus) {
+  const tnmts = loadTournaments();
+  const tnmt = tnmts.find(t => (t._id === tnmtId || t.id === tnmtId));
+  if (!tnmt) return;
+
+  tnmt.status = newStatus;
+  tnmt.isCompleted = (newStatus === 'Completed');
+  saveTournamentsLocally(tnmts);
+
+  if (tnmt._id && /^[a-f\d]{24}$/i.test(tnmt._id)) {
+    fetch(`${BACKEND_URL}/api/tournaments/${tnmt._id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus, isCompleted: tnmt.isCompleted })
+    }).catch(e => console.warn('Tournament status sync error:', e));
+  }
+
+  toast(`Tournament status updated to ${newStatus}`);
+  showTournamentDetail(tnmtId);
+}
+
 function showTournaments() {
   showScreen('screen-tournaments');
   filterTournaments('all');
@@ -4777,14 +4836,20 @@ function filterTournaments(statusFilter, btn) {
 
   let tnmts = loadTournaments();
   if (statusFilter && statusFilter !== 'all') {
-    tnmts = tnmts.filter(t => (t.status || 'Upcoming').toLowerCase() === statusFilter.toLowerCase());
+    tnmts = tnmts.filter(t => getEffectiveTournamentStatus(t).toLowerCase() === statusFilter.toLowerCase());
   }
 
   if (tnmts.length === 0) {
+    const titles = {
+      ongoing: 'No Ongoing Tournaments Found',
+      upcoming: 'No Upcoming Tournaments Found',
+      completed: 'No Completed Tournaments Found'
+    };
+    const titleText = titles[statusFilter?.toLowerCase()] || 'No Tournaments Found';
     container.innerHTML = `
       <div class="empty-state-card">
         <div class="empty-icon">🏆</div>
-        <h3>No Tournaments Found</h3>
+        <h3>${titleText}</h3>
         <p>Create a tournament to track matches, teams, standings, and leaders!</p>
         <button class="btn-primary" onclick="openCreateTournamentModal()">+ Create Tournament</button>
       </div>`;
@@ -4794,7 +4859,7 @@ function filterTournaments(statusFilter, btn) {
   let html = '';
   tnmts.forEach(t => {
     const id = t._id || t.id;
-    const status = t.status || 'Upcoming';
+    const status = getEffectiveTournamentStatus(t);
     const statusClass = status === 'Ongoing' ? 'status-ongoing' : (status === 'Completed' ? 'status-completed' : 'status-upcoming');
     const matchesCount = getTournamentMatches(t).length;
 
@@ -4970,6 +5035,7 @@ function showTournamentDetail(tnmtId) {
   // Hero Card
   const matches = getTournamentMatches(tnmt);
   const heroCard = $('tnmt-hero-card');
+  const effStatus = getEffectiveTournamentStatus(tnmt);
   if (heroCard) {
     heroCard.innerHTML = `
       <div class="hero-top">
@@ -4977,7 +5043,13 @@ function showTournamentDetail(tnmtId) {
           <h2>${tnmt.name}</h2>
           <p class="hero-sub">📍 ${tnmt.location || 'Local Ground'} • ${tnmt.format || 'T20'} Format</p>
         </div>
-        <div class="tnmt-badge ${tnmt.status === 'Ongoing' ? 'status-ongoing' : 'status-completed'}">${(tnmt.status || 'Ongoing').toUpperCase()}</div>
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <select class="form-input" style="width:auto; padding:0.25rem 0.6rem; font-size:0.75rem; font-weight:700; border-radius:20px; background:var(--clr-surface-elevated, #f8fafc); color:var(--clr-text); border:1px solid var(--clr-border, #e2e8f0); cursor:pointer;" onchange="setTournamentStatus('${tnmt._id || tnmt.id}', this.value)">
+            <option value="Ongoing" ${effStatus === 'Ongoing' ? 'selected' : ''}>🟡 ONGOING</option>
+            <option value="Upcoming" ${effStatus === 'Upcoming' ? 'selected' : ''}>🔵 UPCOMING</option>
+            <option value="Completed" ${effStatus === 'Completed' ? 'selected' : ''}>🟢 COMPLETED</option>
+          </select>
+        </div>
       </div>
       <div class="hero-stats-row">
         <div class="hero-stat-pill">
