@@ -151,41 +151,92 @@ function requiredRunRate(target, runsScored, ballsRemaining) {
 }
 
 // ===== SETUP SCREEN =====
+function getHistoryPlayersForTeam(teamName) {
+  if (!teamName) return [];
+  const history = loadHistory();
+  const players = new Set();
+  history.forEach(m => {
+    if (m.team1 && m.team1.name.toLowerCase() === teamName.toLowerCase()) {
+      (m.team1.players || []).forEach(p => players.add(p));
+    }
+    if (m.team2 && m.team2.name.toLowerCase() === teamName.toLowerCase()) {
+      (m.team2.players || []).forEach(p => players.add(p));
+    }
+  });
+  return Array.from(players);
+}
+
+function updateTeamDatalists(t1Squad, t2Squad, t1Name, t2Name) {
+  let list1 = $('datalist-team1-squad');
+  if (!list1) {
+    list1 = document.createElement('datalist');
+    list1.id = 'datalist-team1-squad';
+    document.body.appendChild(list1);
+  }
+
+  let list2 = $('datalist-team2-squad');
+  if (!list2) {
+    list2 = document.createElement('datalist');
+    list2.id = 'datalist-team2-squad';
+    document.body.appendChild(list2);
+  }
+
+  let p1Names = [...new Set([...t1Squad, ...getHistoryPlayersForTeam(t1Name)])];
+  list1.innerHTML = p1Names.map(name => `<option value="${name}">`).join('');
+
+  let p2Names = [...new Set([...t2Squad, ...getHistoryPlayersForTeam(t2Name)])];
+  list2.innerHTML = p2Names.map(name => `<option value="${name}">`).join('');
+}
+
 function renderPlayerInputs() {
-  const count = parseInt($('players-per-team').value) || 11;
+  const count = parseInt($('players-per-team')?.value) || 11;
   const t1 = $('team1-players');
   const t2 = $('team2-players');
+  if (!t1 || !t2) return;
 
-  // Preserve existing values
+  const t1Name = $('team1-name') ? $('team1-name').value.trim() : '';
+  const t2Name = $('team2-name') ? $('team2-name').value.trim() : '';
+
+  const savedTeams = loadTeams();
+  const team1Saved = savedTeams.find(t => t.name && t.name.toLowerCase() === t1Name.toLowerCase());
+  const team2Saved = savedTeams.find(t => t.name && t.name.toLowerCase() === t2Name.toLowerCase());
+
+  const t1Squad = team1Saved && team1Saved.players ? team1Saved.players.map(p => typeof p === 'string' ? p : p.name).filter(Boolean) : [];
+  const t2Squad = team2Saved && team2Saved.players ? team2Saved.players.map(p => typeof p === 'string' ? p : p.name).filter(Boolean) : [];
+
+  // Preserve existing inputs if user modified them
   const prev1 = [...document.querySelectorAll('.team1-player')].map(el => el.value);
   const prev2 = [...document.querySelectorAll('.team2-player')].map(el => el.value);
-
-  // Get profile name for auto-fill
-  let userData = {};
-  try {
-    userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
-  } catch(e) {
-    console.error("Failed to parse user session", e);
-  }
-  const loginName = userData.phone || "";
-  const profile = userData.profile || {};
-  const matchName = profile.matchName || loginName;
 
   t1.innerHTML = '';
   t2.innerHTML = '';
 
   for (let i = 1; i <= count; i++) {
-    // Auto-fill first player with profile name if empty
-    let val1 = prev1[i - 1] !== undefined && prev1[i - 1] !== '' ? prev1[i - 1] : `Player ${i}`;
-    if (i === 1 && (prev1[i - 1] === undefined || prev1[i - 1] === '' || prev1[i - 1] === 'Player 1') && matchName) {
-      val1 = matchName;
+    const idx = i - 1;
+
+    let val1 = `Player ${i}`;
+    if (prev1[idx] !== undefined && prev1[idx] !== '' && !prev1[idx].startsWith('Player ') && !prev1[idx].startsWith('T1 Player ')) {
+      val1 = prev1[idx];
+    } else if (t1Squad[idx]) {
+      val1 = t1Squad[idx];
+    } else if (prev1[idx] !== undefined && prev1[idx] !== '') {
+      val1 = prev1[idx];
     }
-    
-    const val2 = prev2[i - 1] !== undefined && prev2[i - 1] !== '' ? prev2[i - 1] : `Player ${i}`;
-    
-    t1.innerHTML += `<div class="form-group player-input-wrap"><label>Player ${i}</label><input type="text" class="form-input team1-player" placeholder="Player ${i}" maxlength="20" value="${val1}"></div>`;
-    t2.innerHTML += `<div class="form-group player-input-wrap"><label>Player ${i}</label><input type="text" class="form-input team2-player" placeholder="Player ${i}" maxlength="20" value="${val2}"></div>`;
+
+    let val2 = `Player ${i}`;
+    if (prev2[idx] !== undefined && prev2[idx] !== '' && !prev2[idx].startsWith('Player ') && !prev2[idx].startsWith('T2 Player ')) {
+      val2 = prev2[idx];
+    } else if (t2Squad[idx]) {
+      val2 = t2Squad[idx];
+    } else if (prev2[idx] !== undefined && prev2[idx] !== '') {
+      val2 = prev2[idx];
+    }
+
+    t1.innerHTML += `<div class="form-group player-input-wrap"><label>Player ${i}</label><input type="text" class="form-input team1-player" placeholder="Player ${i}" maxlength="20" value="${val1}" list="datalist-team1-squad"></div>`;
+    t2.innerHTML += `<div class="form-group player-input-wrap"><label>Player ${i}</label><input type="text" class="form-input team2-player" placeholder="Player ${i}" maxlength="20" value="${val2}" list="datalist-team2-squad"></div>`;
   }
+
+  updateTeamDatalists(t1Squad, t2Squad, t1Name, t2Name);
 }
 
 // Run on page load
@@ -2280,10 +2331,17 @@ function aggregateCareerStats() {
 
   history.forEach(match => {
     const matchParticipants = new Set();
+    const t1Name = match.team1 ? match.team1.name : '';
+    const t2Name = match.team2 ? match.team2.name : '';
 
     match.innings.forEach((inn, idx) => {
+      if (!inn) return;
+      const battingTeamName = inn.battingTeamName || (idx === 0 ? t1Name : t2Name);
+      const bowlingTeamName = inn.bowlingTeamName || (idx === 0 ? t2Name : t1Name);
+
       // Batting Stats
       Object.values(inn.batters || {}).forEach(b => {
+        if (!b.name) return;
         const normName = b.name.trim().toLowerCase();
         if (!players[normName]) players[normName] = initCareerPlayer(b.name.trim());
         const p = players[normName];
@@ -2293,12 +2351,30 @@ function aggregateCareerStats() {
           matchParticipants.add(normName);
         }
 
+        const teamKey = battingTeamName || 'Other Team';
+        if (!p.teams[teamKey]) {
+          p.teams[teamKey] = { matches: 0, runs: 0, balls: 0, wickets: 0, fours: 0, sixes: 0, hs: 0 };
+        }
+        const tm = p.teams[teamKey];
+        if (!tm._matchSet) tm._matchSet = new Set();
+        if (!tm._matchSet.has(match.id || match.date)) {
+          tm.matches++;
+          tm._matchSet.add(match.id || match.date);
+        }
+
         p.bat.innings++;
         if (!b.isOut) p.bat.notOuts++;
         p.bat.runs += b.runs;
         p.bat.balls += b.balls;
         p.bat.fours += b.fours;
         p.bat.sixes += b.sixes;
+
+        tm.runs += b.runs;
+        tm.balls += b.balls;
+        tm.fours += b.fours;
+        tm.sixes += b.sixes;
+        if (b.runs > tm.hs) tm.hs = b.runs;
+
         if (b.runs > p.bat.highScore) {
           p.bat.highScore = b.runs;
           p.bat.hsNotOut = !b.isOut;
@@ -2309,27 +2385,39 @@ function aggregateCareerStats() {
 
       // Bowling Stats
       Object.values(inn.bowlers || {}).forEach(bw => {
-        if (bw.balls > 0) {
-          const normName = bw.name.trim().toLowerCase();
-          if (!players[normName]) players[normName] = initCareerPlayer(bw.name.trim());
-          const p = players[normName];
-          
-          if (!matchParticipants.has(normName)) {
-            p.matches++;
-            matchParticipants.add(normName);
-          }
+        if (!bw.name || bw.balls <= 0) return;
+        const normName = bw.name.trim().toLowerCase();
+        if (!players[normName]) players[normName] = initCareerPlayer(bw.name.trim());
+        const p = players[normName];
+        
+        if (!matchParticipants.has(normName)) {
+          p.matches++;
+          matchParticipants.add(normName);
+        }
 
-          p.bowl.innings++;
-          p.bowl.balls += bw.balls;
-          p.bowl.runs += bw.runs;
-          p.bowl.wickets += bw.wickets;
-          p.bowl.maidens += bw.maidens;
-          
-          // Best bowling
-          if (bw.wickets > p.bowl.bestWickets || (bw.wickets === p.bowl.bestWickets && bw.runs < p.bowl.bestRuns)) {
-            p.bowl.bestWickets = bw.wickets;
-            p.bowl.bestRuns = bw.runs;
-          }
+        const teamKey = bowlingTeamName || 'Other Team';
+        if (!p.teams[teamKey]) {
+          p.teams[teamKey] = { matches: 0, runs: 0, balls: 0, wickets: 0, fours: 0, sixes: 0, hs: 0 };
+        }
+        const tm = p.teams[teamKey];
+        if (!tm._matchSet) tm._matchSet = new Set();
+        if (!tm._matchSet.has(match.id || match.date)) {
+          tm.matches++;
+          tm._matchSet.add(match.id || match.date);
+        }
+
+        p.bowl.innings++;
+        p.bowl.balls += bw.balls;
+        p.bowl.runs += bw.runs;
+        p.bowl.wickets += bw.wickets;
+        p.bowl.maidens += bw.maidens;
+
+        tm.wickets += bw.wickets;
+
+        // Best bowling
+        if (bw.wickets > p.bowl.bestWickets || (bw.wickets === p.bowl.bestWickets && bw.runs < p.bowl.bestRuns)) {
+          p.bowl.bestWickets = bw.wickets;
+          p.bowl.bestRuns = bw.runs;
         }
       });
 
@@ -2364,10 +2452,21 @@ function initCareerPlayer(name) {
   return {
     name: name,
     matches: 0,
+    teams: {}, // map of teamName -> { matches, runs, balls, wickets, fours, sixes, hs }
     bat: { innings: 0, notOuts: 0, runs: 0, balls: 0, fours: 0, sixes: 0, highScore: 0, hsNotOut: false, fifties: 0, hundreds: 0 },
     bowl: { innings: 0, balls: 0, runs: 0, wickets: 0, maidens: 0, bestWickets: 0, bestRuns: Infinity },
     field: { catches: 0, runOuts: 0, stumpings: 0, total: 0 }
   };
+}
+
+function renderPlayerTeamBreakdownHTML(p) {
+  const teams = Object.keys(p.teams || {});
+  if (teams.length === 0) return '';
+  const badges = teams.map(tm => {
+    const tData = p.teams[tm];
+    return `<span class="ps-team-chip" style="display:inline-block; font-size:0.7rem; background:rgba(2,132,199,0.1); color:var(--clr-blue, #0284c7); padding:0.15rem 0.4rem; border-radius:4px; margin-right:0.25rem; margin-top:0.25rem;"><strong>${tm}</strong>: ${tData.runs}R / ${tData.wickets}W (${tData.matches}M)</span>`;
+  }).join('');
+  return `<div class="ps-teams-breakdown" style="margin-top:0.4rem; border-top:1px dashed var(--clr-border, #e2e8f0); padding-top:0.35rem; display:flex; flex-wrap:wrap; align-items:center;">${badges}</div>`;
 }
 
 function renderCareerStatsBody() {
@@ -2451,6 +2550,7 @@ function renderCareerStatsBody() {
             <div class="ps-stat-box"><div class="ps-stat-lbl">Avg</div><div class="ps-stat-val">${avg}</div></div>
             <div class="ps-stat-box"><div class="ps-stat-lbl">SR</div><div class="ps-stat-val">${sr}</div></div>
           </div>
+          ${renderPlayerTeamBreakdownHTML(p)}
         </div>`;
       });
     } else if (careerTab === 'bowling') {
@@ -2479,6 +2579,7 @@ function renderCareerStatsBody() {
             <div class="ps-stat-box"><div class="ps-stat-lbl">Overs</div><div class="ps-stat-val">${overs}</div></div>
             <div class="ps-stat-box"><div class="ps-stat-lbl">Eco</div><div class="ps-stat-val">${eco}</div></div>
           </div>
+          ${renderPlayerTeamBreakdownHTML(p)}
         </div>`;
       });
     } else {
@@ -2504,6 +2605,7 @@ function renderCareerStatsBody() {
             <div class="ps-stat-box"><div class="ps-stat-lbl">Run Outs</div><div class="ps-stat-val">${p.field.runOuts}</div></div>
             <div class="ps-stat-box"><div class="ps-stat-lbl">Stumpings</div><div class="ps-stat-val">${p.field.stumpings}</div></div>
           </div>
+          ${renderPlayerTeamBreakdownHTML(p)}
         </div>`;
       });
     }
@@ -6038,20 +6140,28 @@ async function renderTeamRoster(team) {
     return;
   }
 
+  const allStats = aggregateCareerStats();
+
   let html = '<div class="roster-list">';
   players.forEach((p, idx) => {
-    const isCap = team.captain === p.name;
-    const isVc = team.viceCaptain === p.name;
-    const isWk = team.wicketKeeper === p.name;
+    const pName = typeof p === 'string' ? p : (p.name || '');
+    const isCap = team.captain === pName;
+    const isVc = team.viceCaptain === pName;
+    const isWk = team.wicketKeeper === pName;
     const playerId = p.id || p._id || p.userId || '';
     const contact = p.contact || p.email || p.phone || '';
-    const encodedPlayerName = encodeURIComponent(p.name || '');
+    const encodedPlayerName = encodeURIComponent(pName);
+
+    const statObj = allStats.find(s => s.name.toLowerCase() === pName.toLowerCase());
+    const tStat = statObj && statObj.teams ? statObj.teams[team.name] : null;
+    const statLabel = tStat ? `${tStat.matches} Matches • ${tStat.runs} Runs • ${tStat.wickets} Wkts` : `No matches played for ${team.name} yet`;
 
     html += `
       <div class="player-roster-card">
         <div class="player-roster-info">
-          <strong>${p.name || 'CricScore Player'}</strong> ${isCap ? '<span class="cap-tag">C</span>' : ''} ${isVc ? '<span class="vc-tag">VC</span>' : ''}
+          <strong>${pName || 'CricScore Player'}</strong> ${isCap ? '<span class="cap-tag">C</span>' : ''} ${isVc ? '<span class="vc-tag">VC</span>' : ''}
           <div class="player-role-sub">${p.role || 'Player'} • ${p.battingHand || 'Right Hand'}</div>
+          <div class="player-team-stats-sub" style="font-size: 0.75rem; color: var(--clr-green, #00d46a); margin-top: 3px; font-weight: 600;">📊 ${statLabel}</div>
           ${contact ? `<div class="player-contact-sub">${p.contact ? contact : maskPlayerContact(contact)}</div>` : ''}
         </div>
         ${isTeamOwner(team) ? `<div class="player-roster-actions">
@@ -6070,9 +6180,65 @@ function openAddPlayerModal() {
   const modal = $('modal-add-player');
   const contact = $('player-search-contact');
   const result = $('player-search-result');
+  const qName = $('quick-player-name-input');
+  if (qName) qName.value = '';
   if (contact) contact.value = '';
   if (result) result.innerHTML = '';
   if (modal) modal.style.display = 'flex';
+}
+
+function addQuickPlayerToTeam() {
+  const nameInput = $('quick-player-name-input');
+  const roleInput = $('quick-player-role-input');
+  const name = nameInput ? nameInput.value.trim() : '';
+  const role = roleInput ? roleInput.value : 'All-Rounder';
+
+  if (!name) {
+    toast('Please enter player name');
+    return;
+  }
+
+  const teams = loadTeams();
+  const team = teams.find(t => (t._id === currentSelectedTeamId || t.id === currentSelectedTeamId));
+  if (!team) {
+    toast('No team selected');
+    return;
+  }
+
+  team.players = team.players || [];
+  const exists = team.players.some(p => {
+    const pName = typeof p === 'string' ? p : p.name;
+    return pName && pName.toLowerCase() === name.toLowerCase();
+  });
+
+  if (exists) {
+    toast(`"${name}" is already in ${team.name}'s squad!`);
+    return;
+  }
+
+  const newPlayerObj = {
+    id: 'p_' + Date.now(),
+    name: name,
+    role: role,
+    battingHand: 'Right Hand'
+  };
+
+  team.players.push(newPlayerObj);
+  saveTeamsLocally(teams);
+
+  // Sync to server if backend team exists
+  if (team._id && /^[a-f\d]{24}$/i.test(team._id)) {
+    fetch(`${BACKEND_URL}/api/teams/${team._id}/members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name, role: role, addedBy: getCurrentActorContact() })
+    }).catch(e => console.warn('Sync quick player error:', e));
+  }
+
+  if (nameInput) nameInput.value = '';
+  closeAddPlayerModal();
+  toast(`Added "${name}" to ${team.name} squad!`);
+  renderTeamRoster(team);
 }
 
 function closeAddPlayerModal() {
