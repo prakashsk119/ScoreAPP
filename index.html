@@ -373,12 +373,12 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label for="team1-name">Team 1 Name</label>
+            <label for="team1-name">Team 1 Name *</label>
             <input type="text" id="team1-name" class="form-input" placeholder="e.g. Mumbai Indians" maxlength="25"
               oninput="syncTeamNames(); updateMatchPredictionUI();" />
           </div>
-        </div>
-            <label for="team2-name">Team 2 Name</label>
+          <div class="form-group">
+            <label for="team2-name">Team 2 Name *</label>
             <input type="text" id="team2-name" class="form-input" placeholder="e.g. Chennai Super Kings" maxlength="25"
               oninput="syncTeamNames(); updateMatchPredictionUI();" />
           </div>
@@ -401,21 +401,25 @@
 
         <div class="form-row">
           <div class="form-group">
-            <label for="total-overs">Total Overs</label>
+            <label for="total-overs">Overs / Format *</label>
             <select id="total-overs" class="form-input">
               <option value="1">1 Over</option>
               <option value="2">2 Overs</option>
               <option value="3">3 Overs</option>
               <option value="4">4 Overs</option>
-              <option value="5">5 Overs</option>
+              <option value="5">5 Overs (T5)</option>
               <option value="6">6 Overs</option>
-              <option value="7">7 Overs</option>
               <option value="8">8 Overs</option>
-              <option value="9">9 Overs</option>
-              <option value="10">10 Overs</option>
+              <option value="10">10 Overs (T10)</option>
+              <option value="12">12 Overs</option>
+              <option value="15">15 Overs</option>
               <option value="20" selected>20 Overs (T20)</option>
               <option value="50">50 Overs (ODI)</option>
             </select>
+          </div>
+          <div class="form-group">
+            <label for="match-venue">Venue / Ground Name</label>
+            <input type="text" id="match-venue" class="form-input" placeholder="e.g. Wankhede Stadium, Mumbai" maxlength="40" />
           </div>
           <div class="form-group">
             <label for="players-per-team">Players per Team</label>

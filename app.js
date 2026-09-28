@@ -32,6 +32,7 @@ let match = {
   innings: [null, null],
   result: null,
   settings: { wideRuns: 1, noBallRuns: 1, freeHit: true },
+  venue: 'Local Ground',
   phase: 'setup'   // setup | innings-select | scoring | bowler-select | result
 };
 
@@ -398,6 +399,7 @@ function startMatch() {
   match.team2 = { name: t2Name, players: dedupe(t2Players) };
   match.totalOvers = parseInt($('total-overs').value);
   match.playersPerTeam = parseInt($('players-per-team').value) || 11;
+  match.venue = $('match-venue')?.value.trim() || 'Local Ground';
 
   const selectedTnmtId = $('match-tournament-select')?.value || '';
   if (selectedTnmtId) {
@@ -1911,6 +1913,7 @@ async function saveMatchToHistory() {
     team1: match.team1,
     team2: match.team2,
     overs: match.totalOvers,
+    venue: match.venue || 'Local Ground',
     playersPerTeam: match.playersPerTeam,
     result: match.result,
     innings: [
@@ -2009,7 +2012,7 @@ function renderHistoryScreen() {
       <div class="hist-summary" onclick="toggleHistDetail(${idx})">
         <div class="hist-meta">
           <span class="hist-date">${dateStr}</span>
-          <span class="hist-format">${entry.overs} Ov · ${entry.playersPerTeam}a-side</span>
+          <span class="hist-format">${entry.venue ? '📍 ' + entry.venue + ' · ' : ''}${entry.overs} Ov · ${entry.playersPerTeam}a-side</span>
         </div>
 
         <div class="hist-teams">
@@ -5053,10 +5056,10 @@ function startScheduledMatch(fixtureId) {
     return;
   }
 
-  startTournamentMatchWithTeams(tnmt._id || tnmt.id, fixture.team1, fixture.team2);
+  startTournamentMatchWithTeams(tnmt._id || tnmt.id, fixture.team1, fixture.team2, fixture.venue);
 }
 
-function startTournamentMatchWithTeams(tournamentId, team1Name, team2Name) {
+function startTournamentMatchWithTeams(tournamentId, team1Name, team2Name, fixtureVenue) {
   const tournaments = loadTournaments();
   const tournament = tournaments.find(item => (item._id || item.id) === tournamentId);
   if (!tournament) return;
@@ -5073,19 +5076,21 @@ function startTournamentMatchWithTeams(tournamentId, team1Name, team2Name) {
     currentInnings: 1,
     innings: [null, null],
     result: null,
-    settings: { wideRuns: 1, noBallRuns: 1, freeHit: true }
+    settings: { wideRuns: 1, noBallRuns: 1, freeHit: true },
+    venue: fixtureVenue || tournament.location || ''
   };
 
   populateTournamentSelect();
   const tournamentSelect = $('match-tournament-select');
   if (tournamentSelect) tournamentSelect.value = tournamentId;
 
-  const formatOvers = { T10: 10, T20: 20, ODI: 50 };
-  const scheduledOvers = formatOvers[String(tournament.format || '').toUpperCase()];
+  const formatOvers = { T5: 5, T10: 10, T20: 20, ODI: 50 };
+  const scheduledOvers = formatOvers[String(tournament.format || '').toUpperCase()] || (tournament.overs ? parseInt(tournament.overs) : null);
   if (scheduledOvers && $('total-overs')) $('total-overs').value = String(scheduledOvers);
 
   if ($('team1-name')) $('team1-name').value = team1Name;
   if ($('team2-name')) $('team2-name').value = team2Name;
+  if ($('match-venue')) $('match-venue').value = fixtureVenue || tournament.location || '';
 
   renderPlayerInputs();
   syncTeamNames();
