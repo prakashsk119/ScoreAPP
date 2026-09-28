@@ -6067,4 +6067,191 @@ body::before {
   text-align: center;
 }
 
+/* ===== Tournament Leaders & Cap Cards ===== */
+.leaders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.2rem;
+  margin-top: 0.5rem;
+}
+
+.leader-card {
+  border-radius: 18px;
+  padding: 1.4rem;
+  color: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.leader-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+}
+
+.leader-card.orange-cap {
+  background: linear-gradient(135deg, #ff5e00 0%, #ff8800 100%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.leader-card.purple-cap {
+  background: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 100%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.cap-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 1rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.3);
+}
+
+.cap-icon {
+  font-size: 1.2rem;
+}
+
+.cap-player-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.cap-player-name {
+  font-size: 1.4rem;
+  font-weight: 900;
+  letter-spacing: -0.3px;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.cap-val {
+  font-size: 2.2rem;
+  font-weight: 900;
+  line-height: 1.1;
+  color: #ffffff;
+  margin: 0.2rem 0;
+}
+
+.cap-val small {
+  font-size: 1rem;
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+.cap-sub {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+  background: rgba(0, 0, 0, 0.15);
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  display: inline-block;
+  width: fit-content;
+  margin-top: 0.3rem;
+}
+
+.cap-empty {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  font-style: italic;
+  padding: 1rem 0;
+}
+
+/* ===== Tournament AI Insights ===== */
+.insights-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 1.4rem 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  margin-top: 0.5rem;
+}
+
+.insights-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1.2rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.insights-header h3 {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.insights-icon {
+  font-size: 1.4rem;
+  background: #fef9c3;
+  padding: 0.4rem;
+  border-radius: 12px;
+}
+
+.insights-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.insight-item, .insights-list li {
+  font-size: 0.93rem;
+  color: #334155;
+  line-height: 1.5;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  border-left: 4px solid #00a896;
+  padding: 0.85rem 1.1rem;
+  border-radius: 10px;
+  transition: all 0.15s ease-in-out;
+}
+
+.insight-item:hover, .insights-list li:hover {
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  transform: translateX(3px);
+}
+
+.insight-item strong, .insights-list li strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+/* ===== Overview Standings Leader Card ===== */
+.leader-standings-card {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1px solid #fde68a;
+  border-radius: 14px;
+  padding: 1rem 1.2rem;
+  margin-top: 0.5rem;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.08);
+}
+
+.rank-crown {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #92400e;
+  margin-bottom: 0.3rem;
+}
+
+.standings-meta {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #b45309;
+}
+
 

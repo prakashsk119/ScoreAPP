@@ -5523,12 +5523,29 @@ function renderTnmtLeaders(tnmt) {
   container.innerHTML = `
     <div class="leaders-grid">
       <div class="leader-card orange-cap">
-        <div class="cap-header">🟧 ORANGE CAP (Top Run Scorer)</div>
-        ${topRunScorer ? `<h3>${topRunScorer[0]}</h3><div class="cap-val">${topRunScorer[1].runs} Runs</div><p class="cap-sub">${topRunScorer[1].fours} 4s • ${topRunScorer[1].sixes} 6s</p>` : '<p>No data</p>'}
+        <div class="cap-header">
+          <span class="cap-icon">🧢</span>
+          <span>ORANGE CAP (Top Run Scorer)</span>
+        </div>
+        ${topRunScorer ? `
+          <div class="cap-player-body">
+            <div class="cap-player-name">${topRunScorer[0]}</div>
+            <div class="cap-val">${topRunScorer[1].runs} <small>Runs</small></div>
+            <div class="cap-sub">🔥 ${topRunScorer[1].fours}×4 • ${topRunScorer[1].sixes}×6</div>
+          </div>` : '<div class="cap-empty">No run stats recorded yet</div>'}
       </div>
+
       <div class="leader-card purple-cap">
-        <div class="cap-header">🟪 PURPLE CAP (Top Wicket Taker)</div>
-        ${topWicketTaker ? `<h3>${topWicketTaker[0]}</h3><div class="cap-val">${topWicketTaker[1].wickets} Wickets</div><p class="cap-sub">${topWicketTaker[1].overs} Overs Bowled</p>` : '<p>No data</p>'}
+        <div class="cap-header">
+          <span class="cap-icon">🧢</span>
+          <span>PURPLE CAP (Top Wicket Taker)</span>
+        </div>
+        ${topWicketTaker ? `
+          <div class="cap-player-body">
+            <div class="cap-player-name">${topWicketTaker[0]}</div>
+            <div class="cap-val">${topWicketTaker[1].wickets} <small>Wickets</small></div>
+            <div class="cap-sub">🎯 ${topWicketTaker[1].overs} Overs Bowled</div>
+          </div>` : '<div class="cap-empty">No wicket stats recorded yet</div>'}
       </div>
     </div>`;
 }
@@ -5550,9 +5567,12 @@ function renderTnmtInsights(tnmt) {
 
   container.innerHTML = `
     <div class="insights-card">
-      <h3>💡 Tournament AI Insights</h3>
+      <div class="insights-header">
+        <span class="insights-icon">💡</span>
+        <h3>Tournament AI Insights</h3>
+      </div>
       <ul class="insights-list">
-        ${insights.map(i => `<li>${i}</li>`).join('')}
+        ${insights.map(i => `<li class="insight-item">${i}</li>`).join('')}
       </ul>
     </div>`;
 }
