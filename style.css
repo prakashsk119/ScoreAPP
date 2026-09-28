@@ -492,6 +492,39 @@ body::before {
   background: #cbd5e1;
 }
 
+.btn-primary-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  width: auto;
+  padding: .5rem .8rem;
+  border: 1px solid #008f80;
+  border-radius: 9px;
+  background: #00a896;
+  color: #ffffff;
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 800;
+  line-height: 1.1;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0, 168, 150, .2);
+  transition: background .2s ease, border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+
+.btn-primary-sm:hover {
+  border-color: #007f72;
+  background: #008f80;
+  box-shadow: 0 5px 14px rgba(0, 168, 150, .28);
+  transform: translateY(-1px);
+}
+
+.btn-primary-sm:focus-visible {
+  outline: 3px solid rgba(2, 132, 199, .28);
+  outline-offset: 2px;
+}
+
 .btn-danger {
   background: var(--clr-danger);
   border: none;
@@ -2284,9 +2317,11 @@ body::before {
   }
 
   .scoring-header .header-center {
-    margin: 0 2px !important;
-    font-size: 0.85rem !important;
-    max-width: 120px !important;
+    margin: 0 4px !important;
+    font-size: 0.95rem !important;
+    font-weight: 800 !important;
+    flex: 1 !important;
+    text-align: center !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
@@ -2375,12 +2410,16 @@ body::before {
   }
 
   .setup-container {
-    width: 96% !important;
-    padding: 0.6rem 0 !important;
+    width: 100% !important;
+    max-width: 600px !important;
+    padding: 1rem 0.8rem 90px !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
   }
 
   .setup-card {
-    padding: 1.2rem 1rem !important;
+    padding: 1.4rem 1.1rem !important;
+    box-sizing: border-box !important;
   }
 
   /* Dashboard Banner Mobile */
@@ -4864,9 +4903,26 @@ body::before {
   margin-top: 0.5rem;
   border: 1px solid rgba(0, 212, 106, 0.2);
   border-radius: 16px;
-  background: rgba(0, 212, 106, 0.05);
+  background: linear-gradient(135deg, #172033 0%, #24324a 100%) !important;
   box-shadow: 0 10px 30px rgba(0,0,0,0.3);
   transition: all 0.4s ease;
+}
+
+.dls-result-card .dls-result-label {
+  color: #cbd5e1 !important;
+}
+
+.dls-result-card .dls-result-value {
+  color: #ffffff !important;
+}
+
+.dls-result-card .dls-result-value.accent {
+  color: #34d399 !important;
+  text-shadow: 0 0 18px rgba(52, 211, 153, .35);
+}
+
+.dls-result-card .dls-result-sub {
+  color: #a8b6c8 !important;
 }
 
 .dls-result-item {
@@ -5213,6 +5269,87 @@ body::before {
   padding: 1rem 0;
 }
 
+.team-dash-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+
+.dash-card {
+  min-width: 0;
+  padding: 1.15rem;
+  background: #ffffff;
+  border: 1px solid #d5dee7;
+  border-radius: 14px;
+  box-shadow: 0 5px 18px rgba(15, 23, 42, .06);
+}
+
+.dash-card h3 {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  margin-bottom: .85rem;
+  color: #0f172a;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.form-pills-row {
+  display: flex;
+  align-items: center;
+  min-height: 2.2rem;
+  color: #64748b;
+  font-size: .85rem;
+}
+
+.text-muted {
+  color: #64748b;
+  font-size: .85rem;
+}
+
+.form-pills-row .form-pill {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-right: .35rem;
+  border-radius: 50%;
+  font-size: .75rem;
+  font-weight: 900;
+}
+
+.form-pill.win { background: #dcfce7; color: #15803d; }
+.form-pill.loss { background: #fee2e2; color: #b91c1c; }
+.form-pill.tie { background: #fef3c7; color: #a16207; }
+
+.dash-overview-stats {
+  display: grid;
+  gap: .65rem;
+}
+
+.dash-overview-stats > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .8rem;
+  padding-bottom: .5rem;
+  border-bottom: 1px solid #eef2f6;
+  color: #64748b;
+  font-size: .84rem;
+}
+
+.dash-overview-stats > div:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.dash-overview-stats strong {
+  color: #0f172a;
+  font-size: .95rem;
+  font-weight: 800;
+}
+
 .tnmt-card, .team-card {
   background: var(--clr-card);
   border: 1px solid var(--clr-glass-border);
@@ -5231,6 +5368,9 @@ body::before {
 
 .team-card-actions {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
   justify-content: flex-end;
   margin-top: 1rem;
 }
@@ -5690,6 +5830,10 @@ body::before {
 }
 
 @media (max-width: 420px) {
+  .team-dash-grid {
+    grid-template-columns: 1fr;
+  }
+
   .player-search-row {
     flex-direction: column;
   }

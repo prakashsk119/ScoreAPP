@@ -3949,7 +3949,7 @@ async function saveProfile() {
     }
 
     // Update local storage
-    userData.profile = profile;
+    userData.profile = { ...(userData.profile || {}), ...profile };
     localStorage.setItem('cricscore_user', JSON.stringify(userData));
     
     updateSidebarUI(userData);
@@ -4856,7 +4856,7 @@ function renderTnmtMatches(tnmt) {
   const matches = (loadHistory() || []).filter(m => (m.tournamentId === (tnmt._id || tnmt.id) || m.tournamentName === tnmt.name));
 
   if (matches.length === 0) {
-    container.innerHTML = `<div class="empty-state-card"><h3>No Matches Played Yet</h3><p>Start a new match from setup and select <strong>${tnmt.name}</strong> as tournament!</p><button class="btn-primary" onclick="showScreen('screen-setup')">+ Start Tournament Match</button></div>`;
+    container.innerHTML = `<div class="empty-state-card"><h3>No Matches Played Yet</h3><p>Start a new match from setup and select <strong>${tnmt.name}</strong> as tournament!</p><button class="btn-primary" onclick="startTournamentMatch('${tnmt._id || tnmt.id}')">+ Start Tournament Match</button></div>`;
     return;
   }
 
@@ -4876,6 +4876,52 @@ function renderTnmtMatches(tnmt) {
       </div>`;
   });
   container.innerHTML = html;
+}
+
+function startTournamentMatch(tournamentId) {
+  const tournaments = loadTournaments();
+  const tournament = tournaments.find(item => (item._id || item.id) === tournamentId);
+  if (!tournament) {
+    toast('Tournament not found. Refresh tournaments and try again.');
+    showTournaments();
+    return;
+  }
+
+  if (match && match.phase === 'scoring' && !confirm('Start a new tournament match? Current match progress will be lost.')) return;
+
+  clearMatchState();
+  match = {
+    team1: { name: '', players: [] },
+    team2: { name: '', players: [] },
+    totalOvers: 20,
+    playersPerTeam: 11,
+    battingFirst: 1,
+    currentInnings: 1,
+    innings: [null, null],
+    result: null,
+    settings: { wideRuns: 1, noBallRuns: 1, freeHit: true }
+  };
+
+  populateTournamentSelect();
+  const tournamentSelect = $('match-tournament-select');
+  if (tournamentSelect) tournamentSelect.value = tournamentId;
+
+  const formatOvers = { T10: 10, T20: 20, ODI: 50 };
+  const scheduledOvers = formatOvers[String(tournament.format || '').toUpperCase()];
+  if (scheduledOvers && $('total-overs')) $('total-overs').value = String(scheduledOvers);
+
+  const registeredTeams = (tournament.teams || []).map(entry => {
+    if (typeof entry === 'string') return entry;
+    if (entry && entry.name) return entry.name;
+    const savedTeam = loadTeams().find(team => (team._id || team.id) === (entry?.id || entry?._id));
+    return savedTeam?.name || '';
+  }).filter(Boolean);
+  if (registeredTeams[0]) $('team1-name').value = registeredTeams[0];
+  if (registeredTeams[1]) $('team2-name').value = registeredTeams[1];
+
+  renderPlayerInputs();
+  syncTeamNames();
+  showScreen('screen-setup');
 }
 
 function renderTnmtTeams(tnmt) {

@@ -1015,7 +1015,7 @@ app.post('/api/update-profile', async (req, res) => {
   if (!phone || !profile) return res.status(400).json({ error: 'Mobile number and profile required' });
 
   try {
-    const user = await User.findOne({ phone });
+    const user = await findUserByPlayerContact(phone);
     if (!user) return res.status(404).json({ error: 'User not found' });
     user.profile = { ...user.profile, ...profile };
     await user.save();
@@ -1033,10 +1033,11 @@ app.post('/api/upload-avatar', upload.single('avatar'), async (req, res) => {
   if (!phone || !req.file) return res.status(400).json({ error: 'Mobile number and file required' });
 
   try {
-    const user = await User.findOne({ phone });
+    const user = await findUserByPlayerContact(phone);
     if (!user) return res.status(404).json({ error: 'User not found' });
     const avatarUrl = `/uploads/${req.file.filename}`;
-    user.profile.avatar = avatarUrl;
+    user.profile = { ...(user.profile || {}), avatar: avatarUrl };
+    user.markModified('profile');
     await user.save();
     console.log(`[AUTH] Avatar uploaded for: ${phone}`);
     res.json({ success: true, avatarUrl });
