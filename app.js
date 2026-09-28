@@ -4853,29 +4853,257 @@ function renderTnmtPointsTable(tnmt) {
 
 function renderTnmtMatches(tnmt) {
   const container = $('tnmt-tab-matches');
-  const matches = (loadHistory() || []).filter(m => (m.tournamentId === (tnmt._id || tnmt.id) || m.tournamentName === tnmt.name));
+  if (!container) return;
 
-  if (matches.length === 0) {
-    container.innerHTML = `<div class="empty-state-card"><h3>No Matches Played Yet</h3><p>Start a new match from setup and select <strong>${tnmt.name}</strong> as tournament!</p><button class="btn-primary" onclick="startTournamentMatch('${tnmt._id || tnmt.id}')">+ Start Tournament Match</button></div>`;
+  const matches = (loadHistory() || []).filter(m => (m.tournamentId === (tnmt._id || tnmt.id) || m.tournamentName === tnmt.name));
+  const fixtures = tnmt.fixtures || [];
+
+  let html = `
+    <div class="section-action-row" style="flex-wrap: wrap;">
+      <div>
+        <h3 class="section-action-title">Tournament Fixtures & Matches</h3>
+        <p class="section-action-subtitle">${fixtures.length} Scheduled • ${matches.length} Completed</p>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn-primary-sm" onclick="generateRoundRobinFixtures()">⚡ Auto Fixtures</button>
+        <button class="btn-primary-sm" onclick="openScheduleMatchModal()">+ Schedule Match</button>
+      </div>
+    </div>`;
+
+  // Section 1: Scheduled Fixtures
+  if (fixtures.length > 0) {
+    html += `<h4 style="margin:1rem 0 0.6rem 0; font-size:0.92rem; color:var(--clr-green); display:flex; align-items:center; gap:6px;">📅 Scheduled Fixtures (${fixtures.length})</h4>`;
+    fixtures.forEach(f => {
+      html += `
+        <div class="fixture-card">
+          <div class="fixture-top">
+            <span class="fixture-stage">${f.stage || 'Match #' + (f.matchNo || 1)}</span>
+            <span class="fixture-meta-info">📍 ${f.venue || 'Ground'} • 🕒 ${f.date || 'TBD'} ${f.time || ''}</span>
+          </div>
+          <div class="fixture-teams-row">
+            <span>${f.team1}</span>
+            <span class="fixture-vs">VS</span>
+            <span>${f.team2}</span>
+          </div>
+          <div class="fixture-actions">
+            <button class="btn-secondary" style="font-size:0.75rem; padding:0.25rem 0.6rem; color:var(--clr-danger);" onclick="deleteScheduledMatch('${f.id}')">🗑️ Delete</button>
+            <button class="btn-primary-sm" onclick="startScheduledMatch('${f.id}')">▶️ Start Scoring</button>
+          </div>
+        </div>`;
+    });
+  }
+
+  // Section 2: Completed Matches
+  if (matches.length > 0) {
+    html += `<h4 style="margin:1.4rem 0 0.6rem 0; font-size:0.92rem; color:#0284c7; display:flex; align-items:center; gap:6px;">✅ Completed Matches (${matches.length})</h4>`;
+    matches.forEach(m => {
+      html += `
+        <div class="history-card" onclick="showMatchScorecard('${m.id}')">
+          <div class="history-card-header">
+            <span class="history-teams">${m.team1.name} vs ${m.team2.name}</span>
+            <span class="history-date">${m.date || ''}</span>
+          </div>
+          <div class="history-scores">
+            <div>${m.team1.name}: ${m.innings[0] ? m.innings[0].runs + '/' + m.innings[0].wickets : '0'} (${m.innings[0] ? m.innings[0].overs : 0} ov)</div>
+            <div>${m.team2.name}: ${m.innings[1] ? m.innings[1].runs + '/' + m.innings[1].wickets : '0'} (${m.innings[1] ? m.innings[1].overs : 0} ov)</div>
+          </div>
+          <div class="history-result">${m.result ? m.result.text : 'Match Completed'}</div>
+        </div>`;
+    });
+  }
+
+  if (fixtures.length === 0 && matches.length === 0) {
+    html += `
+      <div class="empty-state-card">
+        <h3>No Fixtures or Matches Scheduled</h3>
+        <p>Add teams to <strong>${tnmt.name}</strong>, then generate auto-fixtures or schedule single matches!</p>
+        <div style="display:flex; gap:10px; justify-content:center; margin-top:1rem; flex-wrap:wrap;">
+          <button class="btn-primary" onclick="generateRoundRobinFixtures()">⚡ Auto-Generate Fixtures</button>
+          <button class="btn-secondary" onclick="openScheduleMatchModal()">+ Schedule Single Match</button>
+        </div>
+      </div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+function generateRoundRobinFixtures() {
+  const tnmts = loadTournaments();
+  const tnmt = tnmts.find(t => (t._id || t.id) === currentSelectedTnmtId);
+  if (!tnmt) return;
+
+  const teamList = (tnmt.teams || []).map(t => typeof t === 'string' ? t : t.name).filter(Boolean);
+  if (teamList.length < 2) {
+    toast('At least 2 teams are required to generate fixtures! Add teams first.');
+    switchTnmtTab('teams');
+    openAddTournamentTeamsModal();
     return;
   }
 
-  let html = '';
-  matches.forEach(m => {
-    html += `
-      <div class="history-card" onclick="showMatchScorecard('${m.id}')">
-        <div class="history-card-header">
-          <span class="history-teams">${m.team1.name} vs ${m.team2.name}</span>
-          <span class="history-date">${m.date || ''}</span>
-        </div>
-        <div class="history-scores">
-          <div>${m.team1.name}: ${m.innings[0] ? m.innings[0].runs + '/' + m.innings[0].wickets : '0'} (${m.innings[0] ? m.innings[0].overs : 0} ov)</div>
-          <div>${m.team2.name}: ${m.innings[1] ? m.innings[1].runs + '/' + m.innings[1].wickets : '0'} (${m.innings[1] ? m.innings[1].overs : 0} ov)</div>
-        </div>
-        <div class="history-result">${m.result ? m.result.text : 'Match Completed'}</div>
-      </div>`;
+  if (tnmt.fixtures && tnmt.fixtures.length > 0 && !confirm('Fixtures already exist. Regenerate fixtures? Existing scheduled fixtures will be replaced.')) {
+    return;
+  }
+
+  const fixtures = [];
+  let matchNo = 1;
+  const venue = tnmt.location || 'Main Ground';
+  const today = new Date().toISOString().split('T')[0];
+
+  for (let i = 0; i < teamList.length; i++) {
+    for (let j = i + 1; j < teamList.length; j++) {
+      fixtures.push({
+        id: 'fix_' + Date.now() + '_' + matchNo,
+        matchNo: matchNo,
+        stage: 'Group Stage',
+        team1: teamList[i],
+        team2: teamList[j],
+        date: today,
+        time: '10:00',
+        venue: venue,
+        status: 'Scheduled'
+      });
+      matchNo++;
+    }
+  }
+
+  tnmt.fixtures = fixtures;
+  saveTournamentsLocally(tnmts);
+  showTournamentDetail(currentSelectedTnmtId);
+  setTimeout(() => switchTnmtTab('matches'), 0);
+  toast(`Generated ${fixtures.length} round-robin fixtures!`);
+}
+
+function openScheduleMatchModal() {
+  const tnmt = loadTournaments().find(t => (t._id || t.id) === currentSelectedTnmtId);
+  const modal = $('modal-schedule-tournament-match');
+  const t1Sel = $('schedule-input-team1');
+  const t2Sel = $('schedule-input-team2');
+  if (!tnmt || !modal || !t1Sel || !t2Sel) return;
+
+  const teamList = (tnmt.teams || []).map(t => typeof t === 'string' ? t : t.name).filter(Boolean);
+  if (teamList.length < 2) {
+    toast('Please add at least 2 teams to the tournament before scheduling matches.');
+    switchTnmtTab('teams');
+    openAddTournamentTeamsModal();
+    return;
+  }
+
+  const optionsHtml = teamList.map(name => `<option value="${name}">${name}</option>`).join('');
+  t1Sel.innerHTML = optionsHtml;
+  t2Sel.innerHTML = optionsHtml;
+  if (teamList.length > 1) t2Sel.selectedIndex = 1;
+
+  if ($('schedule-input-venue')) $('schedule-input-venue').value = tnmt.location || '';
+  if ($('schedule-input-date')) $('schedule-input-date').value = new Date().toISOString().split('T')[0];
+  if ($('schedule-input-time')) $('schedule-input-time').value = '10:00';
+
+  modal.style.display = 'flex';
+}
+
+function closeScheduleMatchModal() {
+  const modal = $('modal-schedule-tournament-match');
+  if (modal) modal.style.display = 'none';
+}
+
+function saveScheduledMatch() {
+  const tnmts = loadTournaments();
+  const tnmt = tnmts.find(t => (t._id || t.id) === currentSelectedTnmtId);
+  if (!tnmt) return;
+
+  const t1 = $('schedule-input-team1')?.value;
+  const t2 = $('schedule-input-team2')?.value;
+  const stage = $('schedule-input-stage')?.value || 'Group Stage';
+  const venue = $('schedule-input-venue')?.value.trim() || tnmt.location || 'Main Ground';
+  const date = $('schedule-input-date')?.value || new Date().toISOString().split('T')[0];
+  const time = $('schedule-input-time')?.value || '10:00';
+
+  if (!t1 || !t2 || t1 === t2) {
+    toast('Please select two different teams for the match.');
+    return;
+  }
+
+  tnmt.fixtures = tnmt.fixtures || [];
+  const matchNo = tnmt.fixtures.length + 1;
+  tnmt.fixtures.push({
+    id: 'fix_' + Date.now(),
+    matchNo,
+    stage,
+    team1: t1,
+    team2: t2,
+    date,
+    time,
+    venue,
+    status: 'Scheduled'
   });
-  container.innerHTML = html;
+
+  saveTournamentsLocally(tnmts);
+  closeScheduleMatchModal();
+  showTournamentDetail(currentSelectedTnmtId);
+  setTimeout(() => switchTnmtTab('matches'), 0);
+  toast(`Match #${matchNo} (${t1} vs ${t2}) scheduled!`);
+}
+
+function startScheduledMatch(fixtureId) {
+  const tnmt = loadTournaments().find(t => (t._id || t.id) === currentSelectedTnmtId);
+  if (!tnmt) return;
+
+  const fixture = (tnmt.fixtures || []).find(f => f.id === fixtureId);
+  if (!fixture) {
+    toast('Fixture not found.');
+    return;
+  }
+
+  startTournamentMatchWithTeams(tnmt._id || tnmt.id, fixture.team1, fixture.team2);
+}
+
+function startTournamentMatchWithTeams(tournamentId, team1Name, team2Name) {
+  const tournaments = loadTournaments();
+  const tournament = tournaments.find(item => (item._id || item.id) === tournamentId);
+  if (!tournament) return;
+
+  if (match && match.phase === 'scoring' && !confirm('Start scheduled match? Current match progress will be lost.')) return;
+
+  clearMatchState();
+  match = {
+    team1: { name: team1Name || 'Team A', players: [] },
+    team2: { name: team2Name || 'Team B', players: [] },
+    totalOvers: 20,
+    playersPerTeam: 11,
+    battingFirst: 1,
+    currentInnings: 1,
+    innings: [null, null],
+    result: null,
+    settings: { wideRuns: 1, noBallRuns: 1, freeHit: true }
+  };
+
+  populateTournamentSelect();
+  const tournamentSelect = $('match-tournament-select');
+  if (tournamentSelect) tournamentSelect.value = tournamentId;
+
+  const formatOvers = { T10: 10, T20: 20, ODI: 50 };
+  const scheduledOvers = formatOvers[String(tournament.format || '').toUpperCase()];
+  if (scheduledOvers && $('total-overs')) $('total-overs').value = String(scheduledOvers);
+
+  if ($('team1-name')) $('team1-name').value = team1Name;
+  if ($('team2-name')) $('team2-name').value = team2Name;
+
+  renderPlayerInputs();
+  syncTeamNames();
+  showScreen('screen-setup');
+}
+
+function deleteScheduledMatch(fixtureId) {
+  const tnmts = loadTournaments();
+  const tnmt = tnmts.find(t => (t._id || t.id) === currentSelectedTnmtId);
+  if (!tnmt || !tnmt.fixtures) return;
+
+  if (!confirm('Delete this scheduled fixture?')) return;
+
+  tnmt.fixtures = tnmt.fixtures.filter(f => f.id !== fixtureId);
+  saveTournamentsLocally(tnmts);
+  showTournamentDetail(currentSelectedTnmtId);
+  setTimeout(() => switchTnmtTab('matches'), 0);
+  toast('Fixture deleted');
 }
 
 function startTournamentMatch(tournamentId) {
@@ -4926,6 +5154,7 @@ function startTournamentMatch(tournamentId) {
 
 function renderTnmtTeams(tnmt) {
   const container = $('tnmt-tab-teams');
+  if (!container) return;
   const table = calculatePointsTable(tnmt);
   const assignedTeams = tnmt.teams || [];
   let html = `
@@ -4937,8 +5166,8 @@ function renderTnmtTeams(tnmt) {
       <button class="btn-primary-sm" onclick="openAddTournamentTeamsModal()">+ Add Teams</button>
     </div>`;
 
-  if (table.length === 0) {
-    container.innerHTML = html + `<div class="empty-state-card"><h3>No Teams Added Yet</h3><p>Add teams to start building the points table.</p><button class="btn-primary" onclick="openAddTournamentTeamsModal()">+ Add Teams</button></div>`;
+  if (assignedTeams.length === 0) {
+    container.innerHTML = html + `<div class="empty-state-card"><h3>No Teams Added Yet</h3><p>Add teams to start scheduling matches and building the points table.</p><button class="btn-primary" onclick="openAddTournamentTeamsModal()">+ Add Teams</button></div>`;
     return;
   }
 
@@ -4946,13 +5175,60 @@ function renderTnmtTeams(tnmt) {
   table.forEach(t => {
     html += `
       <div class="team-card">
-        <div class="team-avatar">${t.name.charAt(0).toUpperCase()}</div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5rem;">
+          <div class="team-avatar">${t.name.charAt(0).toUpperCase()}</div>
+          <button class="btn-secondary" style="font-size:0.7rem; padding:0.2rem 0.5rem; color:var(--clr-danger);" onclick="removeTeamFromTournament('${t.name}')">✕ Remove</button>
+        </div>
         <h3>${t.name}</h3>
         <p class="team-meta">Matches: ${t.p} • Wins: ${t.w} • Points: ${t.pts}</p>
       </div>`;
   });
   html += '</div>';
   container.innerHTML = html;
+}
+
+function quickAddTournamentTeam() {
+  const input = $('quick-add-tnmt-team-input');
+  const name = input ? input.value.trim() : '';
+  if (!name) {
+    toast('Please enter a team name');
+    return;
+  }
+  
+  let teams = loadTeams();
+  let existing = teams.find(t => t.name.toLowerCase() === name.toLowerCase());
+  if (!existing) {
+    existing = {
+      id: 'team_' + Date.now(),
+      name: name,
+      location: 'Local Team',
+      players: []
+    };
+    teams.push(existing);
+    saveTeamsLocally(teams);
+  }
+
+  input.value = '';
+  openAddTournamentTeamsModal();
+  toast(`Team "${name}" available!`);
+}
+
+function removeTeamFromTournament(teamName) {
+  const tnmts = loadTournaments();
+  const tnmt = tnmts.find(t => (t._id || t.id) === currentSelectedTnmtId);
+  if (!tnmt) return;
+
+  if (!confirm(`Remove "${teamName}" from this tournament?`)) return;
+
+  tnmt.teams = (tnmt.teams || []).filter(t => {
+    const name = typeof t === 'string' ? t : (t.name || t.id);
+    return name !== teamName;
+  });
+  tnmt.numTeams = tnmt.teams.length;
+  saveTournamentsLocally(tnmts);
+  showTournamentDetail(currentSelectedTnmtId);
+  setTimeout(() => switchTnmtTab('teams'), 0);
+  toast(`Removed "${teamName}" from tournament`);
 }
 
 function openAddTournamentTeamsModal() {
@@ -4964,7 +5240,7 @@ function openAddTournamentTeamsModal() {
   const assignedIds = new Set((tnmt.teams || []).map(team => typeof team === 'string' ? team : (team.id || team._id || team.name)));
   const availableTeams = loadTeams();
   if (availableTeams.length === 0) {
-    options.innerHTML = '<div class="picker-empty"><strong>No teams available</strong><span>Create teams first from My Team.</span></div>';
+    options.innerHTML = '<div class="picker-empty"><strong>No teams available</strong><span>Use quick add above or create teams from My Team.</span></div>';
   } else {
     options.innerHTML = availableTeams.map(team => {
       const id = team.id || team._id || team.name;
@@ -5001,7 +5277,7 @@ function addSelectedTournamentTeams() {
   saveTournamentsLocally(tnmts);
   closeAddTournamentTeamsModal();
   showTournamentDetail(currentSelectedTnmtId);
-  setTimeout(() => switchTnmtTab('points'), 0);
+  setTimeout(() => switchTnmtTab('teams'), 0);
   toast(`${tnmt.teams.length} team${tnmt.teams.length === 1 ? '' : 's'} added to tournament`);
 }
 
