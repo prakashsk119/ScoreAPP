@@ -64,11 +64,29 @@ body::before {
   z-index: 1;
   animation: fadeIn .35s ease;
   background: #f4f6f9;
+  overflow: hidden;
 }
 
 .screen.active {
   display: flex;
   overflow: hidden;
+}
+
+.screen-content {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 1rem 1rem 110px 1rem !important;
+  box-sizing: border-box;
+}
+
+.screen-content::-webkit-scrollbar {
+  width: 5px;
+}
+
+.screen-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
 }
 
 @keyframes fadeIn {
@@ -5538,10 +5556,10 @@ body::before {
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.qualify-row { background: rgba(0, 230, 118, 0.05); }
-.pos-col { font-weight: 900; color: var(--clr-green); width: 30px; }
-.pts-col { font-weight: 900; color: #ffffff; }
-.nrr-col { font-weight: 700; color: #38bdf8; }
+.qualify-row { background: #f0fdf4; }
+.pos-col { font-weight: 900; color: #059669; width: 30px; }
+.pts-col { font-weight: 900; color: #047857; }
+.nrr-col { font-weight: 700; color: #0284c7; }
 
 /* Pre-Match Win Probability Card */
 .match-prediction-box {

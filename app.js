@@ -1186,7 +1186,13 @@ function decideResult() {
     isTie = true;
   }
 
-  match.result = resultText;
+  const winningTeamName = inn2.runs > inn1.runs ? inn2.battingTeamName : (inn1.runs > inn2.runs ? inn1.battingTeamName : null);
+
+  match.result = {
+    text: resultText,
+    winner: winningTeamName,
+    isTie: isTie
+  };
   match.phase = 'result';
 
   // Trophy emoji — tie gets handshake
@@ -4873,24 +4879,31 @@ function calculatePointsTable(tnmt) {
 
   (tnmt.teams || []).forEach(t => ensureTeam(typeof t === 'string' ? t : t.name));
 
+  const getDecimalOvers = (balls) => {
+    if (!balls) return 0;
+    const fullOvers = Math.floor(balls / 6);
+    const remBalls = balls % 6;
+    return fullOvers + (remBalls / 6);
+  };
+
   matches.forEach(m => {
+    if (!m) return;
     const t1 = m.team1 ? m.team1.name : 'Team 1';
     const t2 = m.team2 ? m.team2.name : 'Team 2';
     ensureTeam(t1);
     ensureTeam(t2);
 
-    if (m.result) {
+    const inn1 = m.innings ? m.innings[0] : null;
+    const inn2 = m.innings ? m.innings[1] : null;
+
+    if (inn1 || inn2 || m.result) {
       teamStats[t1].p++;
       teamStats[t2].p++;
 
-      const inn1 = m.innings ? m.innings[0] : null;
-      const inn2 = m.innings ? m.innings[1] : null;
-
-      // Extract runs & overs
-      const t1Runs = inn1 ? inn1.runs : 0;
-      const t1Overs = inn1 ? inn1.overs : 0;
-      const t2Runs = inn2 ? inn2.runs : 0;
-      const t2Overs = inn2 ? inn2.overs : 0;
+      const t1Runs = inn1 ? (inn1.runs || 0) : 0;
+      const t1Overs = getDecimalOvers(inn1 ? (inn1.balls || 0) : 0);
+      const t2Runs = inn2 ? (inn2.runs || 0) : 0;
+      const t2Overs = getDecimalOvers(inn2 ? (inn2.balls || 0) : 0);
 
       teamStats[t1].runsScored += t1Runs;
       teamStats[t1].oversFaced += t1Overs;
@@ -4902,11 +4915,43 @@ function calculatePointsTable(tnmt) {
       teamStats[t2].runsConceded += t1Runs;
       teamStats[t2].oversBowled += t1Overs;
 
-      if (m.result.winner === t1) {
+      // Determine Winner
+      let winnerName = null;
+      let isTie = false;
+
+      if (typeof m.result === 'object' && m.result) {
+        if (m.result.winner) winnerName = m.result.winner;
+        if (m.result.isTie) isTie = true;
+      } else if (typeof m.result === 'string') {
+        const resLower = m.result.toLowerCase();
+        if (resLower.includes('tied') || resLower.includes('draw')) {
+          isTie = true;
+        } else if (t1 && resLower.includes(t1.toLowerCase()) && resLower.includes('won')) {
+          winnerName = t1;
+        } else if (t2 && resLower.includes(t2.toLowerCase()) && resLower.includes('won')) {
+          winnerName = t2;
+        }
+      }
+
+      // Fallback directly to innings runs comparison
+      if (!winnerName && !isTie && inn1 && inn2) {
+        if (inn1.runs > inn2.runs) {
+          winnerName = inn1.battingTeamName || t1;
+        } else if (inn2.runs > inn1.runs) {
+          winnerName = inn2.battingTeamName || t2;
+        } else {
+          isTie = true;
+        }
+      }
+
+      const isT1Winner = winnerName && (winnerName.toLowerCase() === t1.toLowerCase());
+      const isT2Winner = winnerName && (winnerName.toLowerCase() === t2.toLowerCase());
+
+      if (isT1Winner) {
         teamStats[t1].w++;
         teamStats[t1].pts += 2;
         teamStats[t2].l++;
-      } else if (m.result.winner === t2) {
+      } else if (isT2Winner) {
         teamStats[t2].w++;
         teamStats[t2].pts += 2;
         teamStats[t1].l++;
