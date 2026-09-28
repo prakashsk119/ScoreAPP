@@ -404,9 +404,31 @@ function startMatch() {
   const selectedTnmtId = $('match-tournament-select')?.value || '';
   if (selectedTnmtId) {
     const allTnmts = loadTournaments();
-    const tnmt = allTnmts.find(t => (t._id === selectedTnmtId || t.id === selectedTnmtId));
+    const tnmt = allTnmts.find(t => String(t._id || t.id) === String(selectedTnmtId));
     match.tournamentId = selectedTnmtId;
     match.tournamentName = tnmt ? tnmt.name : '';
+
+    if (tnmt) {
+      tnmt.teams = tnmt.teams || [];
+      const teamNames = tnmt.teams.map(t => (typeof t === 'string' ? t : t.name).toLowerCase());
+      let updated = false;
+
+      if (t1Name && !teamNames.includes(t1Name.toLowerCase())) {
+        tnmt.teams.push({ id: 'team_' + Date.now() + '_1', name: t1Name });
+        teamNames.push(t1Name.toLowerCase());
+        updated = true;
+      }
+      if (t2Name && !teamNames.includes(t2Name.toLowerCase())) {
+        tnmt.teams.push({ id: 'team_' + Date.now() + '_2', name: t2Name });
+        teamNames.push(t2Name.toLowerCase());
+        updated = true;
+      }
+
+      if (updated) {
+        tnmt.numTeams = tnmt.teams.length;
+        saveTournamentsLocally(allTnmts);
+      }
+    }
   } else {
     match.tournamentId = null;
     match.tournamentName = null;
@@ -1895,7 +1917,15 @@ async function fetchGlobalHistory() {
 }
 
 function loadHistory() {
-  return globalMatchHistory;
+  const localHist = JSON.parse(localStorage.getItem('cricscore_local_history') || '[]');
+  const offlineQueue = getOfflineQueue();
+  const map = new Map();
+
+  (globalMatchHistory || []).forEach(m => { if (m && (m.id || m._id)) map.set(String(m.id || m._id), m); });
+  localHist.forEach(m => { if (m && (m.id || m._id)) map.set(String(m.id || m._id), m); });
+  offlineQueue.forEach(m => { if (m && (m.id || m._id)) map.set(String(m.id || m._id), m); });
+
+  return Array.from(map.values()).sort((a, b) => new Date(b.date || b.id) - new Date(a.date || a.id));
 }
 
 async function saveMatchToHistory() {
@@ -1916,11 +1946,61 @@ async function saveMatchToHistory() {
     venue: match.venue || 'Local Ground',
     playersPerTeam: match.playersPerTeam,
     result: match.result,
+    tournamentId: match.tournamentId || null,
+    tournamentName: match.tournamentName || null,
     innings: [
       snapshotInnings(inn1),
       snapshotInnings(inn2)
     ]
   };
+
+  // Save entry to local history store for instant persistence
+  try {
+    const localHist = JSON.parse(localStorage.getItem('cricscore_local_history') || '[]');
+    localHist.unshift(entry);
+    localStorage.setItem('cricscore_local_history', JSON.stringify(localHist.slice(0, 100)));
+  } catch (e) {}
+
+  // Auto-sync team & fixture status with tournament
+  if (match.tournamentId || match.tournamentName) {
+    const allTnmts = loadTournaments();
+    const tnmt = allTnmts.find(t => 
+      (match.tournamentId && String(t._id || t.id) === String(match.tournamentId)) || 
+      (match.tournamentName && t.name.toLowerCase() === match.tournamentName.toLowerCase())
+    );
+
+    if (tnmt) {
+      tnmt.teams = tnmt.teams || [];
+      const teamNames = tnmt.teams.map(t => (typeof t === 'string' ? t : t.name).toLowerCase());
+      let updated = false;
+
+      if (match.team1?.name && !teamNames.includes(match.team1.name.toLowerCase())) {
+        tnmt.teams.push({ id: 'team_' + Date.now() + '_1', name: match.team1.name });
+        teamNames.push(match.team1.name.toLowerCase());
+        updated = true;
+      }
+      if (match.team2?.name && !teamNames.includes(match.team2.name.toLowerCase())) {
+        tnmt.teams.push({ id: 'team_' + Date.now() + '_2', name: match.team2.name });
+        teamNames.push(match.team2.name.toLowerCase());
+        updated = true;
+      }
+
+      if (tnmt.fixtures && tnmt.fixtures.length > 0) {
+        const fix = tnmt.fixtures.find(f => f.status === 'Scheduled' && (
+          (f.team1.toLowerCase() === match.team1.name.toLowerCase() && f.team2.toLowerCase() === match.team2.name.toLowerCase()) ||
+          (f.team1.toLowerCase() === match.team2.name.toLowerCase() && f.team2.toLowerCase() === match.team1.name.toLowerCase())
+        ));
+        if (fix) {
+          fix.status = 'Completed';
+          fix.result = match.result ? match.result.text : 'Completed';
+          updated = true;
+        }
+      }
+
+      tnmt.numTeams = tnmt.teams.length;
+      saveTournamentsLocally(allTnmts);
+    }
+  }
 
   if (!navigator.onLine) {
     console.log("[OFFLINE] Device is offline. Queueing match locally.");
@@ -4551,7 +4631,7 @@ function filterTournaments(statusFilter, btn) {
     const id = t._id || t.id;
     const status = t.status || 'Upcoming';
     const statusClass = status === 'Ongoing' ? 'status-ongoing' : (status === 'Completed' ? 'status-completed' : 'status-upcoming');
-    const matchesCount = (loadHistory() || []).filter(m => (m.tournamentId === id || m.tournamentName === t.name)).length;
+    const matchesCount = getTournamentMatches(t).length;
 
     html += `
       <div class="tnmt-card" onclick="showTournamentDetail('${id}')">
@@ -4632,6 +4712,81 @@ async function saveTournament() {
 }
 
 // ── TOURNAMENT DETAIL & POINTS TABLE ENGINE ──
+function repairTournamentData() {
+  const tnmts = loadTournaments();
+  const history = loadHistory();
+  if (!tnmts || !tnmts.length || !history || !history.length) return;
+
+  let modified = false;
+
+  tnmts.forEach(tnmt => {
+    tnmt.teams = tnmt.teams || [];
+    const tnmtId = String(tnmt._id || tnmt.id || '');
+    const tnmtName = (tnmt.name || '').toLowerCase().trim();
+    const teamNames = tnmt.teams.map(t => (typeof t === 'string' ? t : (t.name || '')).toLowerCase().trim()).filter(Boolean);
+
+    history.forEach(m => {
+      if (!m || !m.team1 || !m.team2) return;
+      const t1 = (m.team1.name || '').trim();
+      const t2 = (m.team2.name || '').trim();
+      const mTnmtId = String(m.tournamentId || '');
+      const mTnmtName = (m.tournamentName || '').toLowerCase().trim();
+
+      const isDirectMatch = (mTnmtId && mTnmtId === tnmtId) || (mTnmtName && mTnmtName === tnmtName);
+      const isTeamMatch = (t1 && t2 && teamNames.length >= 2 && teamNames.includes(t1.toLowerCase()) && teamNames.includes(t2.toLowerCase()));
+
+      if (isDirectMatch || isTeamMatch) {
+        if (!m.tournamentId) m.tournamentId = tnmt._id || tnmt.id;
+        if (!m.tournamentName) m.tournamentName = tnmt.name;
+
+        if (t1 && !teamNames.includes(t1.toLowerCase())) {
+          tnmt.teams.push({ id: 'team_' + Date.now() + '_1', name: t1 });
+          teamNames.push(t1.toLowerCase());
+          modified = true;
+        }
+        if (t2 && !teamNames.includes(t2.toLowerCase())) {
+          tnmt.teams.push({ id: 'team_' + Date.now() + '_2', name: t2 });
+          teamNames.push(t2.toLowerCase());
+          modified = true;
+        }
+      }
+    });
+
+    tnmt.numTeams = tnmt.teams.length;
+  });
+
+  if (modified) {
+    saveTournamentsLocally(tnmts);
+  }
+}
+
+function getTournamentMatches(tnmt) {
+  if (!tnmt) return [];
+  const tnmtId = String(tnmt._id || tnmt.id || '');
+  const tnmtName = (tnmt.name || '').toLowerCase().trim();
+
+  repairTournamentData();
+
+  const history = loadHistory();
+  return history.filter(m => {
+    if (!m) return false;
+    const mTnmtId = String(m.tournamentId || '');
+    const mTnmtName = (m.tournamentName || '').toLowerCase().trim();
+
+    if (tnmtId && mTnmtId && mTnmtId === tnmtId) return true;
+    if (tnmtName && mTnmtName && mTnmtName === tnmtName) return true;
+
+    if (tnmt.teams && tnmt.teams.length >= 2 && m.team1?.name && m.team2?.name) {
+      const tnmtTeamNames = tnmt.teams.map(t => (typeof t === 'string' ? t : (t.name || '')).toLowerCase().trim());
+      const t1 = m.team1.name.toLowerCase().trim();
+      const t2 = m.team2.name.toLowerCase().trim();
+      if (tnmtTeamNames.includes(t1) && tnmtTeamNames.includes(t2)) return true;
+    }
+
+    return false;
+  });
+}
+
 function showTournamentDetail(tnmtId) {
   currentSelectedTnmtId = tnmtId;
   const tnmts = loadTournaments();
@@ -4645,7 +4800,7 @@ function showTournamentDetail(tnmtId) {
   $('tnmt-detail-title').textContent = tnmt.name;
 
   // Hero Card
-  const matches = (loadHistory() || []).filter(m => (m.tournamentId === tnmtId || m.tournamentName === tnmt.name));
+  const matches = getTournamentMatches(tnmt);
   const heroCard = $('tnmt-hero-card');
   if (heroCard) {
     heroCard.innerHTML = `
@@ -4699,8 +4854,7 @@ function switchTnmtTab(tabName, btn) {
 
 // Points Table Calculator (Actual Scorecard Calculations)
 function calculatePointsTable(tnmt) {
-  const tnmtId = tnmt._id || tnmt.id;
-  const matches = (loadHistory() || []).filter(m => (m.tournamentId === tnmtId || m.tournamentName === tnmt.name));
+  const matches = getTournamentMatches(tnmt);
   
   // Collect all teams
   const teamStats = {};
@@ -4781,7 +4935,7 @@ function calculatePointsTable(tnmt) {
 function renderTnmtOverview(tnmt) {
   const container = $('tnmt-tab-overview');
   const table = calculatePointsTable(tnmt);
-  const matches = (loadHistory() || []).filter(m => (m.tournamentId === (tnmt._id || tnmt.id) || m.tournamentName === tnmt.name));
+  const matches = getTournamentMatches(tnmt);
 
   let html = `
     <div class="tnmt-overview-grid">
@@ -4858,7 +5012,7 @@ function renderTnmtMatches(tnmt) {
   const container = $('tnmt-tab-matches');
   if (!container) return;
 
-  const matches = (loadHistory() || []).filter(m => (m.tournamentId === (tnmt._id || tnmt.id) || m.tournamentName === tnmt.name));
+  const matches = getTournamentMatches(tnmt);
   const fixtures = tnmt.fixtures || [];
 
   let html = `
@@ -5288,7 +5442,7 @@ function addSelectedTournamentTeams() {
 
 function renderTnmtLeaders(tnmt) {
   const container = $('tnmt-tab-leaders');
-  const matches = (loadHistory() || []).filter(m => (m.tournamentId === (tnmt._id || tnmt.id) || m.tournamentName === tnmt.name));
+  const matches = getTournamentMatches(tnmt);
   
   const batStats = {};
   const bowlStats = {};
@@ -5296,7 +5450,7 @@ function renderTnmtLeaders(tnmt) {
   matches.forEach(m => {
     (m.innings || []).forEach(inn => {
       if (!inn) return;
-      Object.entries(inn.batsmen || {}).forEach(([name, b]) => {
+      Object.entries(inn.batters || inn.batsmen || {}).forEach(([name, b]) => {
         if (!batStats[name]) batStats[name] = { runs: 0, balls: 0, fours: 0, sixes: 0 };
         batStats[name].runs += b.runs || 0;
         batStats[name].balls += b.balls || 0;
@@ -5330,7 +5484,7 @@ function renderTnmtLeaders(tnmt) {
 
 function renderTnmtInsights(tnmt) {
   const container = $('tnmt-tab-insights');
-  const matches = (loadHistory() || []).filter(m => (m.tournamentId === (tnmt._id || tnmt.id) || m.tournamentName === tnmt.name));
+  const matches = getTournamentMatches(tnmt);
   const table = calculatePointsTable(tnmt);
 
   let insights = [];
