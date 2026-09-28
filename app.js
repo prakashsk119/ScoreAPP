@@ -4559,7 +4559,8 @@ let currentSelectedTeamId = null;
 // ── TOURNAMENT LOCAL STORAGE & SYNC ──
 function loadTournaments() {
   try {
-    return JSON.parse(localStorage.getItem('cricscore_tournaments') || '[]');
+    const raw = JSON.parse(localStorage.getItem('cricscore_tournaments') || '[]');
+    return repairTournamentData(raw);
   } catch (e) {
     return [];
   }
@@ -4569,13 +4570,69 @@ function saveTournamentsLocally(tnmts) {
   localStorage.setItem('cricscore_tournaments', JSON.stringify(tnmts));
 }
 
+function mergeTournaments(serverTnmts, localTnmts) {
+  const map = new Map();
+
+  (localTnmts || []).forEach(t => {
+    if (t && (t.id || t._id)) {
+      map.set(String(t.id || t._id), t);
+    }
+  });
+
+  (serverTnmts || []).forEach(st => {
+    if (!st || !(st.id || st._id)) return;
+    const key = String(st.id || st._id);
+    const lt = map.get(key);
+
+    if (lt) {
+      const localTeams = lt.teams || [];
+      const serverTeams = st.teams || [];
+      const teamMap = new Map();
+
+      serverTeams.forEach(tm => {
+        const name = typeof tm === 'string' ? tm : (tm.name || '');
+        if (name) teamMap.set(name.toLowerCase(), tm);
+      });
+      localTeams.forEach(tm => {
+        const name = typeof tm === 'string' ? tm : (tm.name || '');
+        if (name) teamMap.set(name.toLowerCase(), tm);
+      });
+
+      const localFix = lt.fixtures || [];
+      const serverFix = st.fixtures || [];
+      const fixMap = new Map();
+
+      serverFix.forEach(f => { if (f && f.id) fixMap.set(f.id, f); });
+      localFix.forEach(f => { if (f && f.id) fixMap.set(f.id, f); });
+
+      const merged = {
+        ...st,
+        ...lt,
+        teams: Array.from(teamMap.values()),
+        numTeams: teamMap.size,
+        fixtures: Array.from(fixMap.values())
+      };
+      map.set(key, merged);
+    } else {
+      map.set(key, st);
+    }
+  });
+
+  return Array.from(map.values());
+}
+
 async function fetchTournaments() {
   try {
     const res = await fetch(`${BACKEND_URL}/api/tournaments`);
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data)) {
-        saveTournamentsLocally(data);
+        const localTnmts = (function() {
+          try { return JSON.parse(localStorage.getItem('cricscore_tournaments') || '[]'); } catch(e) { return []; }
+        })();
+        const merged = mergeTournaments(data, localTnmts);
+        const repaired = repairTournamentData(merged);
+        saveTournamentsLocally(repaired);
         populateTournamentSelect();
       }
     }
@@ -4718,10 +4775,12 @@ async function saveTournament() {
 }
 
 // ── TOURNAMENT DETAIL & POINTS TABLE ENGINE ──
-function repairTournamentData() {
-  const tnmts = loadTournaments();
+function repairTournamentData(tnmtsInput) {
+  const tnmts = tnmtsInput || (function() {
+    try { return JSON.parse(localStorage.getItem('cricscore_tournaments') || '[]'); } catch(e) { return []; }
+  })();
   const history = loadHistory();
-  if (!tnmts || !tnmts.length || !history || !history.length) return;
+  if (!tnmts || !tnmts.length || !history || !history.length) return tnmts;
 
   let modified = false;
 
@@ -4761,9 +4820,10 @@ function repairTournamentData() {
     tnmt.numTeams = tnmt.teams.length;
   });
 
-  if (modified) {
+  if (modified && !tnmtsInput) {
     saveTournamentsLocally(tnmts);
   }
+  return tnmts;
 }
 
 function getTournamentMatches(tnmt) {
