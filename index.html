@@ -1168,8 +1168,9 @@
           <select id="select-new-batter" class="form-input"></select>
         </div>
       </div>
-  </div>
-
+      <div class="modal-footer">
+        <button class="btn-primary" onclick="confirmNewBatter()">Done</button>
+      </div>
     </div>
   </div>
 
@@ -1491,26 +1492,27 @@
     </div>
   </div>
 
+  <!-- ===================== MODAL: TEAM INVITATIONS ===================== -->
+  <div id="modal-team-invitations" class="modal-overlay" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3>Team Invitations</h3>
+          <p class="modal-subtitle">Accept an invitation to join a team.</p>
+        </div>
+        <button class="modal-close-btn" onclick="closeTeamInvitationsModal()">✕</button>
+      </div>
+      <div class="modal-body" id="team-invitations-list"></div>
+      <div class="modal-footer"><button class="btn-secondary" onclick="closeTeamInvitationsModal()">Close</button></div>
+    </div>
+  </div>
+
   <!-- ===================== MODAL: ADD PLAYER ===================== -->
   <div id="modal-add-player" class="modal-overlay" style="display:none;">
     <div class="modal-card add-player-modal">
       <div class="modal-header">
         <div>
           <h3>Add Player to Team</h3>
-
-      <!-- ===================== MODAL: TEAM INVITATIONS ===================== -->
-      <div id="modal-team-invitations" class="modal-overlay" style="display:none;">
-        <div class="modal-card">
-          <div class="modal-header">
-            <div>
-              <h3>Team Invitations</h3>
-              <p class="modal-subtitle">Accept an invitation to join a team.</p>
-            </div>
-            <button class="modal-close-btn" onclick="closeTeamInvitationsModal()">✕</button>
-          </div>
-          <div class="modal-body" id="team-invitations-list"></div>
-        </div>
-      </div>
           <p class="modal-subtitle">Search an existing CricScore user by phone or email.</p>
         </div>
         <button class="modal-close-btn" onclick="closeAddPlayerModal()">✕</button>
