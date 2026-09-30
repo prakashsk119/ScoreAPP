@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    CricScore – Ball-by-Ball Cricket Scoring Application
    ============================================================ */
 
@@ -31,7 +31,7 @@ let match = {
   currentInnings: 1,
   innings: [null, null],
   result: null,
-  settings: { wideRuns: 1, noBallRuns: 1, freeHit: true },
+  settings: { wideRuns: 1, noBallRuns: 1, freeHit: true, matchEnv: 'ground' },
   venue: 'Local Ground',
   phase: 'setup'   // setup | innings-select | scoring | bowler-select | result
 };
@@ -288,31 +288,7 @@ async function updateDashboardStats() {
   $('dash-total-wkts').innerText = totalWkts;
 }
 
-async function refreshUserProfile(phone) {
-  if (!phone) return;
-  try {
-    const response = await fetch(`${BACKEND_URL}/api/profile?phone=${encodeURIComponent(phone)}`);
-    if (response.ok) {
-      const data = await response.json();
-      if (data.success && data.profile) {
-        const storedStr = localStorage.getItem('cricscore_user');
-        if (storedStr) {
-          const storedUser = JSON.parse(storedStr);
-          let avatarUrl = data.profile.avatar;
-          if (avatarUrl && avatarUrl.startsWith('/')) {
-            avatarUrl = BACKEND_URL + avatarUrl;
-          }
-          storedUser.profile = { ...storedUser.profile, ...data.profile, avatar: avatarUrl || storedUser.profile?.avatar };
-          localStorage.setItem('cricscore_user', JSON.stringify(storedUser));
-          if (typeof updateSidebarUI === 'function') updateSidebarUI(storedUser);
-          if (typeof updateAvatarUI === 'function') updateAvatarUI(storedUser.profile?.avatar);
-        }
-      }
-    }
-  } catch (e) {
-    console.warn("Profile sync error:", e);
-  }
-}
+async function refreshUserProfile(...args) { await window.loadFeatures(); return _refreshUserProfile(...args); }
 
 function initAuth() {
   console.log("Checking for persistent login...");
@@ -485,10 +461,11 @@ function startMatch() {
     match.tournamentName = null;
   }
   match.settings = {
-    wideRuns: parseInt($('setting-wide-runs').value) || 1,
-    noBallRuns: parseInt($('setting-nb-runs').value) || 1,
-    freeHit: $('setting-free-hit').checked
-  };
+      wideRuns: parseInt($('setting-wide-runs').value) || 1,
+      noBallRuns: parseInt($('setting-nb-runs').value) || 1,
+      freeHit: $('setting-free-hit').checked,
+      matchEnv: $('setting-match-env') ? $('setting-match-env').value : 'ground'
+    };
   match.battingFirst = battingFirst;
   match.currentInnings = 1;
   match.result = null;
@@ -598,11 +575,11 @@ function addBall(runs) {
   inn.batters[inn.strikerName].balls += 1;
   if (runs === 4) {
     inn.batters[inn.strikerName].fours += 1;
-    playVoiceCommentary('4');
+    playVoiceCommentary('4'); showBoundaryAnimation(4);
   }
   if (runs === 6) {
     inn.batters[inn.strikerName].sixes += 1;
-    playVoiceCommentary('6');
+    playVoiceCommentary('6'); showBoundaryAnimation(6);
   }
 
   inn.bowlers[inn.currentBowlerName].runs += runs;
@@ -620,11 +597,12 @@ function addBall(runs) {
 
   // Show last ball indicator
   showLastBall(ball);
-
   checkOverComplete(inn);
   checkInningsEnd(inn);
   renderScoring();
   syncState();
+  const wagonDelay = (runs === 4 || runs === 6) ? 1400 : 10;
+  if (runs > 0 && match.settings?.matchEnv !== 'turf') setTimeout(() => showWagonWheelModal(), wagonDelay);
 }
 
 function addExtra(type) {
@@ -1327,10 +1305,7 @@ function showResultScorecard() {
 }
 
 // Navigate from result screen → history (records this match)
-function showHistoryFromResult() {
-  renderHistoryScreen();
-  showScreen('screen-history');
-}
+async function showHistoryFromResult(...args) { await window.loadFeatures(); return _showHistoryFromResult(...args); }
 
 function newMatch() {
   if (match && match.phase === 'scoring') {
@@ -1961,17 +1936,7 @@ function renderPlayerStatsBody() {
 // ── Global Match History State ──
 let globalMatchHistory = [];
 
-async function fetchGlobalHistory() {
-  try {
-    const res = await fetch(`${BACKEND_URL}/api/matches`);
-    if (res.ok) {
-      const data = await res.json();
-      globalMatchHistory = data.reverse(); // Newest first
-    }
-  } catch(e) {
-    console.error("Failed to fetch global history:", e);
-  }
-}
+async function fetchGlobalHistory(...args) { await window.loadFeatures(); return _fetchGlobalHistory(...args); }
 
 function loadHistory() {
   const localHist = JSON.parse(localStorage.getItem('cricscore_local_history') || '[]');
@@ -2104,16 +2069,7 @@ function snapshotInnings(inn) {
 }
 
 // ── Navigation ──
-async function showHistory() {
-  if (!isLoggedIn()) {
-    toast("Please login to view match history");
-    showScreen('screen-login');
-    return;
-  }
-  await fetchGlobalHistory();
-  renderHistoryScreen();
-  showScreen('screen-history');
-}
+async function showHistory(...args) { await window.loadFeatures(); return _showHistory(...args); }
 
 function hideHistory() {
   showScreen('screen-setup');
@@ -2127,78 +2083,10 @@ function clearHistory() {
 }
 
 // ── Main render ──
-function renderHistoryScreen() {
-  const history = loadHistory();
-  const body = $('history-body');
-
-  if (history.length === 0) {
-    body.innerHTML = `
-      <div class="hist-empty">
-        <div class="hist-empty-icon">🏏</div>
-        <div class="hist-empty-title">No matches yet</div>
-        <div class="hist-empty-sub">Completed matches will appear here</div>
-      </div>`;
-    return;
-  }
-
-  let html = '<div class="hist-list">';
-  history.forEach((entry, idx) => {
-    const inn1 = entry.innings[0];
-    const inn2 = entry.innings[1];
-    const dateStr = formatHistoryDate(entry.date);
-
-    // Determine winner highlight
-    const inn1won = inn1.battingTeamName === entry.result.split(' won')[0];
-
-    html += `
-    <div class="hist-card" id="hist-card-${idx}">
-      <!-- Summary row (always visible) -->
-      <div class="hist-summary" onclick="toggleHistDetail(${idx})">
-        <div class="hist-meta">
-          <span class="hist-date">${dateStr}</span>
-          <span class="hist-format">${entry.venue ? '📍 ' + entry.venue + ' · ' : ''}${entry.overs} Ov · ${entry.playersPerTeam}a-side</span>
-        </div>
-
-        <div class="hist-teams">
-          <div class="hist-team-row ${inn1won ? 'hist-winner' : ''}">
-            <span class="hist-team-name">${inn1.battingTeamName}</span>
-            <span class="hist-team-score">${inn1.runs}/${inn1.wickets} <small>(${oversString(inn1.balls)})</small></span>
-          </div>
-          <div class="hist-vs">vs</div>
-          <div class="hist-team-row ${!inn1won && entry.result !== 'Match Tied!' ? 'hist-winner' : ''}">
-            <span class="hist-team-name">${inn2.battingTeamName}</span>
-            <span class="hist-team-score">${inn2.runs}/${inn2.wickets} <small>(${oversString(inn2.balls)})</small></span>
-          </div>
-        </div>
-
-        <div class="hist-result-banner ${entry.result === 'Match Tied!' ? 'hist-tie' : ''}">
-          ${entry.result}
-        </div>
-
-        <div class="hist-expand-icon" id="hist-icon-${idx}">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-      </div>
-
-      <!-- Expandable full scorecard -->
-      <div class="hist-detail" id="hist-detail-${idx}" style="display:none;">
-        ${renderHistoryScorecard(entry)}
-      </div>
-    </div>`;
-  });
-
-  html += '</div>';
-  body.innerHTML = html;
-}
+async function renderHistoryScreen(...args) { await window.loadFeatures(); return _renderHistoryScreen(...args); }
 
 // Toggle expand/collapse of a match detail
-function toggleHistDetail(idx) {
-  const detail = $(`hist-detail-${idx}`);
-  const icon   = $(`hist-icon-${idx}`);
-  const isOpen = detail.style.display !== 'none';
-  detail.style.display = isOpen ? 'none' : 'block';
-  icon.style.transform  = isOpen ? '' : 'rotate(180deg)';
-}
+async function toggleHistDetail(...args) { await window.loadFeatures(); return _toggleHistDetail(...args); }
 
 // ── Build a full scorecard HTML for one history entry ──
 function renderHistoryScorecard(entry) {
@@ -2274,14 +2162,14 @@ function formatHistoryDate(iso) {
     const diffHrs  = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 2)  return 'Just now';
+    if (diffMins < 2)  return "Just now";
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHrs < 24)  return `${diffHrs}h ago`;
-    if (diffDays === 1) return 'Yesterday';
+    if (diffDays === 1) return "Yesterday";
     if (diffDays < 7)  return `${diffDays} days ago`;
 
-    return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-  } catch { return '—'; }
+    return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  } catch { return "—"; }
 }
 
 // ===================================================
@@ -2291,35 +2179,7 @@ function formatHistoryDate(iso) {
 let careerTab = 'batting';
 let _isPersonalStats = false; // 'batting' or 'bowling'
 
-async function showCareerStats(isPersonal = false) {
-  try {
-    await fetchGlobalHistory();
-    console.log("showCareerStats called with isPersonal:", isPersonal);
-    _isPersonalStats = isPersonal;
-    careerTab = 'batting';
-    
-    const searchInput = $('career-search-input');
-    if (searchInput) searchInput.value = '';
-    
-    const searchContainer = $('career-search-container');
-    if (searchContainer) searchContainer.style.display = isPersonal ? 'none' : 'block';
-
-    const header = document.querySelector('#screen-career-stats .header-center');
-    if (header) header.textContent = isPersonal ? 'My Career Stats' : 'All Players Stats';
-
-    document.querySelectorAll('#screen-career-stats .ps-tab').forEach(t => t.classList.remove('active'));
-    const tabBtn = $('tab-career-batting');
-    if (tabBtn) tabBtn.classList.add('active');
-
-    console.log("Calling renderCareerStatsBody...");
-    renderCareerStatsBody();
-    console.log("Calling showScreen...");
-    showScreen('screen-career-stats');
-  } catch (e) {
-    console.error("Error in showCareerStats:", e);
-    alert("Error loading stats: " + e.message);
-  }
-}
+async function showCareerStats(...args) { await window.loadFeatures(); return _showCareerStats(...args); }
 
 function hideCareerStats() {
   showScreen('screen-setup');
@@ -2446,13 +2306,30 @@ function aggregateCareerStats() {
             else if (ball.wicketType === 'Run Out') p.field.runOuts++;
             else if (ball.wicketType === 'Stumped') p.field.stumpings++;
             p.field.total++;
-          }
-        });
-      }
+            }
+            if (ball.wagonAngle !== undefined && ball.runs > 0) {
+              const sName = (ball.striker || '').trim();
+              if (sName) {
+                const norm = sName.toLowerCase();
+                if (!players[norm]) players[norm] = initCareerPlayer(sName);
+                players[norm].bat.wagon.push({ angle: ball.wagonAngle, runs: ball.runs });
+              }
+            }
+          });
+        }
+      });
     });
-  });
 
-  return Object.values(players);
+  const result = Object.values(players);
+  result.forEach(p => {
+    const dismissals = p.bat.innings - p.bat.notOuts;
+    p.bat.avg = dismissals > 0 ? (p.bat.runs / dismissals).toFixed(1) : (p.bat.runs > 0 ? "—" : "0.0");
+    p.bat.sr = p.bat.balls > 0 ? ((p.bat.runs / p.bat.balls) * 100).toFixed(1) : "0.0";
+    
+    p.bowl.econ = p.bowl.balls > 0 ? (p.bowl.runs / (p.bowl.balls / 6)).toFixed(2) : "0.00";
+    p.bowl.avg = p.bowl.wickets > 0 ? (p.bowl.runs / p.bowl.wickets).toFixed(1) : "—";
+  });
+  return result;
 }
 
 function initCareerPlayer(name) {
@@ -2460,8 +2337,8 @@ function initCareerPlayer(name) {
     name: name,
     matches: 0,
     teams: {}, // map of teamName -> { matches, runs, balls, wickets, fours, sixes, hs }
-    bat: { innings: 0, notOuts: 0, runs: 0, balls: 0, fours: 0, sixes: 0, highScore: 0, hsNotOut: false, fifties: 0, hundreds: 0 },
-    bowl: { innings: 0, balls: 0, runs: 0, wickets: 0, maidens: 0, bestWickets: 0, bestRuns: Infinity },
+    bat: { innings: 0, notOuts: 0, runs: 0, balls: 0, fours: 0, sixes: 0, highScore: 0, hsNotOut: false, fifties: 0, hundreds: 0, wagon: [] },
+    bowl: { innings: 0, balls: 0, runs: 0, wickets: 0, maidens: 0, bestWickets: 0, bestRuns: Infinity, threeWickets: 0, fiveWickets: 0 },
     field: { catches: 0, runOuts: 0, stumpings: 0, total: 0 }
   };
 }
@@ -2557,6 +2434,12 @@ function renderCareerStatsBody() {
             <div class="ps-stat-box"><div class="ps-stat-lbl">Avg</div><div class="ps-stat-val">${avg}</div></div>
             <div class="ps-stat-box"><div class="ps-stat-lbl">SR</div><div class="ps-stat-val">${sr}</div></div>
           </div>
+          <div class="ps-milestones">
+            ${p.bat.fifties > 0 ? `<div class="badge badge-50">🌟 50s: ${p.bat.fifties}</div>` : ""}
+            ${p.bat.hundreds > 0 ? `<div class="badge badge-100">🔥 100s: ${p.bat.hundreds}</div>` : ""}
+            ${p.bat.highScore > 0 ? `<div class="badge badge-hs">🎯 HS: ${hsStr}</div>` : ""}
+          </div>
+          ${p.bat.wagon && p.bat.wagon.length > 0 ? `<div class="ps-wagon-wrapper"><canvas id="ww-canvas-${p.name.replace(/[^a-zA-Z0-9]/g, '')}" width="200" height="200" class="ww-canvas"></canvas></div>` : ""}
           ${renderPlayerTeamBreakdownHTML(p)}
         </div>`;
       });
@@ -2585,6 +2468,11 @@ function renderCareerStatsBody() {
             <div class="ps-stat-box"><div class="ps-stat-lbl">Inn</div><div class="ps-stat-val">${p.bowl.innings}</div></div>
             <div class="ps-stat-box"><div class="ps-stat-lbl">Overs</div><div class="ps-stat-val">${overs}</div></div>
             <div class="ps-stat-box"><div class="ps-stat-lbl">Eco</div><div class="ps-stat-val">${eco}</div></div>
+          </div>
+          <div class="ps-milestones">
+            ${p.bowl.threeWickets > 0 ? `<div class="badge badge-3w">⚡ 3W: ${p.bowl.threeWickets}</div>` : ""}
+            ${p.bowl.fiveWickets > 0 ? `<div class="badge badge-5w">🌪️ 5W: ${p.bowl.fiveWickets}</div>` : ""}
+            ${best !== "—" ? `<div class="badge badge-best">🎯 Best: ${best}</div>` : ""}
           </div>
           ${renderPlayerTeamBreakdownHTML(p)}
         </div>`;
@@ -2618,6 +2506,16 @@ function renderCareerStatsBody() {
     }
     html += '</div>';
     body.innerHTML = html;
+    
+    // Draw Wagon Wheels if batting tab
+    if (careerTab === "batting") {
+      stats.forEach(p => {
+        if (p.bat.wagon && p.bat.wagon.length > 0) {
+          const canvasId = `ww-canvas-${p.name.replace(/[^a-zA-Z0-9]/g, "")}`;
+          drawWagonWheel(canvasId, p.bat.wagon);
+        }
+      });
+    }
   } catch (e) {
     console.error("Error in renderCareerStatsBody:", e);
     alert("Error rendering stats: " + e.message);
@@ -2629,9 +2527,21 @@ function renderCareerStatsBody() {
 // =====================================================================
 
 function initRealtime() {
-  if (typeof io === 'undefined') return;
-  // Connect to the Koyeb backend (not the Vercel frontend)
+  if (typeof io === 'undefined') {
+    const script = document.createElement('script');
+    script.src = "https://cdn.socket.io/4.7.5/socket.io.min.js";
+    script.onload = () => {
+      _socket = io(BACKEND_URL, { transports: ['websocket', 'polling'] });
+      setupSocketListeners();
+    };
+    document.head.appendChild(script);
+    return;
+  }
   _socket = io(BACKEND_URL, { transports: ['websocket', 'polling'] });
+  setupSocketListeners();
+}
+
+function setupSocketListeners() {
 
   // Receive state update from server (viewer side)
   _socket.on('state-sync', (state) => {
@@ -2747,9 +2657,11 @@ function fallbackCopyCode(text) {
 }
 
 function shareViaWhatsApp() {
-  const webUrl = (window.CRICSCORE_BACKEND_URL || 'https://scoreapp-irrc.onrender.com');
+  const origin = window.location.origin;
+  const webUrl = origin.includes("localhost") || origin.includes("127.0.0") ? "https://scoreapp-irrc.onrender.com" : origin;
   const code = _roomCode || ($('share-code-display') ? $('share-code-display').textContent : '');
-  const msg = `Join my live cricket match! 🏏\nMatch Code: *${code}*\nOpen the app: ${webUrl}\nClick "Join Live Match" and enter the code.`;
+  const directLink = `${webUrl}/?match=${code}`;
+  const msg = `Follow my live cricket match! 🏏\n\nClick the link below to view the live scoreboard instantly:\n${directLink}\n\n(Match Code: ${code})`;
 
   if (navigator.share) {
     navigator.share({
@@ -2785,10 +2697,10 @@ function clearMatchState() {
 }
 
 // Viewer: join using a code
-function joinMatch() {
-  const code = $('join-code-input').value.trim().toUpperCase();
-  $('join-error').textContent = '';
-  if (code.length < 6) { $('join-error').textContent = 'Enter a 6-character code.'; return; }
+function joinMatch(autoCode) {
+  const code = typeof autoCode === "string" ? autoCode.toUpperCase() : $('join-code-input').value.trim().toUpperCase();
+  if ($('join-error')) $('join-error').textContent = '';
+  if (code.length < 6) { if ($('join-error')) $('join-error').textContent = 'Enter a 6-character code.'; return; }
 
   _socket.emit('join-match', { code }, ({ error, ok, state }) => {
     if (error) { $('join-error').textContent = error; return; }
@@ -2889,25 +2801,32 @@ function copyRoomCode() {
 
 // ── Kick off socket connection and UI when DOM is ready ──
 function initAppListeners() {
-  try {
-    initRealtime();
-  } catch(e) { console.error("Realtime init failed", e); }
+  try { initRealtime(); } catch(e) { console.error("Realtime init failed", e); }
   
-  try {
-    initAuth(); 
-  } catch(e) { console.error("Auth init failed", e); }
+  const urlParams = new URLSearchParams(window.location.search);
+  const autoJoinCode = urlParams.get('match');
+  if (autoJoinCode) {
+    // Wait slightly for socket to initialize
+    setTimeout(() => {
+      joinMatch(autoJoinCode);
+      toast("Joining Live Match...");
+    }, 1000);
+  }
+  
+  // Defer non-critical UI data fetching to unblock initial paint
+  setTimeout(() => {
+    try { initAuth(); } catch(e) { console.error("Auth init failed", e); }
+  }, 100);
 
   try {
-    const backdrop = $('sidebar-backdrop');
-    if (backdrop) backdrop.addEventListener('click', closeSidebar);
-    
-    const closeBtn = $('btn-sidebar-close');
-    if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+    const backdrop = $("sidebar-backdrop");
+    if (backdrop) backdrop.addEventListener("click", closeSidebar);
+    const closeBtn = $("btn-sidebar-close");
+    if (closeBtn) closeBtn.addEventListener("click", closeSidebar);
   } catch(e) {
     console.error("Sidebar event bindings failed", e);
   }
 }
-
 if (document.readyState === "complete" || document.readyState === "interactive") {
   initAppListeners();
 } else {
@@ -2992,19 +2911,7 @@ function shareApp() {
 // =====================================================
 let _lbTab = 'bat';
 
-async function showLeaderboard() {
-  if (!isLoggedIn()) {
-    toast("Please login to view statistics");
-    showScreen('screen-login');
-    return;
-  }
-  await fetchGlobalHistory();
-  showScreen('screen-leaderboard');
-  _lbTab = 'bat';
-  $('lb-tab-bat').classList.add('active');
-  $('lb-tab-bowl').classList.remove('active');
-  renderLeaderboard();
-}
+async function showLeaderboard(...args) { await window.loadFeatures(); return _showLeaderboard(...args); }
 
 function switchLbTab(tab) {
   _lbTab = tab;
@@ -3585,7 +3492,12 @@ async function requestLoginOTP() {
     otpInput.focus();
   }
 
-  toast(`📧 OTP code sent to ${identifier}! Please check your email inbox.`);
+  if (result.realEmail || result.realSMS) {
+    toast(`📧 OTP code sent to ${identifier}! Please check your inbox.`);
+  } else {
+    toast(`MOCK OTP: Your code is ${result.otp}`);
+    if (otpInput) otpInput.value = result.otp;
+  }
   btn.disabled = false;
   btn.textContent = "🔄 Resend OTP Code";
 }
@@ -3640,12 +3552,14 @@ async function verifyAndLoginOTP() {
   localStorage.setItem('cricscore_user', JSON.stringify(userObj));
 
   if (typeof updateSidebarUI === 'function') updateSidebarUI(userObj);
-  showScreen("screen-home");
-  if (typeof updateDashboardStats === 'function') updateDashboardStats();
-  if (typeof renderLeaderboard === 'function') renderLeaderboard();
+  showScreen("screen-get-started");
+  if (typeof updateDashboardStats === "function") updateDashboardStats();
+  if (typeof renderLeaderboard === "function") renderLeaderboard();
 
   const displayName = userObj.profile?.matchName || userObj.phone;
   toast(`Welcome to CricScore, ${displayName}! 🎉`);
+
+
 
   btn.disabled = false;
   btn.textContent = "✅ Verify & Login";
@@ -3820,13 +3734,8 @@ async function handleAuth() {
       showScreen("screen-get-started");
       updateDashboardStats();
       renderLeaderboard();
-      
-      // Fast redirect to home dashboard after snappy 0.8s onboarding animation!
-      setTimeout(() => {
-        showScreen("screen-home");
-        const displayName = result.user.profile?.matchName || result.user.phone;
-        toast(`Welcome back, ${displayName}!`);
-      }, 800);
+      const displayName = result.user.profile?.matchName || result.user.phone;
+      toast('Welcome back, ' + displayName + '! 🎉');
     }
   } catch (err) {
     toast(err.message);
@@ -4016,36 +3925,7 @@ function handleSignOut() {
   }, 500);
 }
 
-function showProfile() {
-  const userData = JSON.parse(localStorage.getItem('cricscore_user') || '{}');
-  if (!userData.phone) {
-    toast("Please login first");
-    showScreen('screen-login');
-    return;
-  }
-
-  const phone = userData.phone;
-  const name = phone;
-  
-  if (phone && phone.startsWith("VismeUser")) {
-    $('profile-display-name').textContent = userData.profile?.matchName || "Visme User";
-    $('profile-display-phone').textContent = "";
-  } else {
-    $('profile-display-name').textContent = userData.profile?.matchName || name;
-    $('profile-display-phone').textContent = phone;
-  }
-
-  // Use profile from synced user data
-  const profile = userData.profile || {};
-  $('profile-match-name').value = profile.matchName || ((phone && phone.startsWith("VismeUser")) ? "Visme User" : name);
-  if (profile.battingHand) $('profile-batting-hand').value = profile.battingHand;
-  if (profile.bowlingType) $('profile-bowling-type').value = profile.bowlingType;
-
-  // Update avatar previews
-  updateAvatarUI(profile.avatar);
-
-  showScreen('screen-profile');
-}
+async function showProfile(...args) { await window.loadFeatures(); return _showProfile(...args); }
 
 function updateAvatarUI(avatarUrl) {
   const profilePreview = $('profile-avatar-preview');
@@ -4297,91 +4177,9 @@ function getDLSResource(overs, wickets) {
     return lowerVal + (ratio * (upperVal - lowerVal));
 }
 
-function runDLS() {
-    const resultCard = $('dls-result-container');
-    const resultHeader = $('dls-results-header');
-    if (resultCard) {
-        resultCard.style.display = 'flex';
-        if (resultHeader) resultHeader.style.display = 'block';
-    }
+async function runDLS(...args) { await window.loadFeatures(); return _runDLS(...args); }
 
-    const btn = $('btn-run-dls');
-    if (btn) {
-        const original = btn.innerHTML;
-        if (!original.includes('Calculating')) {
-            btn.innerHTML = "🔄 Calculating...";
-            btn.style.opacity = '0.7';
-            setTimeout(() => {
-                btn.innerHTML = original;
-                btn.style.opacity = '1';
-            }, 300);
-        }
-    }
-
-    // Use parseFloat to handle balls (e.g. 20.2 overs)
-    const s1 = parseFloat($('dls-team1-score').value) || 0;
-    const t1 = parseFloat($('dls-total-overs').value) || 0;
-    const p2 = parseFloat($('dls-interrupted-overs').value) || 0;
-    const w2 = parseInt($('dls-interrupted-wickets').value) || 0;
-    const r2 = parseFloat($('dls-revised-overs').value) || t1;
-
-    if (s1 <= 0 || t1 <= 0 || r2 <= 0) {
-        $('dls-par-score').textContent = '—';
-        $('dls-target-score').textContent = '—';
-        if (s1 > 0 && t1 > 0 && r2 <= 0) toast("Revised overs must be greater than 0");
-        else toast("Please enter both Total Score and Overs Scheduled.");
-        return;
-    }
-
-    const res1 = getDLSResource(t1, 0);
-    const res2Current = getDLSResource(r2 - p2, w2);
-    const res2Total = getDLSResource(r2, 0);
-
-    if (res1 === 0) {
-        $('dls-par-score').textContent = 'Error';
-        $('dls-target-score').textContent = 'Error';
-        return;
-    }
-
-    const resourcesUsedByTeam2 = Math.max(0, res2Total - res2Current);
-    const parScore = Math.floor(s1 * (resourcesUsedByTeam2 / res1));
-    const targetScore = Math.floor(s1 * (res2Total / res1)) + 1;
-
-    $('dls-par-score').textContent = isNaN(parScore) ? '—' : parScore;
-    $('dls-target-score').textContent = isNaN(targetScore) ? '—' : targetScore;
-    $('dls-target-desc').textContent = `Target for ${r2} overs`;
-
-    // Apply pulse effect
-    if (resultCard) {
-        resultCard.style.transition = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-        resultCard.style.transform = 'scale(1.05)';
-        resultCard.style.background = 'rgba(0, 212, 106, 0.15)';
-        setTimeout(() => {
-            resultCard.style.transform = 'scale(1)';
-            resultCard.style.background = 'rgba(255, 255, 255, 0.05)';
-        }, 600);
-    }
-}
-
-function applyDLS() {
-    const targetVal = parseInt($('dls-target-score').textContent);
-    const revisedOvers = parseFloat($('dls-revised-overs').value);
-
-    if (isNaN(targetVal) || isNaN(revisedOvers)) {
-        toast("Please calculate the target first!");
-        return;
-    }
-
-    match.dlsTarget = targetVal;
-    match.totalOvers = revisedOvers;
-
-    toast(`DLS Applied: Target ${targetVal}, Overs ${revisedOvers}`);
-    
-    // Switch to scoring screen and re-render
-    showScreen('screen-scoring');
-    renderScoring();
-    syncState();
-}
+async function applyDLS(...args) { await window.loadFeatures(); return _applyDLS(...args); }
 
 function goHome() {
     showScreen('screen-home');
@@ -4521,14 +4319,9 @@ async function proceedVismeLogin(uniqueId, name) {
             // Route through the spectacular 3D cricket wicket strike onboarding screen!
             showScreen("screen-get-started");
             updateDashboardStats();
-            renderLeaderboard();
-            
-            // Auto-redirect to the home dashboard after 3.8 seconds of gorgeous wicket smash action!
-            setTimeout(() => {
-                showScreen("screen-home");
-                toast(`Welcome back, ${name}!`);
-            }, 3800);
-        } else {
+      renderLeaderboard();
+      toast('Welcome back, ' + name + '! 🎉');
+      } else {
             toast("Failed to log in via Visme User");
         }
     } catch (err) {
@@ -4652,10 +4445,13 @@ window.addEventListener('DOMContentLoaded', () => {
       .then((reg) => console.log('✅ Service Worker registered for offline scoring:', reg.scope))
       .catch((err) => console.warn('⚠️ Service Worker registration failed:', err));
   }
-  // Initialize Tournaments & Teams
-  fetchTournaments();
-  fetchTeams();
-  populateTournamentSelect();
+  setTimeout(() => {
+    if (isLoggedIn()) {
+      fetchTournaments();
+      fetchTeams();
+    }
+    populateTournamentSelect();
+  }, 100);
 });
 
 /* ============================================================
@@ -4730,25 +4526,7 @@ function mergeTournaments(serverTnmts, localTnmts) {
   return Array.from(map.values());
 }
 
-async function fetchTournaments() {
-  try {
-    const res = await fetch(`${BACKEND_URL}/api/tournaments`);
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        const localTnmts = (function() {
-          try { return JSON.parse(localStorage.getItem('cricscore_tournaments') || '[]'); } catch(e) { return []; }
-        })();
-        const merged = mergeTournaments(data, localTnmts);
-        const repaired = repairTournamentData(merged);
-        saveTournamentsLocally(repaired);
-        populateTournamentSelect();
-      }
-    }
-  } catch (e) {
-    console.warn("Tournaments fetch error:", e);
-  }
-}
+async function fetchTournaments(...args) { await window.loadFeatures(); return _fetchTournaments(...args); }
 
 function populateTournamentSelect() {
   const sel = $('match-tournament-select');
@@ -4820,10 +4598,7 @@ function setTournamentStatus(tnmtId, newStatus) {
   showTournamentDetail(tnmtId);
 }
 
-function showTournaments() {
-  showScreen('screen-tournaments');
-  filterTournaments('all');
-}
+async function showTournaments(...args) { await window.loadFeatures(); return _showTournaments(...args); }
 
 function filterTournaments(statusFilter, btn) {
   if (btn) {
@@ -5020,56 +4795,7 @@ function getTournamentMatches(tnmt) {
   });
 }
 
-function showTournamentDetail(tnmtId) {
-  currentSelectedTnmtId = tnmtId;
-  const tnmts = loadTournaments();
-  const tnmt = tnmts.find(t => (t._id === tnmtId || t.id === tnmtId));
-  if (!tnmt) {
-    toast("Tournament not found");
-    showTournaments();
-    return;
-  }
-
-  $('tnmt-detail-title').textContent = tnmt.name;
-
-  // Hero Card
-  const matches = getTournamentMatches(tnmt);
-  const heroCard = $('tnmt-hero-card');
-  const effStatus = getEffectiveTournamentStatus(tnmt);
-  if (heroCard) {
-    heroCard.innerHTML = `
-      <div class="hero-top">
-        <div>
-          <h2>${tnmt.name}</h2>
-          <p class="hero-sub">📍 ${tnmt.location || 'Local Ground'} • ${tnmt.format || 'T20'} Format</p>
-        </div>
-        <div style="display:flex; align-items:center; gap:0.5rem;">
-          <select class="form-input" style="width:auto; padding:0.25rem 0.6rem; font-size:0.75rem; font-weight:700; border-radius:20px; background:var(--clr-surface-elevated, #f8fafc); color:var(--clr-text); border:1px solid var(--clr-border, #e2e8f0); cursor:pointer;" onchange="setTournamentStatus('${tnmt._id || tnmt.id}', this.value)">
-            <option value="Ongoing" ${effStatus === 'Ongoing' ? 'selected' : ''}>🟡 ONGOING</option>
-            <option value="Upcoming" ${effStatus === 'Upcoming' ? 'selected' : ''}>🔵 UPCOMING</option>
-            <option value="Completed" ${effStatus === 'Completed' ? 'selected' : ''}>🟢 COMPLETED</option>
-          </select>
-        </div>
-      </div>
-      <div class="hero-stats-row">
-        <div class="hero-stat-pill">
-          <span class="num">${matches.length}</span>
-          <span class="lbl">Matches</span>
-        </div>
-        <div class="hero-stat-pill">
-          <span class="num">${tnmt.numTeams || (tnmt.teams ? tnmt.teams.length : 0)}</span>
-          <span class="lbl">Teams</span>
-        </div>
-        <div class="hero-stat-pill">
-          <span class="num">${matches.reduce((sum, m) => sum + (m.innings ? m.innings.reduce((a, b) => a + (b ? b.runs : 0), 0) : 0), 0)}</span>
-          <span class="lbl">Total Runs</span>
-        </div>
-      </div>`;
-  }
-
-  showScreen('screen-tournament-detail');
-  switchTnmtTab('overview');
-}
+async function showTournamentDetail(...args) { await window.loadFeatures(); return _showTournamentDetail(...args); }
 
 function switchTnmtTab(tabName, btn) {
   if (btn) {
@@ -5560,7 +5286,7 @@ function startTournamentMatchWithTeams(tournamentId, team1Name, team2Name, fixtu
     currentInnings: 1,
     innings: [null, null],
     result: null,
-    settings: { wideRuns: 1, noBallRuns: 1, freeHit: true },
+    settings: { wideRuns: 1, noBallRuns: 1, freeHit: true, matchEnv: 'ground' },
     venue: fixtureVenue || tournament.location || ''
   };
 
@@ -5616,7 +5342,7 @@ function startTournamentMatch(tournamentId) {
     currentInnings: 1,
     innings: [null, null],
     result: null,
-    settings: { wideRuns: 1, noBallRuns: 1, freeHit: true }
+    settings: { wideRuns: 1, noBallRuns: 1, freeHit: true, matchEnv: 'ground' }
   };
 
   populateTournamentSelect();
@@ -5661,15 +5387,17 @@ function renderTnmtTeams(tnmt) {
   }
 
   html += '<div class="teams-grid">';
-  table.forEach(t => {
+  assignedTeams.forEach(assignedTeam => {
+    const tName = typeof assignedTeam === 'string' ? assignedTeam : (assignedTeam.name || assignedTeam.id);
+    const tStats = table.find(x => x.name === tName) || { p: 0, w: 0, pts: 0 };
     html += `
       <div class="team-card">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5rem;">
-          <div class="team-avatar">${t.name.charAt(0).toUpperCase()}</div>
-          <button class="btn-secondary" style="font-size:0.7rem; padding:0.2rem 0.5rem; color:var(--clr-danger);" onclick="removeTeamFromTournament('${t.name}')">✕ Remove</button>
+          <div class="team-avatar">${tName.charAt(0).toUpperCase()}</div>
+          <button class="btn-secondary" style="font-size:0.7rem; padding:0.2rem 0.5rem; color:var(--clr-danger);" onclick="removeTeamFromTournament('${tName}')">✕ Remove</button>
         </div>
-        <h3>${t.name}</h3>
-        <p class="team-meta">Matches: ${t.p} • Wins: ${t.w} • Points: ${t.pts}</p>
+        <h3>${tName}</h3>
+        <p class="team-meta">Matches: ${tStats.p} • Wins: ${tStats.w} • Points: ${tStats.pts}</p>
       </div>`;
   });
   html += '</div>';
@@ -5869,64 +5597,11 @@ function saveTeamsLocally(teams) {
   localStorage.setItem('cricscore_teams', JSON.stringify(teams));
 }
 
-async function fetchTeams() {
-  try {
-    const res = await fetch(`${BACKEND_URL}/api/teams`);
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data)) saveTeamsLocally(data);
-    }
-  } catch (e) {
-    console.warn("Teams fetch error:", e);
-  }
-}
+async function fetchTeams(...args) { await window.loadFeatures(); return _fetchTeams(...args); }
 
-function showTeams() {
-  showScreen('screen-teams');
-  renderTeamsList();
-}
+async function showTeams(...args) { await window.loadFeatures(); return _showTeams(...args); }
 
-function renderTeamsList() {
-  const container = $('teams-list-container');
-  if (!container) return;
-
-  const teams = loadTeams();
-  if (teams.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state-card">
-        <div class="empty-icon">🛡️</div>
-        <h3>No Teams Created Yet</h3>
-        <p>Create your team, add players, assign captain & roles!</p>
-        <button class="btn-primary" onclick="openCreateTeamModal()">+ Create Team</button>
-      </div>`;
-    return;
-  }
-
-  let html = '';
-  teams.forEach(t => {
-    const id = t._id || t.id;
-    const playerCount = t.players ? t.players.length : 0;
-    const captain = t.captain ? `Cap: ${t.captain}` : 'No Captain';
-
-    html += `
-      <div class="team-card" onclick="showTeamDetail('${id}')">
-        <div class="team-card-header">
-          <div class="team-avatar">${t.name.charAt(0).toUpperCase()}</div>
-          <div>
-            <h3>${t.name}</h3>
-            <p class="team-sub">${t.location || 'Local Team'} • ${playerCount} Players</p>
-          </div>
-        </div>
-        <div class="team-card-meta">
-          <span>👑 ${captain}</span>
-        </div>
-        <div class="team-card-actions">
-          <button class="btn-primary-sm" onclick="event.stopPropagation(); openTeamRoster('${id}')">Manage Players</button>
-        </div>
-      </div>`;
-  });
-  container.innerHTML = html;
-}
+async function renderTeamsList(...args) { await window.loadFeatures(); return _renderTeamsList(...args); }
 
 function openTeamRoster(teamId) {
   currentSelectedTeamId = teamId;
@@ -6025,57 +5700,7 @@ async function saveTeam() {
   showTeamDetail(newTeam._id || newTeam.id);
 }
 
-function showTeamDetail(teamId) {
-  currentSelectedTeamId = teamId;
-  const teams = loadTeams();
-  const team = teams.find(t => (t._id === teamId || t.id === teamId));
-  if (!team) {
-    toast("Team not found");
-    showTeams();
-    return;
-  }
-
-  $('team-detail-title').textContent = team.name;
-  const teamActions = $('team-detail-actions');
-  if (teamActions) {
-    teamActions.innerHTML = isTeamOwner(team) ? `
-      <button class="btn-primary-sm" onclick="openAddPlayerModal()">+ Add Player</button>
-      <button class="btn-delete-team" onclick="confirmDeleteTeam('${team._id || team.id}')">Delete Team</button>` : '';
-  }
-
-  // Compute team stats
-  const stats = calculateTeamStats(team.name);
-  const heroCard = $('team-hero-card');
-  if (heroCard) {
-    heroCard.innerHTML = `
-      <div class="hero-top">
-        <div style="display:flex; align-items:center; gap:0.8rem;">
-          <div class="team-avatar-lg">${team.name.charAt(0).toUpperCase()}</div>
-          <div>
-            <h2>${team.name}</h2>
-            <p class="hero-sub">📍 ${team.location || 'Local Ground'} • ${team.players ? team.players.length : 0} Players</p>
-          </div>
-        </div>
-      </div>
-      <div class="hero-stats-row">
-        <div class="hero-stat-pill">
-          <span class="num">${stats.matches}</span>
-          <span class="lbl">Matches</span>
-        </div>
-        <div class="hero-stat-pill">
-          <span class="num">${stats.winPct}%</span>
-          <span class="lbl">Win Rate</span>
-        </div>
-        <div class="hero-stat-pill">
-          <span class="num">${stats.wins}W / ${stats.losses}L</span>
-          <span class="lbl">Record</span>
-        </div>
-      </div>`;
-  }
-
-  showScreen('screen-team-detail');
-  switchTeamTab('dashboard');
-}
+async function showTeamDetail(...args) { await window.loadFeatures(); return _showTeamDetail(...args); }
 
 function switchTeamTab(tabName, btn) {
   if (btn) {
@@ -6710,3 +6335,208 @@ function updateMatchPredictionUI() {
     bar2.textContent = `${t2Name} ${pct2}%`;
   }
 }
+
+
+window._featuresLoaded = false;
+window._featuresPromise = null;
+window.loadFeatures = function() {
+  if (window._featuresLoaded) return Promise.resolve();
+  if (window._featuresPromise) return window._featuresPromise;
+  window._featuresPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'features.min.js?v=5.0';
+    s.onload = () => { window._featuresLoaded = true; resolve(); };
+    s.onerror = reject;
+    document.body.appendChild(s);
+  });
+  return window._featuresPromise;
+};
+
+
+
+
+
+
+
+
+
+
+
+
+// ===== WAGON WHEEL MODULE =====
+function showWagonWheelModal() {
+  const modal = $('modal-wagon-wheel');
+  if (modal) modal.style.setProperty('display', 'flex', 'important');
+}
+
+function closeWagonWheelModal() {
+  const modal = $('modal-wagon-wheel');
+  if (modal) modal.style.display = 'none';
+}
+
+function recordWagonAngle(angle) {
+  const inn = getInnings();
+  if (inn.ballLog && inn.ballLog.length > 0) {
+    const lastBall = inn.ballLog[inn.ballLog.length - 1];
+    lastBall.wagonAngle = angle;
+    syncState(); // Save to local storage and sync
+    toast('Shot direction recorded!');
+  }
+  closeWagonWheelModal();
+}
+
+
+
+
+
+
+function drawWagonWheel(canvasId, wagonData) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const cx = 100, cy = 100;
+  
+  // Draw ground
+  ctx.beginPath();
+  ctx.arc(cx, cy, 95, 0, 2 * Math.PI);
+  ctx.fillStyle = '#047857';
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#a7f3d0';
+  ctx.stroke();
+
+  // Draw inner circle
+  ctx.beginPath();
+  ctx.arc(cx, cy, 40, 0, 2 * Math.PI);
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Draw pitch
+  ctx.fillStyle = '#d97706';
+  ctx.fillRect(96, 85, 8, 30);
+
+  // Draw lines
+  wagonData.forEach(shot => {
+    const angleRad = (shot.angle - 90) * (Math.PI / 180); 
+    
+    let length = 40;
+    let color = 'rgba(255,255,255,0.7)';
+    if (shot.runs === 4) { length = 95; color = '#60a5fa'; }
+    if (shot.runs === 6) { length = 95; color = '#f59e0b'; }
+    if (shot.runs === 1) { length = 45; }
+    if (shot.runs === 2) { length = 65; }
+    if (shot.runs === 3) { length = 85; }
+    
+    // Add spread so shots don't overlap completely
+    const spread = (Math.random() - 0.5) * 0.5; 
+    const finalAngle = angleRad + spread;
+
+    const x2 = cx + Math.cos(finalAngle) * length;
+    const y2 = cy + Math.sin(finalAngle) * length;
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = shot.runs >= 4 ? 2.5 : 1.5;
+    ctx.stroke();
+    
+    // Draw dot at end of line
+    ctx.beginPath();
+    ctx.arc(x2, y2, shot.runs >= 4 ? 3 : 2, 0, 2 * Math.PI);
+    ctx.fillStyle = color;
+    ctx.fill();
+  });
+}
+
+
+
+
+
+
+
+// ===== SHAREABLE SCORECARD GRAPHICS =====
+function shareScorecardGraphic(elementId) {
+  const el = document.getElementById(elementId);
+  if (!el || typeof html2canvas === 'undefined') {
+    toast('Error generating graphic. Please try again.');
+    return;
+  }
+  
+  toast('Generating scorecard graphic...');
+  
+  html2canvas(el, { backgroundColor: '#0f172a', scale: 2 }).then(canvas => {
+    canvas.toBlob(blob => {
+      const file = new File([blob], 'cricscore_scorecard.png', { type: 'image/png' });
+      
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({
+          title: 'CricScore Scorecard',
+          text: 'Check out this match scorecard from CricScore! 🏏',
+          files: [file]
+        }).catch(err => {
+          console.error('Share failed:', err);
+          downloadFallback(canvas);
+        });
+      } else {
+        downloadFallback(canvas);
+      }
+    });
+  });
+}
+
+function downloadFallback(canvas) {
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL('image/png');
+  a.download = 'cricscore_scorecard.png';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  toast('Scorecard graphic saved to device!');
+}
+
+
+
+
+
+function showBoundaryAnimation(runs) {
+  const overlay = $('boundary-overlay');
+  const text = $('boundary-text');
+  if (!overlay || !text) return;
+  
+  overlay.style.display = 'flex';
+  // Force reflow
+  void overlay.offsetWidth;
+  
+  if (runs === 4) {
+    text.className = 'boundary-text boundary-4';
+    text.innerHTML = 'FOUR!';
+  } else if (runs === 6) {
+    text.className = 'boundary-text boundary-6';
+    text.innerHTML = 'SIX!';
+  }
+  
+  overlay.classList.add('active');
+  
+  setTimeout(() => {
+    overlay.classList.remove('active');
+    setTimeout(() => { overlay.style.display = 'none'; }, 300);
+  }, 1200);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

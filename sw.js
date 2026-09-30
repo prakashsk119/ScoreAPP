@@ -1,15 +1,15 @@
-/* ============================================================
+﻿/* ============================================================
    CricScore Service Worker – Offline Scoring & PWA Support
    ============================================================ */
 
-const CACHE_NAME = 'cricscore-cache-v1';
+const CACHE_NAME = 'cricscore-cache-v13';
 const STATIC_ASSETS = [
   './',
   './index.html',
-  './style.css',
-  './app.js',
-  './cricket_bg.png',
-  './manifest.json'
+  './style.min.css',
+  './app.min.js',
+  './manifest.json',
+  './app-icon.svg'
 ];
 
 // Install Event – Pre-cache static assets
@@ -78,3 +78,15 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "CricScore - Ball-by-Ball Cricket Scoring",
   "short_name": "CricScore",
   "description": "Live Ball-by-Ball Cricket Scoring Application with Offline Support",
@@ -9,14 +9,20 @@
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "dummy.jpg",
-      "sizes": "192x192",
-      "type": "image/jpeg"
+      "src": "app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
     },
     {
-      "src": "dummy.jpg",
+      "src": "app-icon.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "app-icon.svg",
       "sizes": "512x512",
-      "type": "image/jpeg"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ]
 }
