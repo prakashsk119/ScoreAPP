@@ -2,7 +2,7 @@
    CricScore Service Worker – Offline Scoring & PWA Support
    ============================================================ */
 
-const CACHE_NAME = 'cricscore-cache-v13';
+const CACHE_NAME = 'cricscore-cache-v14';
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -78,6 +78,7 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
 
 
 
