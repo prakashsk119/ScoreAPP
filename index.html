@@ -92,16 +92,15 @@
     </div>
   </div>
   <script>
-    window.addEventListener('load', () => {
-      setTimeout(() => {
-        const splash = document.getElementById('cric-splash-screen');
-        if (splash) {
-          splash.style.opacity = '0';
-          splash.style.visibility = 'hidden';
-          setTimeout(() => splash.remove(), 600);
-        }
-      }, 2500);
-    });
+    // Start removing splash screen extremely quickly
+    setTimeout(() => {
+      const splash = document.getElementById('cric-splash-screen');
+      if (splash) {
+        splash.style.opacity = '0';
+        splash.style.visibility = 'hidden';
+        setTimeout(() => splash.remove(), 400);
+      }
+    }, 1500);
   </script>
 
   <!-- Offline Status Banner -->
@@ -2050,10 +2049,11 @@
     <link rel="stylesheet" href="style.min.css?v=11.0" />
   </noscript>
 
-<script src="app.min.js?v=26.0" defer></script>
+<script src="app.min.js?v=27.0" defer></script>
 </body>
 
 </html>
+
 
 
 
