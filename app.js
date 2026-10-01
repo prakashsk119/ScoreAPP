@@ -2192,8 +2192,12 @@ function switchCareerTab(tab) {
   renderCareerStatsBody();
 }
 
+let _cachedCareerStats = null;
+let _cachedHistoryHash = -1;
 function aggregateCareerStats() {
   const history = loadHistory();
+  const historyHash = history.length + "_" + (history.length > 0 ? (history[0].id || history[0]._id || 'x') : '0');
+  if (_cachedCareerStats && _cachedHistoryHash === historyHash) { return _cachedCareerStats; }
   const players = {}; // map of normalizedName -> stats
 
   history.forEach(match => {
@@ -2329,6 +2333,8 @@ function aggregateCareerStats() {
     p.bowl.econ = p.bowl.balls > 0 ? (p.bowl.runs / (p.bowl.balls / 6)).toFixed(2) : "0.00";
     p.bowl.avg = p.bowl.wickets > 0 ? (p.bowl.runs / p.bowl.wickets).toFixed(1) : "—";
   });
+  _cachedCareerStats = result;
+  _cachedHistoryHash = historyHash;
   return result;
 }
 
@@ -6524,6 +6530,8 @@ function showBoundaryAnimation(runs) {
     setTimeout(() => { overlay.style.display = 'none'; }, 300);
   }, 1200);
 }
+
+
 
 
 
